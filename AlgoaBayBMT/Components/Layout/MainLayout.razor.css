@@ -1,84 +1,152 @@
-.page {
-    position: relative;
+/* === App Container === */
+.app-container {
+    display: grid;
+    grid-template-areas:
+        "topbar topbar"
+        "sidebar main";
+    grid-template-columns: var(--sidebar-width) 1fr;
+    grid-template-rows: var(--topbar-height) 1fr;
+    min-height: 100vh;
+    transition: grid-template-columns var(--transition-speed) ease;
+}
+
+.app-container.sidebar-collapsed {
+    grid-template-columns: 0 1fr;
+}
+
+/* === Top Bar === */
+.topbar {
+    grid-area: topbar;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    background: var(--color-primary-dark);
+    color: #FFFFFF;
+    height: var(--topbar-height);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(10, 42, 67, 0.15);
 }
 
-main {
-    flex: 1;
+.topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 }
 
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+.sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #FFFFFF;
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 6px;
+    transition: background-color var(--transition-speed) ease;
 }
 
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+.sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.logo-link {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+.logo-link:hover {
+    text-decoration: none;
+    color: #FFFFFF;
+}
+
+.logo {
+    height: 40px;
+    width: auto;
+}
+
+.logo-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: #FFFFFF;
+}
+
+.topbar-right {
     display: flex;
     align-items: center;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    color: #FFFFFF;
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
-    }
-
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-    }
-
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
-    }
+.user-name {
+    font-weight: 500;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
+.guest-text {
+    color: var(--color-grey-200);
+    font-size: 0.9rem;
+}
+
+/* === Sidebar === */
+.sidebar {
+    grid-area: sidebar;
+    background: linear-gradient(180deg, var(--color-primary-dark) 0%, #062035 100%);
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: transform var(--transition-speed) ease, width var(--transition-speed) ease;
+    position: fixed;
+    top: var(--topbar-height);
+    left: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    z-index: 90;
+}
+
+.sidebar.collapsed {
+    transform: translateX(-100%);
+}
+
+.sidebar-overlay {
+    display: none;
+}
+
+/* === Main Content === */
+.main-content {
+    grid-area: main;
+    background: var(--color-background);
+    min-height: calc(100vh - var(--topbar-height));
+    overflow-y: auto;
+}
+
+.content-area {
+    padding: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* === Error UI === */
 #blazor-error-ui {
     color-scheme: light only;
-    background: lightyellow;
+    background: var(--color-warning);
     bottom: 0;
     box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
     box-sizing: border-box;
@@ -88,11 +156,81 @@ main {
     position: fixed;
     width: 100%;
     z-index: 1000;
+    color: #FFFFFF;
 }
 
-    #blazor-error-ui .dismiss {
-        cursor: pointer;
-        position: absolute;
-        right: 0.75rem;
-        top: 0.5rem;
+#blazor-error-ui .dismiss {
+    cursor: pointer;
+    position: absolute;
+    right: 0.75rem;
+    top: 0.5rem;
+}
+
+/* === Mobile Responsive (< 768px) === */
+@media (max-width: 767.98px) {
+    .app-container {
+        grid-template-columns: 0 1fr;
     }
+
+    .sidebar {
+        transform: translateX(-100%);
+        box-shadow: 2px 0 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .app-container:not(.sidebar-collapsed) .sidebar {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay {
+        display: block;
+        position: fixed;
+        top: var(--topbar-height);
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 85;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity var(--transition-speed) ease, visibility var(--transition-speed) ease;
+    }
+
+    .sidebar-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .topbar {
+        padding: 0 1rem;
+    }
+
+    .logo-text {
+        font-size: 1rem;
+    }
+
+    .user-name {
+        max-width: 100px;
+    }
+
+    .content-area {
+        padding: 1rem;
+    }
+}
+
+/* === Tablet Responsive (768px - 1024px) === */
+@media (min-width: 768px) and (max-width: 1024px) {
+    :root {
+        --sidebar-width: 220px;
+    }
+
+    .content-area {
+        padding: 1.25rem;
+    }
+}
+
+/* === Large Desktop (> 1400px) === */
+@media (min-width: 1400px) {
+    .content-area {
+        padding: 2rem;
+    }
+}

@@ -1,18 +1,51 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
-    <main>
-        <div class="top-row px-4">
-            <a href="https://www.syncfusion.com/blazor-components/" target="_blank">Blazor Components</a>
-        	<a href="https://blazor.syncfusion.com/documentation/" target="_blank">User Guide</a>
-        	<a href="http://blazor.syncfusion.com/" target="_blank">View Demos</a>
+<div class="app-container @(sidebarCollapsed ? "sidebar-collapsed" : "")">
+    <!-- Top Bar -->
+    <header class="topbar">
+        <div class="topbar-left">
+            <button class="sidebar-toggle" @onclick="ToggleSidebar" aria-label="Toggle sidebar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
+            </button>
+            <a href="" class="logo-link">
+                <img src="images/logo.png" alt="Algoa Bay BMT Logo" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                <span class="logo-text">Algoa Bay BMT</span>
+            </a>
         </div>
+        <div class="topbar-right">
+            <AuthorizeView>
+                <Authorized>
+                    <div class="user-info">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <span class="user-name">@context.User.Identity?.Name</span>
+                    </div>
+                </Authorized>
+                <NotAuthorized>
+                    <span class="guest-text">Welcome, Guest</span>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </header>
 
-        <article class="content px-4">
+    <!-- Sidebar -->
+    <aside class="sidebar @(sidebarCollapsed ? "collapsed" : "")">
+        <NavMenu OnNavigate="CloseSidebarOnMobile" />
+    </aside>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay @(sidebarCollapsed ? "" : "active")" @onclick="ToggleSidebar"></div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <article class="content-area">
             @Body
         </article>
     </main>
@@ -23,3 +56,24 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool sidebarCollapsed = false;
+
+    protected override void OnInitialized()
+    {
+        // Default to expanded so navigation is visible
+        sidebarCollapsed = false;
+    }
+
+    private void ToggleSidebar()
+    {
+        sidebarCollapsed = !sidebarCollapsed;
+    }
+
+    private void CloseSidebarOnMobile()
+    {
+        // Close sidebar on mobile after navigation
+        sidebarCollapsed = true;
+    }
+}
