@@ -1,0 +1,274 @@
+﻿@implements IDisposable
+
+@inject NavigationManager NavigationManager
+
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">AlgoaBayBMT</a>
+    </div>
+</div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <nav class="flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="counter">
+                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            </NavLink>
+        </div>
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="weather">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            </NavLink>
+        </div>
+		
+			<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="datagrid-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-datagrid" aria-hidden="true"></span><span class="displayText">DataGrid</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="imageeditor-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-imageeditor" aria-hidden="true"></span><span class="displayText">Image Editor</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="richtexteditor-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-richtexteditor" aria-hidden="true"></span><span class="displayText">Rich Text Editor</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="inplaceeditor-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-inplaceeditor" aria-hidden="true"></span><span class="displayText">In-place Editor</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="scheduler-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-scheduler" aria-hidden="true"></span><span class="displayText">Scheduler</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="calendar-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-calendar" aria-hidden="true"></span><span class="displayText">Calendar</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="datepicker-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-datepicker" aria-hidden="true"></span><span class="displayText">DatePicker</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="datetimepicker-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-datetimepicker" aria-hidden="true"></span><span class="displayText">DateTime Picker</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="timepicker-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-timepicker" aria-hidden="true"></span><span class="displayText">TimePicker</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="combobox-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-combobox" aria-hidden="true"></span><span class="displayText">ComboBox</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="dropdownlist-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-dropdownlist" aria-hidden="true"></span><span class="displayText">Dropdown List</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-2">
+ 	<NavLink class="nav-link" href="multicolumncombobox-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-multicolumncombobox" aria-hidden="true"></span><span class="displayText">MultiColumn ComboBox</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="listbox-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-listbox" aria-hidden="true"></span><span class="displayText">ListBox</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="dialog-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-dialog" aria-hidden="true"></span><span class="displayText">Dialog</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="tooltip-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-tooltip" aria-hidden="true"></span><span class="displayText">Tooltip</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="dashboardlayout-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-dashboardlayout" aria-hidden="true"></span><span class="displayText">Dashboard Layout</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="card-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-card" aria-hidden="true"></span><span class="displayText">Card</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="textbox-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-textbox" aria-hidden="true"></span><span class="displayText">TextBox</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="inputmask-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-inputmask" aria-hidden="true"></span><span class="displayText">Input Mask</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="numerictextbox-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-numerictextbox" aria-hidden="true"></span><span class="displayText">Numeric TextBox</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="rating-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-rating" aria-hidden="true"></span><span class="displayText">Rating</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="radiobutton-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-radiobutton" aria-hidden="true"></span><span class="displayText">Radio Button</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="checkbox-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-checkbox" aria-hidden="true"></span><span class="displayText">Checkbox</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="fileupload-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-fileupload" aria-hidden="true"></span><span class="displayText">File Upload</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="toggleswitchbutton-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-toggleswitchbutton" aria-hidden="true"></span><span class="displayText">Toggle Switch Button</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="signature-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-signature" aria-hidden="true"></span><span class="displayText">Signature</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="contextmenu-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-contextmenu" aria-hidden="true"></span><span class="displayText">Context Menu</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="sidebar-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-sidebar" aria-hidden="true"></span><span class="displayText">Sidebar</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="tabs-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-tabs" aria-hidden="true"></span><span class="displayText">Tabs</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="carousel-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-carousel" aria-hidden="true"></span><span class="displayText">Carousel</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="breadcrumb-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-breadcrumb" aria-hidden="true"></span><span class="displayText">Breadcrumb</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="toast-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-toast" aria-hidden="true"></span><span class="displayText">Toast</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="spinner-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-spinner" aria-hidden="true"></span><span class="displayText">Spinner</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="dataform-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-dataform" aria-hidden="true"></span><span class="displayText">DataForm</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="stepper-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-stepper" aria-hidden="true"></span><span class="displayText">Stepper</span>
+ 	</NavLink>
+ 	</div>
+	<div class="nav-item px-3">
+ 	<NavLink class="nav-link" href="textarea-features">
+ 	<span class="syncfusion-blazor-icons syncfusion-blazor-icon-textarea" aria-hidden="true"></span><span class="displayText">TextArea</span>
+ 	</NavLink>
+ 	</div>
+
+
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="auth">
+                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
+            </NavLink>
+        </div>
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Manage">
+                        <span class="bi bi-person-fill-nav-menu" aria-hidden="true"></span> @context.User.Identity?.Name
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <form action="Account/Logout" method="post">
+                        <AntiforgeryToken />
+                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
+                        <button type="submit" class="nav-link">
+                            <span class="bi bi-arrow-bar-left-nav-menu" aria-hidden="true"></span> Logout
+                        </button>
+                    </form>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Register">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Login">
+                        <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Login
+                    </NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
+</div>
+
+@code {
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
+}
+

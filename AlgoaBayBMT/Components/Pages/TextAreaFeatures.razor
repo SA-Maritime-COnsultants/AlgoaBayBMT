@@ -1,0 +1,27 @@
+﻿@page "/textarea-features"
+@rendermode InteractiveServer
+@using Syncfusion.Blazor
+@using Syncfusion.Blazor.Inputs
+<PageTitle>TextArea</PageTitle>
+<h2>TextArea</h2>
+<div>
+  <h3>Selected Features:</h3>
+    <ul class="ulstyle">
+      <li class="list"> Floating Label - Always</li>
+      <li class="list"> Resize Mode - Vertical</li>
+      <li class="list"> Theme - Tailwind</li>
+    </ul>
+</div>
+<br/>
+<div id="ControlRegion">
+    <div class="control-wrapper">
+        <SfTextArea Placeholder="Enter your comments" ResizeMode="Resize.Vertical" FloatLabelType="FloatLabelType.Always" RowCount="2" ColumnCount="31"></SfTextArea>
+    </div>
+</div>
+<style>
+    .control-wrapper {
+        max-width: 250px;
+        margin: 0 auto;
+        padding: 30px 0px 0px;
+    }   
+</style>
