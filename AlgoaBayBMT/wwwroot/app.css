@@ -44,7 +44,12 @@
     --sidebar-width: 260px;
     --sidebar-collapsed-width: 0px;
     --topbar-height: 60px;
-    --transition-speed: 0.3s;
+    /* slightly longer transition and custom easing for smoother animations */
+    --transition-speed: 0.45s;
+    --transition-ease: cubic-bezier(.22,.9,.35,1);
+    /* logo translate defaults (x, y) */
+    --logo-translate-x: -20px;
+    --logo-translate-y: 80px;
 }
 
 *, *::before, *::after {

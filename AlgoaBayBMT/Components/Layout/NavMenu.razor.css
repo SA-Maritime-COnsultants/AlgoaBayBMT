@@ -8,6 +8,18 @@
     overflow-x: hidden;
 }
 
+/* When sidebar is expanded, drop the navigation text and items down by 100px
+   to sit flush with the bottom of the topbar/logo and eliminate any gap. */
+.app-container:not(.sidebar-collapsed) .nav-menu {
+    /* increased drop by 20px as requested */
+    padding-top: 120px;
+    transition: padding-top var(--transition-speed) ease;
+}
+
+.app-container.sidebar-collapsed .nav-menu {
+    padding-top: 1rem;
+}
+
 /* === Navigation Sections === */
 .nav-section {
     padding: 0 1rem;

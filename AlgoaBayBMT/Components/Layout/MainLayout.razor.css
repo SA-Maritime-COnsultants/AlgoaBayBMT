@@ -67,8 +67,20 @@
 }
 
 .logo {
-    height: 40px;
+    /* Responsive logo: at least 200px high on larger screens, but clamp to a reasonable max */
+    height: clamp(200px, 10vw, 320px);
     width: auto;
+    display: block;
+    transition: transform var(--transition-speed) var(--transition-ease);
+}
+
+/* Logo drops only when the sidebar is expanded */
+.app-container:not(.sidebar-collapsed) .logo {
+    transform: translate(var(--logo-translate-x), var(--logo-translate-y)); /* controlled by CSS variables */
+}
+
+.app-container.sidebar-collapsed .logo {
+    transform: none;
 }
 
 .logo-text {
@@ -81,6 +93,9 @@
 .topbar-right {
     display: flex;
     align-items: center;
+    /* Place right-side content at the end of the second column */
+    justify-self: end;
+    padding-right: 0.5rem;
 }
 
 .user-info {
@@ -112,13 +127,24 @@
     background: linear-gradient(180deg, var(--color-primary-dark) 0%, #062035 100%);
     overflow-y: auto;
     overflow-x: hidden;
-    transition: transform var(--transition-speed) ease, width var(--transition-speed) ease;
+    transition: transform var(--transition-speed) ease, width var(--transition-speed) ease, top var(--transition-speed) ease;
     position: fixed;
+    /* Place the sidebar directly under the topbar */
     top: var(--topbar-height);
     left: 0;
     bottom: 0;
     width: var(--sidebar-width);
-    z-index: 90;
+    z-index: 95;
+}
+
+/* Smoothly animate the sidebar top when the container class changes
+   (useful if top is adjusted by scripts or state) */
+.app-container:not(.sidebar-collapsed) .sidebar {
+    top: var(--topbar-height);
+}
+
+.app-container.sidebar-collapsed .sidebar {
+    top: var(--topbar-height);
 }
 
 .sidebar.collapsed {
@@ -139,8 +165,43 @@
 
 .content-area {
     padding: 1.5rem;
-    max-width: 1400px;
-    margin: 0 auto;
+    /* Allow content to stretch to full available width inside the main content area */
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+
+/* Ensure main content is offset to the right of the fixed sidebar with a small gap */
+.app-container:not(.sidebar-collapsed) .main-content {
+    margin-left: calc(var(--sidebar-width) + 1rem);
+}
+
+/* Add top padding to main content to account for the logo drop so it doesn't overlap the content */
+.app-container:not(.sidebar-collapsed) .main-content {
+    padding-top: calc(var(--topbar-height) + 120px);
+}
+
+.app-container.sidebar-collapsed .main-content {
+    padding-top: var(--topbar-height);
+}
+
+@media (max-width: 767.98px) {
+    /* When logo is hidden on mobile, reduce main content top padding */
+    .app-container:not(.sidebar-collapsed) .main-content {
+        padding-top: var(--topbar-height);
+    }
+
+    /* Nav menu padding top reset on mobile */
+    .app-container:not(.sidebar-collapsed) .nav-menu {
+        padding-top: 1rem;
+    }
+}
+
+/* When sidebar is collapsed, remove left margin */
+.app-container.sidebar-collapsed .main-content {
+    margin-left: 0;
 }
 
 /* === Error UI === */
@@ -201,12 +262,55 @@
     }
 
     .topbar {
+        /* On mobile, collapse topbar to a single flexible column */
+        display: flex;
+        justify-content: space-between;
         padding: 0 1rem;
     }
 
     .logo-text {
         font-size: 1rem;
     }
+
+    .logo {
+        /* Smaller logo on mobile to avoid layout overflow */
+        height: 48px;
+        transform: none;
+    }
+
+    /* Hide the logo entirely on very small screens */
+    /* Hide only the logo image on mobile but keep the text brand visible */
+    .logo-link .logo {
+        display: none;
+    }
+    .logo-link .logo-text {
+        display: inline-block;
+        font-size: 1.1rem;
+    }
+
+    /* Reset sidebar top offset on mobile so nav sits directly under topbar */
+    .sidebar {
+        top: var(--topbar-height);
+    }
+
+/* Tablet: show logo but reduce left offset */
+@media (min-width: 768px) and (max-width: 1024px) {
+.app-container:not(.sidebar-collapsed) .logo {
+    transform: translate(calc(var(--logo-translate-x) / 2), var(--logo-translate-y)); /* smaller left offset on tablet */
+}
+}
+
+/* Desktop: keep original left offset */
+@media (min-width: 1025px) {
+.app-container:not(.sidebar-collapsed) .logo {
+    transform: translate(var(--logo-translate-x), var(--logo-translate-y));
+}
+
+/* When JS adds a scroll-based class, we'll apply a reduced translate based on scroll percentage */
+.logo.logo-scroll-scrolled {
+    transform: translate(calc(var(--logo-translate-x) * 0.3), calc(var(--logo-translate-y) * 0.3));
+}
+}
 
     .user-name {
         max-width: 100px;
