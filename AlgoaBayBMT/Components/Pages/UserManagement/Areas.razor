@@ -1,0 +1,215 @@
+@page "/user-management/areas"
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IAreaService AreaService
+
+<PageTitle>Manage Areas</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Operational Areas</h1>
+            <div class="page-subtitle">Manage operational area definitions used for routing, compliance, and access scoping.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add Area</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message">
+            <CardContent>@StatusMessage</CardContent>
+        </SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Area List" SubTitle="View and manage all configured operational areas" />
+        <CardContent>
+            <SfGrid DataSource="@AreaItems" TValue="OperationalArea" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(OperationalArea.Id)" HeaderText="ID" Width="90" TextAlign="TextAlign.Center" />
+                    <GridColumn Field="@nameof(OperationalArea.Name)" HeaderText="Area" Width="220" />
+                    <GridColumn Field="@nameof(OperationalArea.Code)" HeaderText="Code" Width="130" />
+                    <GridColumn Field="@nameof(OperationalArea.Description)" HeaderText="Description" Width="250" />
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var area = context as OperationalArea;
+                            }
+                            <span class="badge @(area?.IsActive == true ? "bg-success" : "bg-secondary")">@(area?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="220" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var area = context as OperationalArea;
+                            }
+                            <div class="pf-grid-actions">
+                                <SfButton CssClass="e-flat" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(area))">Edit</SfButton>
+                                <SfButton CssClass="e-flat e-danger" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDelete(area))">Delete</SfButton>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="720px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
+    <DialogTemplates>
+        <Header>@(IsEditMode ? "Edit Area" : "Add Area")</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="area-dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Area Name</label>
+                                <SfTextBox Placeholder="Enter area name" @bind-Value="EditModel.Name" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Area Code</label>
+                                <SfTextBox Placeholder="Enter area code" @bind-Value="EditModel.Code" />
+                            </div>
+                            <div class="pf-col-12">
+                                <label class="pf-field-label">Description</label>
+                                <SfTextBox Placeholder="Enter description" Multiline="true" @bind-Value="EditModel.Description" />
+                            </div>
+                            <div class="pf-col-12">
+                                <SfCheckBox Label="Active operational area" @bind-Checked="EditModel.IsActive" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseEditDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => SaveAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="420px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+    <DialogTemplates>
+        <Header>Confirm Delete</Header>
+        <Content>Are you sure you want to delete area <strong>@DeleteDisplayName</strong>?</Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" OnClick="@(_ => IsDeleteDialogVisible = false)" />
+        <DialogButton Content="Delete" IsPrimary="true" OnClick="@(_ => DeleteConfirmedAsync())" />
+    </DialogButtons>
+</SfDialog>
+
+@code {
+    private List<OperationalArea> AreaItems = new();
+    private OperationalArea EditModel = new();
+    private EditContext DialogEditContext = default!;
+    private string? StatusMessage;
+    private string? DeleteDisplayName;
+    private int? DeleteId;
+    private bool IsEditDialogVisible;
+    private bool IsDeleteDialogVisible;
+    private bool IsEditMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private async Task LoadPageDataAsync() => AreaItems = await AreaService.GetAreasAsync();
+
+    private void OpenAddDialog()
+    {
+        IsEditMode = false;
+        EditModel = new OperationalArea { IsActive = true };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void OpenEditDialog(OperationalArea? area)
+    {
+        if (area is null)
+        {
+            return;
+        }
+
+        IsEditMode = true;
+        EditModel = new OperationalArea
+        {
+            Id = area.Id,
+            Name = area.Name,
+            Code = area.Code,
+            Description = area.Description,
+            IsActive = area.IsActive
+        };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        IsEditDialogVisible = false;
+        ResetDialogModel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        var result = IsEditMode
+            ? await AreaService.UpdateAreaAsync(EditModel)
+            : await AreaService.CreateAreaAsync(EditModel);
+
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsEditDialogVisible = false;
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private void ConfirmDelete(OperationalArea? area)
+    {
+        if (area is null)
+        {
+            return;
+        }
+
+        DeleteId = area.Id;
+        DeleteDisplayName = area.Name;
+        IsDeleteDialogVisible = true;
+    }
+
+    private async Task DeleteConfirmedAsync()
+    {
+        if (!DeleteId.HasValue)
+        {
+            return;
+        }
+
+        var result = await AreaService.DeleteAreaAsync(DeleteId.Value);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        IsDeleteDialogVisible = false;
+        DeleteId = null;
+        DeleteDisplayName = null;
+        await LoadPageDataAsync();
+    }
+
+    private void ResetDialogModel()
+    {
+        EditModel = new OperationalArea { IsActive = true };
+        DialogEditContext = new EditContext(EditModel);
+    }
+}

@@ -1,0 +1,223 @@
+@page "/user-management/companies"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject ICompanyService CompanyService
+
+<PageTitle>Manage Companies</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Bunkering Companies</h1>
+            <div class="page-subtitle">Manage company profiles, registration identifiers, and contact details.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add Company</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message">
+            <CardContent>
+                @StatusMessage
+            </CardContent>
+        </SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Company List" SubTitle="View and maintain company records" />
+        <CardContent>
+            <SfGrid DataSource="@CompanyItems" TValue="BunkeringCompany" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(BunkeringCompany.Id)" HeaderText="ID" Width="90" TextAlign="TextAlign.Center" />
+                    <GridColumn Field="@nameof(BunkeringCompany.Name)" HeaderText="Company" Width="220" />
+                    <GridColumn Field="@nameof(BunkeringCompany.RegistrationNumber)" HeaderText="Registration No." Width="180" />
+                    <GridColumn Field="@nameof(BunkeringCompany.ContactEmail)" HeaderText="Email" Width="220" />
+                    <GridColumn Field="@nameof(BunkeringCompany.ContactPhone)" HeaderText="Phone" Width="160" />
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var company = context as BunkeringCompany;
+                            }
+                            <span class="badge @(company?.IsActive == true ? "bg-success" : "bg-secondary")">@(company?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="220" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var company = context as BunkeringCompany;
+                            }
+                            <div class="pf-grid-actions">
+                                <SfButton CssClass="e-flat" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(company))">Edit</SfButton>
+                                <SfButton CssClass="e-flat e-danger" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDelete(company))">Delete</SfButton>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="720px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
+    <DialogTemplates>
+        <Header>@(IsEditMode ? "Edit Company" : "Add Company")</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="company-dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Company Name</label>
+                                <SfTextBox Placeholder="Enter company name" @bind-Value="EditModel.Name" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Registration Number</label>
+                                <SfTextBox Placeholder="Enter registration number" @bind-Value="EditModel.RegistrationNumber" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Contact Email</label>
+                                <SfTextBox Placeholder="Enter contact email" @bind-Value="EditModel.ContactEmail" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Contact Phone</label>
+                                <SfTextBox Placeholder="Enter contact phone" @bind-Value="EditModel.ContactPhone" />
+                            </div>
+                            <div class="pf-col-12">
+                                <SfCheckBox Label="Active company" @bind-Checked="EditModel.IsActive" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseEditDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => SaveAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="420px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+    <DialogTemplates>
+        <Header>Confirm Delete</Header>
+        <Content>Are you sure you want to delete company <strong>@DeleteDisplayName</strong>?</Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" OnClick="@(_ => IsDeleteDialogVisible = false)" />
+        <DialogButton Content="Delete" IsPrimary="true" OnClick="@(_ => DeleteConfirmedAsync())" />
+    </DialogButtons>
+</SfDialog>
+
+@code {
+    private List<BunkeringCompany> CompanyItems = new();
+    private BunkeringCompany EditModel = new();
+    private EditContext DialogEditContext = default!;
+    private string? StatusMessage;
+    private string? DeleteDisplayName;
+    private int? DeleteId;
+    private bool IsEditDialogVisible;
+    private bool IsDeleteDialogVisible;
+    private bool IsEditMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private async Task LoadPageDataAsync() => CompanyItems = await CompanyService.GetCompaniesAsync();
+
+    private void OpenAddDialog()
+    {
+        IsEditMode = false;
+        EditModel = new BunkeringCompany { IsActive = true };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void OpenEditDialog(BunkeringCompany? company)
+    {
+        if (company is null)
+        {
+            return;
+        }
+
+        IsEditMode = true;
+        EditModel = new BunkeringCompany
+        {
+            Id = company.Id,
+            Name = company.Name,
+            RegistrationNumber = company.RegistrationNumber,
+            ContactEmail = company.ContactEmail,
+            ContactPhone = company.ContactPhone,
+            IsActive = company.IsActive
+        };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        IsEditDialogVisible = false;
+        ResetDialogModel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        var result = IsEditMode
+            ? await CompanyService.UpdateCompanyAsync(EditModel)
+            : await CompanyService.CreateCompanyAsync(EditModel);
+
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsEditDialogVisible = false;
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private void ConfirmDelete(BunkeringCompany? company)
+    {
+        if (company is null)
+        {
+            return;
+        }
+
+        DeleteId = company.Id;
+        DeleteDisplayName = company.Name;
+        IsDeleteDialogVisible = true;
+    }
+
+    private async Task DeleteConfirmedAsync()
+    {
+        if (!DeleteId.HasValue)
+        {
+            return;
+        }
+
+        var result = await CompanyService.DeleteCompanyAsync(DeleteId.Value);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        IsDeleteDialogVisible = false;
+        DeleteId = null;
+        DeleteDisplayName = null;
+        await LoadPageDataAsync();
+    }
+
+    private void ResetDialogModel()
+    {
+        EditModel = new BunkeringCompany { IsActive = true };
+        DialogEditContext = new EditContext(EditModel);
+    }
+}

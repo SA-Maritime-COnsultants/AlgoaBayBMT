@@ -1,0 +1,244 @@
+@page "/user-management/vessels"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject IVesselService VesselService
+@inject ICompanyService CompanyService
+
+<PageTitle>Manage Vessels</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Vessels</h1>
+            <div class="page-subtitle">Manage vessel records, linked companies, and fleet identifiers.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add Vessel</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message">
+            <CardContent>
+                @StatusMessage
+            </CardContent>
+        </SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Vessel List" SubTitle="View and manage all vessels in the system" />
+        <CardContent>
+            <SfGrid DataSource="@VesselItems" TValue="Vessel" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(Vessel.Id)" HeaderText="ID" Width="90" TextAlign="TextAlign.Center" />
+                    <GridColumn Field="@nameof(Vessel.Name)" HeaderText="Vessel" Width="190" />
+                    <GridColumn Field="@nameof(Vessel.ImoNumber)" HeaderText="IMO Number" Width="150" />
+                    <GridColumn Field="@nameof(Vessel.CallSign)" HeaderText="Call Sign" Width="130" />
+                    <GridColumn Field="@nameof(Vessel.FlagState)" HeaderText="Flag State" Width="130" />
+                    <GridColumn HeaderText="Company" Width="180">
+                        <Template>
+                            @{
+                                var vessel = context as Vessel;
+                            }
+                            <span>@(vessel?.Company?.Name ?? "Unassigned")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var vessel = context as Vessel;
+                            }
+                            <span class="badge @(vessel?.IsActive == true ? "bg-success" : "bg-secondary")">@(vessel?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="220" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var vessel = context as Vessel;
+                            }
+                            <div class="pf-grid-actions">
+                                <SfButton CssClass="e-flat" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(vessel))">Edit</SfButton>
+                                <SfButton CssClass="e-flat e-danger" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDelete(vessel))">Delete</SfButton>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="720px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
+    <DialogTemplates>
+        <Header>@(IsEditMode ? "Edit Vessel" : "Add Vessel")</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="vessel-dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Vessel Name</label>
+                                <SfTextBox Placeholder="Enter vessel name" FloatLabelType="FloatLabelType.Never" @bind-Value="EditModel.Name" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">IMO Number</label>
+                                <SfTextBox Placeholder="Enter IMO number" FloatLabelType="FloatLabelType.Never" @bind-Value="EditModel.ImoNumber" />
+                            </div>
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Call Sign</label>
+                                <SfTextBox Placeholder="Enter call sign" FloatLabelType="FloatLabelType.Never" @bind-Value="EditModel.CallSign" />
+                            </div>
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Flag State</label>
+                                <SfTextBox Placeholder="Enter flag state" FloatLabelType="FloatLabelType.Never" @bind-Value="EditModel.FlagState" />
+                            </div>
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Company</label>
+                                <SfDropDownList TValue="int?" TItem="BunkeringCompany" DataSource="@CompanyItems" @bind-Value="EditModel.CompanyId" Placeholder="Select a company">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-12">
+                                <SfCheckBox Label="Active vessel" @bind-Checked="EditModel.IsActive" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseEditDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => SaveAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="420px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+    <DialogTemplates>
+        <Header>Confirm Delete</Header>
+        <Content>Are you sure you want to delete vessel <strong>@DeleteDisplayName</strong>?</Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" OnClick="@(_ => IsDeleteDialogVisible = false)" />
+        <DialogButton Content="Delete" IsPrimary="true" OnClick="@(_ => DeleteConfirmedAsync())" />
+    </DialogButtons>
+</SfDialog>
+
+@code {
+    private List<Vessel> VesselItems = new();
+    private List<BunkeringCompany> CompanyItems = new();
+    private Vessel EditModel = new();
+    private EditContext DialogEditContext = default!;
+    private string? StatusMessage;
+    private string? DeleteDisplayName;
+    private int? DeleteId;
+    private bool IsEditDialogVisible;
+    private bool IsDeleteDialogVisible;
+    private bool IsEditMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private async Task LoadPageDataAsync()
+    {
+        CompanyItems = await CompanyService.GetCompaniesAsync();
+        VesselItems = await VesselService.GetVesselsAsync();
+    }
+
+    private void OpenAddDialog()
+    {
+        IsEditMode = false;
+        EditModel = new Vessel { IsActive = true };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void OpenEditDialog(Vessel? vessel)
+    {
+        if (vessel is null)
+        {
+            return;
+        }
+
+        IsEditMode = true;
+        EditModel = new Vessel
+        {
+            Id = vessel.Id,
+            Name = vessel.Name,
+            ImoNumber = vessel.ImoNumber,
+            CallSign = vessel.CallSign,
+            FlagState = vessel.FlagState,
+            CompanyId = vessel.CompanyId,
+            IsActive = vessel.IsActive
+        };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        IsEditDialogVisible = false;
+        ResetDialogModel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        var result = IsEditMode
+            ? await VesselService.UpdateVesselAsync(EditModel)
+            : await VesselService.CreateVesselAsync(EditModel);
+
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsEditDialogVisible = false;
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private void ConfirmDelete(Vessel? vessel)
+    {
+        if (vessel is null)
+        {
+            return;
+        }
+
+        DeleteId = vessel.Id;
+        DeleteDisplayName = vessel.Name;
+        IsDeleteDialogVisible = true;
+    }
+
+    private async Task DeleteConfirmedAsync()
+    {
+        if (!DeleteId.HasValue)
+        {
+            return;
+        }
+
+        var result = await VesselService.DeleteVesselAsync(DeleteId.Value);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        IsDeleteDialogVisible = false;
+        DeleteId = null;
+        DeleteDisplayName = null;
+        await LoadPageDataAsync();
+    }
+
+    private void ResetDialogModel()
+    {
+        EditModel = new Vessel { IsActive = true };
+        DialogEditContext = new EditContext(EditModel);
+    }
+}

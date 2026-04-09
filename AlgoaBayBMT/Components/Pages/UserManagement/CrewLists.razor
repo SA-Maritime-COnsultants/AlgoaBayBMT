@@ -1,0 +1,89 @@
+@page "/user-management/crew-lists"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject ICrewDeploymentService CrewDeploymentService
+@inject IVesselService VesselService
+
+<PageTitle>Vessel Crew Lists</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Vessel Crew Lists</h1>
+            <div class="page-subtitle">Review the onboard crew composition and stored compliance snapshot for a selected vessel.</div>
+        </div>
+    </div>
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Crew On Board" SubTitle="Select a vessel to inspect the current onboard crew list" />
+        <CardContent>
+            <div class="pf-toolbar-row">
+                <SfDropDownList TValue="int" TItem="Vessel" DataSource="@VesselItems" @bind-Value="SelectedVesselId" Placeholder="Select vessel">
+                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                </SfDropDownList>
+                <SfButton CssClass="e-primary" OnClick="@(_ => LoadCrewAsync())">Load Crew List</SfButton>
+            </div>
+
+            <SfGrid DataSource="@CrewList" TValue="VesselCrewListEntry" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(VesselCrewListEntry.UserId)" HeaderText="User ID" Width="190" />
+                    <GridColumn Field="@nameof(VesselCrewListEntry.OnboardRoleName)" HeaderText="Role" Width="170" />
+                    <GridColumn Field="@nameof(VesselCrewListEntry.ComplianceState)" HeaderText="Compliance" Width="140" />
+                    <GridColumn HeaderText="Compliance Expiry" Width="180">
+                        <Template>
+                            @{
+                                var entry = context as VesselCrewListEntry;
+                            }
+                            <span>@entry?.ComplianceExpiresOnUtc?.ToString("yyyy-MM-dd")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Joined" Width="180">
+                        <Template>
+                            @{
+                                var entry = context as VesselCrewListEntry;
+                            }
+                            <span>@entry?.JoinedOnUtc.ToString("yyyy-MM-dd HH:mm")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Current" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var entry = context as VesselCrewListEntry;
+                            }
+                            <span class="badge @(entry?.IsCurrent == true ? "bg-success" : "bg-secondary")">@(entry?.IsCurrent == true ? "Onboard" : "Historic")</span>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private List<Vessel> VesselItems = new();
+    private List<VesselCrewListEntry> CrewList = new();
+    private int SelectedVesselId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        VesselItems = await VesselService.GetVesselsAsync();
+        SelectedVesselId = VesselItems.FirstOrDefault()?.Id ?? 0;
+        if (SelectedVesselId != 0)
+        {
+            await LoadCrewAsync();
+        }
+    }
+
+    private async Task LoadCrewAsync()
+    {
+        if (SelectedVesselId == 0)
+        {
+            CrewList = new();
+            return;
+        }
+
+        CrewList = await CrewDeploymentService.GetCrewListAsync(SelectedVesselId);
+    }
+}

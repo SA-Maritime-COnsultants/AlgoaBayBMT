@@ -1,6 +1,11 @@
 ﻿using AlgoaBayBMT.Components;
 using AlgoaBayBMT.Components.Account;
 using AlgoaBayBMT.Data;
+using AlgoaBayBMT.Security;
+using AlgoaBayBMT.Services;
+using AlgoaBayBMT.Services.Interfaces;
+using AlgoaBayBMT.Shared.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -31,11 +36,36 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
     {
         options.SignIn.RequireConfirmedAccount = true;
+        options.SignIn.RequireConfirmedEmail = true;
         options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
     })
+    .AddRoles<IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
     .AddDefaultTokenProviders();
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(PolicyNames.AdminOnly, policy => policy.RequireRole(RoleNames.Admin));
+    options.AddPolicy(PolicyNames.AdminOrCompanyManager, policy => policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager));
+    options.AddPolicy(PolicyNames.AuditAuthorities, policy => policy.RequireRole(RoleNames.Dffe, RoleNames.Tnpa, RoleNames.Samsa));
+    options.AddPolicy(PolicyNames.AreaScopedAccess, policy => policy.RequireAuthenticatedUser());
+    options.AddPolicy(PolicyNames.VesselCommand, policy => policy.Requirements.Add(new VesselCommandRequirement()));
+});
+
+builder.Services.AddScoped<IAuthorizationHandler, VesselCommandHandler>();
+
+builder.Services.AddScoped<IAreaService, AreaService>();
+builder.Services.AddScoped<IVesselService, VesselService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IUserRegistrationService, UserRegistrationService>();
+builder.Services.AddScoped<IUserApprovalService, UserApprovalService>();
+builder.Services.AddScoped<IUserManagementService, UserManagementService>();
+builder.Services.AddScoped<IVesselRoleAssignmentService, VesselRoleAssignmentService>();
+builder.Services.AddScoped<ICrewDirectoryService, CrewDirectoryService>();
+builder.Services.AddScoped<ICrewDeploymentService, CrewDeploymentService>();
+builder.Services.AddScoped<INotificationRoutingService, NotificationRoutingService>();
+builder.Services.AddScoped<IAuthorityContactService, AuthorityContactService>();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
@@ -56,7 +86,8 @@ else
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
@@ -65,5 +96,13 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+
+await IdentitySeedData.EnsureSeedDataAsync(app.Services);
 
 app.Run();

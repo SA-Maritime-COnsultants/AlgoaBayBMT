@@ -1,0 +1,67 @@
+@page "/user-management/crew-directory"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject ICrewDirectoryService CrewDirectoryService
+
+<PageTitle>Crew Directory</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Crew Directory</h1>
+            <div class="page-subtitle">Search registered seafarers and review vessel assignment status.</div>
+        </div>
+    </div>
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Crew Directory" SubTitle="View all seafarers and current assigned vessels" />
+        <CardContent>
+            <div class="pf-toolbar-row">
+                <SfTextBox Placeholder="Search crew directory" @bind-Value="SearchTerm" />
+                <SfButton CssClass="e-primary" OnClick="@(_ => SearchAsync())">Search</SfButton>
+            </div>
+
+            <SfGrid DataSource="@CrewMembers" TValue="ApplicationUser" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn HeaderText="Name" Width="190">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.FullName ?? user?.Email)</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(ApplicationUser.Email)" HeaderText="Email" Width="220" />
+                    <GridColumn Field="@nameof(ApplicationUser.RequestedRole)" HeaderText="Requested Role" Width="160" />
+                    <GridColumn HeaderText="Assigned Vessel" Width="180">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.Vessel?.Name ?? "Unassigned")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span class="badge @(user?.IsActive == true ? "bg-success" : "bg-secondary")">@(user?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private List<ApplicationUser> CrewMembers = new();
+    private string? SearchTerm;
+
+    protected override async Task OnInitializedAsync() => await SearchAsync();
+
+    private async Task SearchAsync() => CrewMembers = await CrewDirectoryService.SearchSeafarersAsync(SearchTerm);
+}

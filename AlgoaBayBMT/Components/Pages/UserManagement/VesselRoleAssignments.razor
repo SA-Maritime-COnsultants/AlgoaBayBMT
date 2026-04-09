@@ -1,0 +1,233 @@
+@page "/user-management/vessel-roles"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject IVesselRoleAssignmentService VesselRoleAssignmentService
+@inject IVesselService VesselService
+@inject IUserManagementService UserManagementService
+@inject ICompanyService CompanyService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Vessel Role Assignments</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Vessel Role Assignments</h1>
+            <div class="page-subtitle">Assign command and company-linked vessel roles to registered users.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Assign Role</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Assignment List" SubTitle="Review and close active vessel role assignments" />
+        <CardContent>
+            <SfGrid DataSource="@Assignments" TValue="VesselRoleAssignment" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn HeaderText="Vessel" Width="170">
+                        <Template>
+                            @{
+                                var assignment = context as VesselRoleAssignment;
+                            }
+                            <span>@assignment?.Vessel?.Name</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(VesselRoleAssignment.UserId)" HeaderText="User ID" Width="190" />
+                    <GridColumn Field="@nameof(VesselRoleAssignment.VesselRoleType)" HeaderText="Role" Width="150" />
+                    <GridColumn HeaderText="Company" Width="170">
+                        <Template>
+                            @{
+                                var assignment = context as VesselRoleAssignment;
+                            }
+                            <span>@(assignment?.Company?.Name ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Assigned" Width="180">
+                        <Template>
+                            @{
+                                var assignment = context as VesselRoleAssignment;
+                            }
+                            <span>@assignment?.AssignedOnUtc.ToString("yyyy-MM-dd HH:mm")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var assignment = context as VesselRoleAssignment;
+                            }
+                            <span class="badge @(assignment?.IsActive == true ? "bg-success" : "bg-secondary")">@(assignment?.IsActive == true ? "Active" : "Closed")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="160" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var assignment = context as VesselRoleAssignment;
+                            }
+                            @if (assignment?.IsActive == true)
+                            {
+                                <div class="pf-grid-actions">
+                                    <SfButton CssClass="e-flat e-danger" IconCss="e-icons e-close" OnClick="@(_ => RemoveAsync(assignment.Id))">Close</SfButton>
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="760px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+    <DialogTemplates>
+        <Header>Assign Vessel Role</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="vessel-role-dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Vessel</label>
+                                <SfDropDownList TValue="int" TItem="Vessel" DataSource="@VesselItems" @bind-Value="Input.VesselId" Placeholder="Select vessel">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">User</label>
+                                <SfDropDownList TValue="string" TItem="UserOption" DataSource="@UserOptions" @bind-Value="Input.UserId" Placeholder="Select user">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Role</label>
+                                <SfDropDownList TValue="VesselRoleType" TItem="VesselRoleTypeOption" DataSource="@RoleOptions" @bind-Value="Input.VesselRoleType" Placeholder="Select role">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Company</label>
+                                <SfDropDownList TValue="int?" TItem="BunkeringCompany" DataSource="@CompanyItems" @bind-Value="Input.CompanyId" Placeholder="Select company">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => AssignAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<VesselRoleAssignment> Assignments = new();
+    private List<Vessel> VesselItems = new();
+    private List<ApplicationUser> UserItems = new();
+    private List<UserOption> UserOptions = new();
+    private List<BunkeringCompany> CompanyItems = new();
+    private List<VesselRoleTypeOption> RoleOptions = Enum.GetValues<VesselRoleType>().Select(role => new VesselRoleTypeOption { Value = role, Text = role.ToString() }).ToList();
+    private InputModel Input = new();
+    private EditContext DialogEditContext = default!;
+    private string? StatusMessage;
+    private bool IsDialogVisible;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPageDataAsync();
+        ResetInput();
+    }
+
+    private async Task LoadPageDataAsync()
+    {
+        VesselItems = await VesselService.GetVesselsAsync();
+        UserItems = await UserManagementService.GetUsersAsync(null);
+        UserOptions = UserItems.Select(user => new UserOption
+        {
+            Value = user.Id,
+            Text = user.FullName ?? user.Email ?? user.Id
+        }).ToList();
+        CompanyItems = await CompanyService.GetCompaniesAsync();
+        Assignments = await VesselRoleAssignmentService.GetAssignmentsAsync();
+    }
+
+    private void OpenAddDialog()
+    {
+        ResetInput();
+        IsDialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        IsDialogVisible = false;
+        ResetInput();
+    }
+
+    private async Task AssignAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var assignedByUserId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var result = await VesselRoleAssignmentService.AssignRoleAsync(Input.VesselId, Input.UserId, Input.VesselRoleType, assignedByUserId, Input.CompanyId);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsDialogVisible = false;
+        await LoadPageDataAsync();
+        ResetInput();
+    }
+
+    private async Task RemoveAsync(int assignmentId)
+    {
+        var result = await VesselRoleAssignmentService.RemoveAssignmentAsync(assignmentId);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        await LoadPageDataAsync();
+    }
+
+    private void ResetInput()
+    {
+        Input = new InputModel
+        {
+            VesselId = VesselItems.FirstOrDefault()?.Id ?? 0,
+            UserId = UserItems.FirstOrDefault()?.Id ?? string.Empty,
+            VesselRoleType = VesselRoleType.Master
+        };
+        DialogEditContext = new EditContext(Input);
+    }
+
+    private sealed class InputModel
+    {
+        public int VesselId { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public VesselRoleType VesselRoleType { get; set; } = VesselRoleType.Master;
+        public int? CompanyId { get; set; }
+    }
+
+    private sealed class VesselRoleTypeOption
+    {
+        public string Text { get; set; } = string.Empty;
+        public VesselRoleType Value { get; set; }
+    }
+
+    private sealed class UserOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

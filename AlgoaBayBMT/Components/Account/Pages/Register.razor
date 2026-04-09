@@ -7,8 +7,11 @@
 @using Microsoft.AspNetCore.WebUtilities
 @using AlgoaBayBMT.Data
 
+@inject IUserRegistrationService UserRegistrationService
+@inject IAreaService AreaService
+@inject ICompanyService CompanyService
+@inject IVesselService VesselService
 @inject UserManager<ApplicationUser> UserManager
-@inject IUserStore<ApplicationUser> UserStore
 @inject SignInManager<ApplicationUser> SignInManager
 @inject IEmailSender<ApplicationUser> EmailSender
 @inject ILogger<Register> Logger
@@ -19,19 +22,76 @@
 
 <h1>Register</h1>
 
-<div class="row">
-    <div class="col-lg-6">
+<div class="row g-4">
+    <div class="col-lg-7">
         <StatusMessage Message="@Message" />
         <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
             <h2>Create a new account.</h2>
             <hr />
             <ValidationSummary class="text-danger" role="alert" />
+
+            <div class="form-floating mb-3">
+                <InputText @bind-Value="Input.FullName" id="Input.FullName" class="form-control" aria-required="true" placeholder="Full name" />
+                <label for="Input.FullName">Full name</label>
+                <ValidationMessage For="() => Input.FullName" class="text-danger" />
+            </div>
+
             <div class="form-floating mb-3">
                 <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
                 <label for="Input.Email">Email</label>
                 <ValidationMessage For="() => Input.Email" class="text-danger" />
             </div>
+
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.RequestedRole" id="Input.RequestedRole" class="form-select" aria-required="true">
+                    <option value="">Select requested role</option>
+                    @foreach (var role in AvailableRoles)
+                    {
+                        <option value="@role">@role.Replace("_", " ")</option>
+                    }
+                </InputSelect>
+                <label for="Input.RequestedRole">Requested role</label>
+                <ValidationMessage For="() => Input.RequestedRole" class="text-danger" />
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.CompanyId" id="Input.CompanyId" class="form-select">
+                    <option value="">No company selected</option>
+                    @foreach (var company in Companies)
+                    {
+                        <option value="@company.Id">@company.Name</option>
+                    }
+                </InputSelect>
+                <label for="Input.CompanyId">Company</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.PrimaryAreaId" id="Input.PrimaryAreaId" class="form-select">
+                    <option value="">No primary area selected</option>
+                    @foreach (var area in Areas)
+                    {
+                        <option value="@area.Id">@area.Name</option>
+                    }
+                </InputSelect>
+                <label for="Input.PrimaryAreaId">Operational area</label>
+            </div>
+
+            <div class="form-floating mb-3">
+                <InputSelect @bind-Value="Input.VesselId" id="Input.VesselId" class="form-select">
+                    <option value="">No vessel selected</option>
+                    @foreach (var vessel in Vessels)
+                    {
+                        <option value="@vessel.Id">@vessel.Name</option>
+                    }
+                </InputSelect>
+                <label for="Input.VesselId">Vessel</label>
+                @if (IsCrewRequested)
+                {
+                    <div class="form-text">Crew registration requires a vessel assignment.</div>
+                }
+            </div>
+
             <div class="form-floating mb-3">
                 <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
                 <label for="Input.Password">Password</label>
@@ -45,17 +105,28 @@
             <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
         </EditForm>
     </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
+    <div class="col-lg-5">
+        <section class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+                <h3 class="h5">Approval workflow</h3>
+                <hr />
+                <ol class="ps-3 mb-0">
+                    <li>Submit registration with requested role and assignment details.</li>
+                    <li>Confirm email using the verification link.</li>
+                    <li>Await account approval by Admin or the relevant company approver.</li>
+                    <li>Login becomes active only after both steps complete.</li>
+                </ol>
+            </div>
         </section>
     </div>
 </div>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private List<OperationalArea> Areas = new();
+    private List<BunkeringCompany> Companies = new();
+    private List<Vessel> Vessels = new();
+    private static IReadOnlyList<string> AvailableRoles => RoleNames.All;
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
@@ -63,29 +134,39 @@
     [SupplyParameterFromQuery]
     private string? ReturnUrl { get; set; }
 
+    private bool IsCrewRequested => string.Equals(Input.RequestedRole, RoleNames.Crew, StringComparison.OrdinalIgnoreCase);
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         Input ??= new();
+        Areas = await AreaService.GetAreasAsync();
+        Companies = await CompanyService.GetCompaniesAsync();
+        Vessels = await VesselService.GetVesselsAsync();
     }
 
     public async Task RegisterUser(EditContext editContext)
     {
-        var user = CreateUser();
-
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-        var emailStore = GetEmailStore();
-        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-        var result = await UserManager.CreateAsync(user, Input.Password);
-
-        if (!result.Succeeded)
+        var registrationResult = await UserRegistrationService.RegisterAsync(new RegistrationRequest
         {
-            identityErrors = result.Errors;
+            Email = Input.Email,
+            Password = Input.Password,
+            ConfirmPassword = Input.ConfirmPassword,
+            FullName = Input.FullName,
+            RequestedRole = Input.RequestedRole,
+            CompanyId = Input.CompanyId,
+            PrimaryAreaId = Input.PrimaryAreaId,
+            VesselId = Input.VesselId
+        });
+
+        if (!registrationResult.Succeeded || registrationResult.Data is null)
+        {
+            identityErrors = registrationResult.Errors.Select(error => new IdentityError { Description = error });
             return;
         }
 
-        Logger.LogInformation("User created a new account with password.");
+        var user = registrationResult.Data;
+        Logger.LogInformation("User created a new account with password and pending approval workflow.");
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -96,57 +177,44 @@
 
         await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
 
-        if (UserManager.Options.SignIn.RequireConfirmedAccount)
-        {
-            RedirectManager.RedirectTo(
-                "Account/RegisterConfirmation",
-                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
-        }
-        else
-        {
-            await SignInManager.SignInAsync(user, isPersistent: false);
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
-    }
-
-    private ApplicationUser CreateUser()
-    {
-        try
-        {
-            return Activator.CreateInstance<ApplicationUser>();
-        }
-        catch
-        {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
-        }
-    }
-
-    private IUserEmailStore<ApplicationUser> GetEmailStore()
-    {
-        if (!UserManager.SupportsUserEmail)
-        {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
-        }
-        return (IUserEmailStore<ApplicationUser>)UserStore;
+        RedirectManager.RedirectTo(
+            "Account/RegisterConfirmation",
+            new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
     }
 
     private sealed class InputModel
     {
         [Required]
+        [Display(Name = "Full name")]
+        public string FullName { get; set; } = string.Empty;
+
+        [Required]
         [EmailAddress]
         [Display(Name = "Email")]
-        public string Email { get; set; } = "";
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        [Display(Name = "Requested role")]
+        public string RequestedRole { get; set; } = string.Empty;
+
+        [Display(Name = "Company")]
+        public int? CompanyId { get; set; }
+
+        [Display(Name = "Operational area")]
+        public int? PrimaryAreaId { get; set; }
+
+        [Display(Name = "Vessel")]
+        public int? VesselId { get; set; }
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
-        public string Password { get; set; } = "";
+        public string Password { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
         [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; } = "";
+        [Compare(nameof(Password), ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
     }
 }

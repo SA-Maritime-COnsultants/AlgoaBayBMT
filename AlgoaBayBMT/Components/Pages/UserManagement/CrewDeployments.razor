@@ -1,0 +1,197 @@
+@page "/user-management/crew-deployments"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject ICrewDeploymentService CrewDeploymentService
+@inject ICrewDirectoryService CrewDirectoryService
+@inject IVesselService VesselService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Crew Deployments</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Crew Deployments</h1>
+            <div class="page-subtitle">Deploy crew members to vessels and review deployment history.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Deploy Crew Member</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Deployment History" SubTitle="View current and historical crew deployments" />
+        <CardContent>
+            <SfGrid DataSource="@Deployments" TValue="CrewDeployment" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(CrewDeployment.UserId)" HeaderText="Crew Member" Width="190" />
+                    <GridColumn HeaderText="Vessel" Width="170">
+                        <Template>
+                            @{
+                                var deployment = context as CrewDeployment;
+                            }
+                            <span>@deployment?.Vessel?.Name</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(CrewDeployment.OnboardRoleName)" HeaderText="Onboard Role" Width="170" />
+                    <GridColumn Field="@nameof(CrewDeployment.Status)" HeaderText="Status" Width="130" />
+                    <GridColumn HeaderText="Start" Width="180">
+                        <Template>
+                            @{
+                                var deployment = context as CrewDeployment;
+                            }
+                            <span>@deployment?.StartedOnUtc.ToString("yyyy-MM-dd HH:mm")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="End" Width="180">
+                        <Template>
+                            @{
+                                var deployment = context as CrewDeployment;
+                            }
+                            <span>@deployment?.EndedOnUtc?.ToString("yyyy-MM-dd HH:mm")</span>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="760px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+    <DialogTemplates>
+        <Header>Deploy Crew Member</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="crew-deployment-dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Crew Member</label>
+                                <SfDropDownList TValue="string" TItem="CrewOption" DataSource="@CrewOptions" @bind-Value="Input.UserId" Placeholder="Select crew member">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Vessel</label>
+                                <SfDropDownList TValue="int" TItem="Vessel" DataSource="@VesselItems" @bind-Value="Input.VesselId" Placeholder="Select vessel">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Onboard Role</label>
+                                <SfTextBox Placeholder="Enter onboard role" @bind-Value="Input.OnboardRoleName" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Role Type</label>
+                                <SfDropDownList TValue="VesselRoleType" TItem="RoleOption" DataSource="@RoleOptions" @bind-Value="Input.OnboardRoleType" Placeholder="Select role type">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => DeployAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<ApplicationUser> CrewMembers = new();
+    private List<CrewOption> CrewOptions = new();
+    private List<Vessel> VesselItems = new();
+    private List<CrewDeployment> Deployments = new();
+    private List<RoleOption> RoleOptions = Enum.GetValues<VesselRoleType>().Select(role => new RoleOption { Value = role, Text = role.ToString() }).ToList();
+    private CrewDeploymentRequest Input = new();
+    private EditContext DialogEditContext = default!;
+    private string? StatusMessage;
+    private bool IsDialogVisible;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPageDataAsync();
+        ResetInput();
+    }
+
+    private async Task LoadPageDataAsync()
+    {
+        CrewMembers = await CrewDirectoryService.SearchSeafarersAsync(null);
+        CrewOptions = CrewMembers.Select(user => new CrewOption
+        {
+            Value = user.Id,
+            Text = user.FullName ?? user.Email ?? user.Id
+        }).ToList();
+        VesselItems = await VesselService.GetVesselsAsync();
+        var selectedVesselId = Input.VesselId != 0 ? Input.VesselId : VesselItems.FirstOrDefault()?.Id ?? 0;
+        Deployments = selectedVesselId == 0
+            ? new List<CrewDeployment>()
+            : await CrewDeploymentService.GetDeploymentHistoryAsync(selectedVesselId);
+    }
+
+    private void OpenAddDialog()
+    {
+        ResetInput();
+        IsDialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        IsDialogVisible = false;
+        ResetInput();
+    }
+
+    private async Task DeployAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        Input.DeployedByUserId = state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var result = await CrewDeploymentService.DeployCrewAsync(Input);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsDialogVisible = false;
+        await LoadPageDataAsync();
+        ResetInput();
+    }
+
+    private void ResetInput()
+    {
+        Input = new CrewDeploymentRequest
+        {
+            UserId = CrewOptions.FirstOrDefault()?.Value ?? string.Empty,
+            VesselId = VesselItems.FirstOrDefault()?.Id ?? 0,
+            OnboardRoleName = "Crew Member",
+            OnboardRoleType = VesselRoleType.Crew
+        };
+        DialogEditContext = new EditContext(Input);
+    }
+
+    private sealed class CrewOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class RoleOption
+    {
+        public VesselRoleType Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+}

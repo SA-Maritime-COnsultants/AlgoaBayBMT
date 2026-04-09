@@ -32,6 +32,10 @@
     <PackageReference Include="Syncfusion.Blazor.DataForm" Version="33.1.47" />
     <PackageReference Include="Syncfusion.Blazor.Themes" Version="33.1.47" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AlgoaBayBMT.Shared\AlgoaBayBMT.Shared.csproj" />
+  </ItemGroup>
   
   
 

@@ -1,0 +1,227 @@
+@page "/user-management/ports"
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IAreaService AreaService
+
+<PageTitle>Manage Ports</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Ports</h1>
+            <div class="page-subtitle">Manage ports and their operational area assignments.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add Port</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Port List" SubTitle="View and manage port records" />
+        <CardContent>
+            <SfGrid DataSource="@PortItems" TValue="Port" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(Port.Id)" HeaderText="ID" Width="90" TextAlign="TextAlign.Center" />
+                    <GridColumn Field="@nameof(Port.Name)" HeaderText="Port" Width="200" />
+                    <GridColumn Field="@nameof(Port.Code)" HeaderText="Code" Width="120" />
+                    <GridColumn HeaderText="Operational Area" Width="220">
+                        <Template>
+                            @{
+                                var port = context as Port;
+                            }
+                            <span>@(port?.OperationalArea?.Name ?? "Unassigned")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var port = context as Port;
+                            }
+                            <span class="badge @(port?.IsActive == true ? "bg-success" : "bg-secondary")">@(port?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="220" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var port = context as Port;
+                            }
+                            <div class="pf-grid-actions">
+                                <SfButton CssClass="e-flat" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(port))">Edit</SfButton>
+                                <SfButton CssClass="e-flat e-danger" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDelete(port))">Delete</SfButton>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="720px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
+    <DialogTemplates>
+        <Header>@(IsEditMode ? "Edit Port" : "Add Port")</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="port-dialog-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Port Name</label>
+                                <SfTextBox Placeholder="Enter port name" @bind-Value="EditModel.Name" />
+                            </div>
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">Code</label>
+                                <SfTextBox Placeholder="Enter code" @bind-Value="EditModel.Code" />
+                            </div>
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">Operational Area</label>
+                                <SfDropDownList TValue="int" TItem="OperationalArea" DataSource="@AreaItems" @bind-Value="EditModel.OperationalAreaId" Placeholder="Select area">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-12">
+                                <SfCheckBox Label="Active port" @bind-Checked="EditModel.IsActive" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseEditDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => SaveAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="420px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+    <DialogTemplates>
+        <Header>Confirm Delete</Header>
+        <Content>Are you sure you want to delete port <strong>@DeleteDisplayName</strong>?</Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" OnClick="@(_ => IsDeleteDialogVisible = false)" />
+        <DialogButton Content="Delete" IsPrimary="true" OnClick="@(_ => DeleteConfirmedAsync())" />
+    </DialogButtons>
+</SfDialog>
+
+@code {
+    private List<OperationalArea> AreaItems = new();
+    private List<Port> PortItems = new();
+    private Port EditModel = new();
+    private EditContext DialogEditContext = default!;
+    private string? StatusMessage;
+    private string? DeleteDisplayName;
+    private int? DeleteId;
+    private bool IsEditDialogVisible;
+    private bool IsDeleteDialogVisible;
+    private bool IsEditMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private async Task LoadPageDataAsync()
+    {
+        AreaItems = await AreaService.GetAreasAsync();
+        PortItems = await AreaService.GetPortsAsync();
+    }
+
+    private void OpenAddDialog()
+    {
+        IsEditMode = false;
+        EditModel = new Port { IsActive = true, OperationalAreaId = AreaItems.FirstOrDefault()?.Id ?? 0 };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void OpenEditDialog(Port? port)
+    {
+        if (port is null)
+        {
+            return;
+        }
+
+        IsEditMode = true;
+        EditModel = new Port
+        {
+            Id = port.Id,
+            Name = port.Name,
+            Code = port.Code,
+            OperationalAreaId = port.OperationalAreaId,
+            IsActive = port.IsActive
+        };
+        DialogEditContext = new EditContext(EditModel);
+        IsEditDialogVisible = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        IsEditDialogVisible = false;
+        ResetDialogModel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        var result = IsEditMode
+            ? await AreaService.UpdatePortAsync(EditModel)
+            : await AreaService.CreatePortAsync(EditModel);
+
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsEditDialogVisible = false;
+        await LoadPageDataAsync();
+        ResetDialogModel();
+    }
+
+    private void ConfirmDelete(Port? port)
+    {
+        if (port is null)
+        {
+            return;
+        }
+
+        DeleteId = port.Id;
+        DeleteDisplayName = port.Name;
+        IsDeleteDialogVisible = true;
+    }
+
+    private async Task DeleteConfirmedAsync()
+    {
+        if (!DeleteId.HasValue)
+        {
+            return;
+        }
+
+        var result = await AreaService.DeletePortAsync(DeleteId.Value);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        IsDeleteDialogVisible = false;
+        DeleteId = null;
+        DeleteDisplayName = null;
+        await LoadPageDataAsync();
+    }
+
+    private void ResetDialogModel()
+    {
+        EditModel = new Port { IsActive = true, OperationalAreaId = AreaItems.FirstOrDefault()?.Id ?? 0 };
+        DialogEditContext = new EditContext(EditModel);
+    }
+}

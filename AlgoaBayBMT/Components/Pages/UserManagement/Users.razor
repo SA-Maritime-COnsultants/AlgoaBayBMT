@@ -1,0 +1,308 @@
+@page "/user-management/users"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject IUserManagementService UserManagementService
+@inject IAreaService AreaService
+@inject ICompanyService CompanyService
+@inject IVesselService VesselService
+
+<PageTitle>Manage Users</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Users</h1>
+            <div class="page-subtitle">Search the directory and manage account activation status.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="User Directory" SubTitle="View and manage users, assignments, and activation state" />
+        <CardContent>
+            <div class="pf-toolbar-row">
+                <SfTextBox Placeholder="Search by name, email, or requested role" @bind-Value="SearchTerm" />
+                <SfButton CssClass="e-primary" OnClick="@(_ => LoadAsync())">Search</SfButton>
+                <AuthorizeView Roles="@RoleNames.Admin">
+                    <Authorized>
+                        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add User</SfButton>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+
+            <SfGrid DataSource="@UserItems" TValue="ApplicationUser" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn HeaderText="Name" Width="180">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.FullName ?? user?.Email)</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(ApplicationUser.Email)" HeaderText="Email" Width="220" />
+                    <GridColumn Field="@nameof(ApplicationUser.RequestedRole)" HeaderText="Requested Role" Width="160" />
+                    <GridColumn HeaderText="Company" Width="170">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.Company?.Name ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Area" Width="170">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.PrimaryArea?.Name ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Vessel" Width="170">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.Vessel?.Name ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span class="badge @(user?.IsActive == true ? "bg-success" : "bg-secondary")">@(user?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="180" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <div class="pf-grid-actions">
+                                <AuthorizeView Roles="@RoleNames.Admin">
+                                    <Authorized Context="adminActions">
+                                        <SfButton CssClass="e-flat" OnClick="@(_ => OpenEditDialog(user))">Edit</SfButton>
+                                        <SfButton CssClass="e-flat" OnClick="@(_ => ToggleActiveAsync(user))">@(user?.IsActive == true ? "Deactivate" : "Activate")</SfButton>
+                                    </Authorized>
+                                </AuthorizeView>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="820px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+    <DialogTemplates>
+        <Header>@(IsEditMode ? "Edit User" : "Add User")</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="user-admin-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Full Name</label>
+                                <SfTextBox Placeholder="Enter full name" @bind-Value="EditModel.FullName" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Email</label>
+                                <SfTextBox Placeholder="Enter email" @bind-Value="EditModel.Email" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Assigned Role</label>
+                                <SfDropDownList TValue="string" TItem="RoleOption" DataSource="@RoleOptions" @bind-Value="EditModel.AssignedRole" Placeholder="Select role">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Company</label>
+                                <SfDropDownList TValue="int?" TItem="BunkeringCompany" DataSource="@CompanyItems" @bind-Value="EditModel.CompanyId" Placeholder="Select company">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Operational Area</label>
+                                <SfDropDownList TValue="int?" TItem="OperationalArea" DataSource="@AreaItems" @bind-Value="EditModel.PrimaryAreaId" Placeholder="Select area">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Vessel</label>
+                                <SfDropDownList TValue="int?" TItem="Vessel" DataSource="@VesselItems" @bind-Value="EditModel.VesselId" Placeholder="Select vessel">
+                                    <DropDownListFieldSettings Text="Name" Value="Id" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-6">
+                                <SfCheckBox Label="Active" @bind-Checked="EditModel.IsActive" />
+                            </div>
+                            <div class="pf-col-6">
+                                <SfCheckBox Label="Approved" @bind-Checked="EditModel.IsAccountApproved" />
+                            </div>
+                            @if (!IsEditMode)
+                            {
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Password</label>
+                                    <SfTextBox Placeholder="Enter password" Type="InputType.Password" @bind-Value="EditModel.Password" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Confirm Password</label>
+                                    <SfTextBox Placeholder="Confirm password" Type="InputType.Password" @bind-Value="EditModel.ConfirmPassword" />
+                                </div>
+                            }
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => CloseDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => SaveAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<ApplicationUser> UserItems = new();
+    private List<OperationalArea> AreaItems = new();
+    private List<BunkeringCompany> CompanyItems = new();
+    private List<Vessel> VesselItems = new();
+    private List<RoleOption> RoleOptions = RoleNames.All.Select(role => new RoleOption { Value = role, Text = role.Replace("_", " ") }).ToList();
+    private UserAdministrationModel EditModel = new();
+    private EditContext DialogEditContext = default!;
+    private string? SearchTerm;
+    private string? StatusMessage;
+    private bool IsDialogVisible;
+    private bool IsEditMode;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLookupsAsync();
+        await LoadAsync();
+        ResetDialogModel();
+    }
+
+    private async Task LoadAsync() => UserItems = await UserManagementService.GetUsersAsync(SearchTerm);
+
+    private async Task LoadLookupsAsync()
+    {
+        AreaItems = await AreaService.GetAreasAsync();
+        CompanyItems = await CompanyService.GetCompaniesAsync();
+        VesselItems = await VesselService.GetVesselsAsync();
+    }
+
+    private void OpenAddDialog()
+    {
+        IsEditMode = false;
+        EditModel = new UserAdministrationModel
+        {
+            AssignedRole = RoleNames.Crew,
+            IsActive = true,
+            IsAccountApproved = true
+        };
+        DialogEditContext = new EditContext(EditModel);
+        IsDialogVisible = true;
+    }
+
+    private async Task OpenEditDialog(ApplicationUser? user)
+    {
+        if (user is null)
+        {
+            return;
+        }
+
+        var editor = await UserManagementService.GetUserEditorAsync(user.Id);
+        if (editor is null)
+        {
+            StatusMessage = "User not found.";
+            return;
+        }
+
+        IsEditMode = true;
+        EditModel = editor;
+        DialogEditContext = new EditContext(EditModel);
+        IsDialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        IsDialogVisible = false;
+        ResetDialogModel();
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        if (!IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(EditModel.Password))
+            {
+                StatusMessage = "Password is required for new users.";
+                return;
+            }
+
+            if (!string.Equals(EditModel.Password, EditModel.ConfirmPassword, StringComparison.Ordinal))
+            {
+                StatusMessage = "Password confirmation does not match.";
+                return;
+            }
+        }
+
+        var result = IsEditMode
+            ? await UserManagementService.UpdateUserAsync(EditModel)
+            : await UserManagementService.CreateUserAsync(EditModel);
+
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        IsDialogVisible = false;
+        await LoadAsync();
+        ResetDialogModel();
+    }
+
+    private async Task ToggleActiveAsync(ApplicationUser? user)
+    {
+        if (user is null)
+        {
+            return;
+        }
+
+        var result = await UserManagementService.SetUserActivationAsync(user.Id, !user.IsActive);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        await LoadAsync();
+    }
+
+    private void ResetDialogModel()
+    {
+        EditModel = new UserAdministrationModel
+        {
+            AssignedRole = RoleNames.Crew,
+            IsActive = true,
+            IsAccountApproved = true
+        };
+        DialogEditContext = new EditContext(EditModel);
+    }
+
+    private sealed class RoleOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

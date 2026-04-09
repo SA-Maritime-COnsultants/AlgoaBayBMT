@@ -1,0 +1,104 @@
+@page "/user-management/approvals"
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@inject IUserApprovalService UserApprovalService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>User Approvals</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Pending User Approvals</h1>
+            <div class="page-subtitle">Review email confirmation status and approve or reject requested access.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Approval Queue" SubTitle="Users awaiting email confirmation or account approval" />
+        <CardContent>
+            <SfGrid DataSource="@PendingUsers" TValue="ApplicationUser" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn Field="@nameof(ApplicationUser.FullName)" HeaderText="Name" Width="190" />
+                    <GridColumn Field="@nameof(ApplicationUser.Email)" HeaderText="Email" Width="220" />
+                    <GridColumn Field="@nameof(ApplicationUser.RequestedRole)" HeaderText="Requested Role" Width="160" />
+                    <GridColumn HeaderText="Email Status" Width="140" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span class="badge @(user?.EmailConfirmed == true ? "bg-success" : "bg-warning text-dark")">@(user?.EmailConfirmed == true ? "Confirmed" : "Pending")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Approval Status" Width="150" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span class="badge @(user?.IsAccountApproved == true ? "bg-success" : "bg-secondary")">@(user?.IsAccountApproved == true ? "Approved" : "Pending")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="230" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <div class="pf-grid-actions">
+                                <SfButton CssClass="e-flat e-success" OnClick="@(_ => ApproveAsync(user?.Id))">Approve</SfButton>
+                                <SfButton CssClass="e-flat e-danger" OnClick="@(_ => RejectAsync(user?.Id))">Reject</SfButton>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private List<ApplicationUser> PendingUsers = new();
+    private string? StatusMessage;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync() => PendingUsers = await UserApprovalService.GetPendingUsersAsync();
+
+    private async Task ApproveAsync(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        var approverId = await GetCurrentUserIdAsync();
+        var result = await UserApprovalService.ApproveAsync(userId, approverId, null);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        await LoadAsync();
+    }
+
+    private async Task RejectAsync(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        var approverId = await GetCurrentUserIdAsync();
+        var result = await UserApprovalService.RejectAsync(userId, approverId, null);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        await LoadAsync();
+    }
+
+    private async Task<string> GetCurrentUserIdAsync()
+    {
+        var state = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return state.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
+    }
+}

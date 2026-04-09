@@ -47,6 +47,94 @@
             </ul>
         </section>
 
+        <AuthorizeView Roles="@RoleNames.Admin">
+            <section class="side-nav-group" aria-labelledby="admin-nav-heading">
+                <h2 id="admin-nav-heading" class="side-nav-group-title">Admin</h2>
+                <ul class="side-nav-items">
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/vessels" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)OperationsIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Add Vessels</span><span class="side-nav-meta">Fleet setup</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/areas" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)ComplianceIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Add Areas</span><span class="side-nav-meta">Operational scope</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/ports" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)DashboardIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Add Ports</span><span class="side-nav-meta">Port structure</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/bays" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)WildlifeIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Add Bays</span><span class="side-nav-meta">Bay mapping</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/anchorages" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)SettingsIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Add Anchorages</span><span class="side-nav-meta">Anchorage mapping</span></span>
+                        </NavLink>
+                    </li>
+                </ul>
+            </section>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager}")">
+            <section class="side-nav-group" aria-labelledby="user-management-nav-heading">
+                <h2 id="user-management-nav-heading" class="side-nav-group-title">User Management</h2>
+                <ul class="side-nav-items">
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/users" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Manage Users</span><span class="side-nav-meta">Directory and activation</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/approvals" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)EmergencyIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Approve Users</span><span class="side-nav-meta">Registration workflow</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/vessel-roles" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)OperationsIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Assign Vessel Roles</span><span class="side-nav-meta">Master, CO, POAC</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/companies" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)ComplianceIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Manage Companies</span><span class="side-nav-meta">Company users and contacts</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/crew-directory" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Crew Directory</span><span class="side-nav-meta">Seafarer search</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/crew-deployments" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)DashboardIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Crew Deployments</span><span class="side-nav-meta">Deployment history</span></span>
+                        </NavLink>
+                    </li>
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="user-management/crew-lists" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)HomeIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">Vessel Crew Lists</span><span class="side-nav-meta">Onboard composition</span></span>
+                        </NavLink>
+                    </li>
+                </ul>
+            </section>
+        </AuthorizeView>
+
         <section class="side-nav-group side-nav-group--account" aria-labelledby="account-nav-heading">
             <h2 id="account-nav-heading" class="side-nav-group-title">Account</h2>
             <ul class="side-nav-items">
@@ -62,7 +150,7 @@
                             </NavLink>
                         </li>
                         <li class="side-nav-item">
-                            <form action="Account/Logout" method="post" class="side-nav-form">
+                            <form action="Account/Logout" method="post" class="side-nav-form" @formname="logout-form">
                                 <AntiforgeryToken />
                                 <input type="hidden" name="ReturnUrl" value="@returnUrl" />
                                 <button type="submit" class="side-nav-button" @onclick="HandleNavClick">
