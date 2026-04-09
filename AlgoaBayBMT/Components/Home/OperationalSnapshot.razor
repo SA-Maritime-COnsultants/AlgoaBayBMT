@@ -1,0 +1,134 @@
+@using Syncfusion.Blazor.Grids
+@using AlgoaBayBMT.Models
+
+<section class="snapshot-section" role="region" aria-label="Live operational snapshot">
+    <h2 class="section-heading">Operational Snapshot</h2>
+
+    <!-- Weather & Sea State -->
+    <div class="snapshot-widget" role="status" aria-label="Current weather and sea state">
+        <h3 class="widget-heading">
+            <svg class="widget-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+            </svg>
+            Weather &amp; Sea State
+        </h3>
+        <div class="widget-metrics">
+            <div class="metric">
+                <span class="metric-value">SW 18kn</span>
+                <span class="metric-label">Wind</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">2.1m SSW</span>
+                <span class="metric-label">Swell</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value">22°C</span>
+                <span class="metric-label">Temp</span>
+            </div>
+            <div class="metric">
+                <span class="metric-value status-text-warning">BF 5</span>
+                <span class="metric-label">Beaufort</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Operations -->
+    <div class="snapshot-widget" role="status" aria-label="Active bunkering operations">
+        <h3 class="widget-heading">
+            <svg class="widget-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+            </svg>
+            Active Operations
+        </h3>
+        <div class="ops-list">
+            <div class="ops-item status-normal">
+                <span class="ops-vessel">MV Pacific Voyager</span>
+                <span class="ops-detail">Berth 3 · In Progress</span>
+            </div>
+            <div class="ops-item status-success">
+                <span class="ops-vessel">MT Emerald Fortune</span>
+                <span class="ops-detail">Anchorage A · Scheduled 14:00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Environmental Alerts -->
+    <div class="snapshot-widget snapshot-widget--alert" role="alert" aria-label="Environmental alerts">
+        <h3 class="widget-heading widget-heading--warning">
+            <svg class="widget-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Environmental Alerts
+        </h3>
+        <div class="alert-item status-warning">
+            <span class="alert-type">African Penguin colony activity near Berth 7</span>
+            <span class="alert-time">Detected 45 min ago</span>
+        </div>
+        <div class="alert-item status-success">
+            <span class="alert-type">Marine mammal monitoring — all clear</span>
+            <span class="alert-time">Last scan 12 min ago</span>
+        </div>
+    </div>
+
+    <!-- Recent Incident Reports -->
+    <div class="snapshot-widget">
+        <h3 class="widget-heading">
+            <svg class="widget-icon" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+            </svg>
+            Recent Incidents
+        </h3>
+        <SfGrid DataSource="@RecentIncidents" CssClass="incident-grid" AllowPaging="false">
+            <GridColumns>
+                <GridColumn Field="@nameof(IncidentReportModel.Type)" HeaderText="Type" Width="80" />
+                <GridColumn Field="@nameof(IncidentReportModel.Severity)" HeaderText="Severity" Width="70" />
+                <GridColumn Field="@nameof(IncidentReportModel.ReportedAt)" HeaderText="Reported" Format="g" Width="120" />
+                <GridColumn Field="@nameof(IncidentReportModel.Status)" HeaderText="Status" Width="90" />
+            </GridColumns>
+        </SfGrid>
+    </div>
+</section>
+
+@code {
+    private List<IncidentReportModel> RecentIncidents = new()
+    {
+        new()
+        {
+            Id = 1,
+            Type = "Wildlife",
+            Severity = "Warning",
+            ReportedAt = DateTime.Now.AddHours(-2),
+            Status = "Under Review",
+            Location = "Berth 7"
+        },
+        new()
+        {
+            Id = 2,
+            Type = "Spill",
+            Severity = "Critical",
+            ReportedAt = DateTime.Now.AddHours(-5),
+            Status = "Active",
+            Location = "Anchorage B"
+        },
+        new()
+        {
+            Id = 3,
+            Type = "Safety",
+            Severity = "Normal",
+            ReportedAt = DateTime.Now.AddDays(-1),
+            Status = "Resolved",
+            Location = "Terminal 2"
+        },
+        new()
+        {
+            Id = 4,
+            Type = "Environmental",
+            Severity = "Warning",
+            ReportedAt = DateTime.Now.AddDays(-2),
+            Status = "Monitoring",
+            Location = "Channel"
+        }
+    };
+}

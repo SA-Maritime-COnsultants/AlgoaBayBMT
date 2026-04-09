@@ -1,0 +1,48 @@
+@using Syncfusion.Blazor.Navigations
+
+<header class="global-header" role="banner" aria-label="Algoa Bay BMT site header">
+    <SfAppBar CssClass="header-appbar">
+        <a href="/" class="header-brand" aria-label="Algoa Bay BMT — Home">
+            <img src="images/logo.png" alt="" class="header-brand-logo" />
+            <span class="header-brand-name">Algoa Bay <strong>BMT</strong></span>
+        </a>
+        <AppBarSpacer />
+        <nav class="header-nav" aria-label="Primary navigation">
+            <SfMenu TValue="MenuItem" CssClass="header-menu">
+                <MenuItems>
+                    <MenuItem Text="Training" Url="/training" />
+                    <MenuItem Text="Bunkering Operations" Url="/bunkering-operations" />
+                    <MenuItem Text=@("Wildlife & Environment") Url="/wildlife" />
+                    <MenuItem Text="Emergency Response" Url="/emergency-response" />
+                    <MenuItem Text=@("Compliance & Documents") Url="/compliance" />
+                    <MenuItem Text="Dashboards" Url="/dashboards" />
+                </MenuItems>
+            </SfMenu>
+        </nav>
+        <AppBarSpacer />
+        <div class="header-utilities">
+            <div class="header-weather" role="status" aria-label="@($"Wind {WindDirection} {WindSpeed} knots, Beaufort {BeaufortScale}")">
+                <svg class="utility-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+                </svg>
+                <span class="weather-reading">@WindDirection @(WindSpeed)kn · BF @BeaufortScale</span>
+            </div>
+            <span class="e-badge role-badge" aria-label="@($"Current role: {UserRole}")">@UserRole</span>
+            <button type="button" class="header-profile-btn" aria-label="User profile menu" aria-haspopup="true">
+                <svg class="utility-icon" aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span class="profile-name">@UserName</span>
+            </button>
+        </div>
+    </SfAppBar>
+</header>
+
+@code {
+    private string WindDirection = "SW";
+    private int WindSpeed = 18;
+    private int BeaufortScale = 5;
+    private string UserRole = "Operator";
+    private string UserName = "J. van der Merwe";
+}

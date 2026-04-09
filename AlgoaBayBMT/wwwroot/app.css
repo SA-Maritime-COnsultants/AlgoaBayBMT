@@ -48,8 +48,12 @@
     --transition-speed: 0.45s;
     --transition-ease: cubic-bezier(.22,.9,.35,1);
     /* logo translate defaults (x, y) */
-    --logo-translate-x: -20px;
-    --logo-translate-y: 80px;
+    /* moved left by additional 50px as requested */
+    --logo-translate-x: -70px;
+    --logo-translate-y: 100px; /* increased by 20px */
+    /* Navigation offsets used by the sidebar nav; responsive overrides in component CSS */
+    --nav-offset-expanded: 40px;
+    --nav-offset-collapsed: 8px;
 }
 
 *, *::before, *::after {

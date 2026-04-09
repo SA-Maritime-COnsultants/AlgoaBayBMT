@@ -1,54 +1,81 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
 @inject NavigationManager NavigationManager
 
-<div class="app-container @(sidebarCollapsed ? "sidebar-collapsed" : "")">
-    <!-- Top Bar -->
-    <header class="topbar">
-        <div class="topbar-left">
-            <button class="sidebar-toggle" @onclick="ToggleSidebar" aria-label="Toggle sidebar">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="3" y1="12" x2="21" y2="12"></line>
-                    <line x1="3" y1="6" x2="21" y2="6"></line>
-                    <line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
-            </button>
-            <a href="/" class="logo-link">
-                <img src="images/logo.png" alt="Algoa Bay BMT Logo" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                <span class="logo-text">Algoa Bay BMT</span>
-            </a>
-        </div>
-        <div class="topbar-right">
-            <AuthorizeView>
-                <Authorized>
-                    <div class="user-info">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="12" cy="7" r="4"></circle>
-                        </svg>
-                        <span class="user-name">@context.User.Identity?.Name</span>
-                    </div>
-                </Authorized>
-                <NotAuthorized>
-                    <span class="guest-text">Welcome, Guest</span>
-                </NotAuthorized>
-            </AuthorizeView>
-        </div>
-    </header>
-
-    <!-- Sidebar -->
-    <aside class="sidebar @(sidebarCollapsed ? "collapsed" : "")">
-        <NavMenu OnNavigate="CloseSidebarOnMobile" />
+<div class="app-shell @(isSidebarOpen ? "sidebar-open" : string.Empty)">
+    <aside id="app-sidebar" class="app-sidebar" aria-label="Primary navigation">
+        <NavMenu OnNavigate="CloseSidebar" />
     </aside>
 
-    <!-- Sidebar Overlay for Mobile -->
-    <div class="sidebar-overlay @(sidebarCollapsed ? "" : "active")" @onclick="ToggleSidebar"></div>
+    <div class="app-shell-main">
+        <header class="app-topbar" role="banner">
+            <div class="topbar-left">
+                <button type="button"
+                        class="sidebar-toggle"
+                        @onclick="ToggleSidebar"
+                        aria-label="Toggle primary navigation"
+                        aria-controls="app-sidebar"
+                        aria-expanded="@isSidebarOpen">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <article class="content-area">
+                <div class="topbar-context">
+                    <span class="topbar-breadcrumb">Operations / @CurrentSection</span>
+                    <div class="topbar-title-row">
+                        <h1 class="topbar-title">@CurrentPageTitle</h1>
+                        <span class="topbar-status-chip @CurrentStatusClass">@CurrentStatusLabel</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="topbar-right">
+                <div class="topbar-weather" role="status" aria-label="Current weather conditions">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M9.59 4.59A2 2 0 1 1 11 8H2"></path>
+                        <path d="M19.73 7.73A2.5 2.5 0 1 1 19.5 12H2"></path>
+                        <path d="M12.59 19.41A2 2 0 1 0 14 16H2"></path>
+                    </svg>
+                    <div class="weather-copy">
+                        <span class="weather-label">Sea State</span>
+                        <span class="weather-value">SW 18 kn · BF 5</span>
+                    </div>
+                </div>
+
+                <span class="role-badge" aria-label="Current role">Authority</span>
+
+                <AuthorizeView Context="authState">
+                    <Authorized>
+                        <button type="button" class="profile-button" aria-label="User profile menu">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>@(authState.User.Identity?.Name ?? "Operations User")</span>
+                        </button>
+                    </Authorized>
+                    <NotAuthorized>
+                        <button type="button" class="profile-button" aria-label="Guest access status">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <span>Guest</span>
+                        </button>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </header>
+
+        <div class="app-overlay" @onclick="CloseSidebar"></div>
+
+        <main id="main-content" class="app-content" tabindex="-1">
             @Body
-        </article>
-    </main>
+        </main>
+    </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -58,22 +85,77 @@
 </div>
 
 @code {
-    private bool sidebarCollapsed = false;
+    private bool isSidebarOpen;
+    private string currentPath = string.Empty;
 
     protected override void OnInitialized()
     {
-        // Default to expanded so navigation is visible
-        sidebarCollapsed = false;
+        currentPath = GetCurrentPath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += HandleLocationChanged;
     }
 
-    private void ToggleSidebar()
+    private string CurrentPageTitle => currentPath switch
     {
-        sidebarCollapsed = !sidebarCollapsed;
+        "" => "Operations Dashboard",
+        "training" => "Training",
+        "bunkering-operations" => "Bunkering Operations",
+        "wildlife-environment" => "Wildlife & Environment",
+        "emergency-response" => "Emergency Response",
+        "compliance-documents" => "Compliance & Documents",
+        "dashboards" => "Dashboards",
+        "settings" => "Settings",
+        _ => "Operations Workspace"
+    };
+
+    private string CurrentSection => currentPath switch
+    {
+        "" => "Home",
+        "training" => "Training Control",
+        "bunkering-operations" => "Marine Fuel Transfer",
+        "wildlife-environment" => "Environmental Oversight",
+        "emergency-response" => "Incident Command",
+        "compliance-documents" => "Regulatory Control",
+        "dashboards" => "Operational Reporting",
+        "settings" => "System Configuration",
+        _ => "Application"
+    };
+
+    private string CurrentStatusLabel => currentPath switch
+    {
+        "emergency-response" => "Priority Monitoring",
+        "wildlife-environment" => "Environmental Watch",
+        "compliance-documents" => "Controlled Access",
+        _ => "Normal Operations"
+    };
+
+    private string CurrentStatusClass => currentPath switch
+    {
+        "emergency-response" => "status-critical",
+        "wildlife-environment" => "status-success",
+        "compliance-documents" => "status-warning",
+        _ => "status-normal"
+    };
+
+    private void ToggleSidebar() => isSidebarOpen = !isSidebarOpen;
+
+    private void CloseSidebar() => isSidebarOpen = false;
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentPath = GetCurrentPath(e.Location);
+        isSidebarOpen = false;
+        _ = InvokeAsync(StateHasChanged);
     }
 
-    private void CloseSidebarOnMobile()
+    private static string GetCurrentPath(string uri)
     {
-        // Close sidebar on mobile after navigation
-        sidebarCollapsed = true;
+        var relativePath = new Uri(uri).PathAndQuery.TrimStart('/');
+        var path = relativePath.Split('?', '#')[0].TrimEnd('/');
+        return path;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= HandleLocationChanged;
     }
 }

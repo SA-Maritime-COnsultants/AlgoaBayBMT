@@ -1,0 +1,84 @@
+@using AlgoaBayBMT.Models
+
+<section class="training-section" role="region" aria-label="Training modules overview">
+    <h2 class="section-heading">Training Modules</h2>
+    <div class="training-grid">
+        @foreach (var module in Modules)
+        {
+            <div class="e-card training-card">
+                <div class="e-card-header">
+                    <div class="e-card-header-caption">
+                        <div class="training-card-header">
+                            <span class="e-badge category-badge category-@module.Category.ToLowerInvariant().Replace(" ", "-")">@module.Category</span>
+                            @if (module.IsCertified)
+                            {
+                                <span class="e-badge e-badge-success cert-badge" aria-label="Certification achieved">Certified</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="e-card-content">
+                    <h3 class="training-title">@module.Title</h3>
+                    <p class="training-desc">@module.Description</p>
+                    <div class="progress-container" role="progressbar"
+                         aria-valuenow="@module.ProgressPercent"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-label="@($"{module.Title} progress: {module.ProgressPercent}%")">
+                        <div class="progress-track">
+                            <div class="progress-fill progress-fill--@GetProgressLevel(module.ProgressPercent)"
+                                 style="width: @(module.ProgressPercent)%"></div>
+                        </div>
+                        <span class="progress-label">@(module.ProgressPercent)% complete</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+
+@code {
+    private List<TrainingModuleModel> Modules = new()
+    {
+        new()
+        {
+            Title = "Bunkering Operations",
+            Description = "Ship-to-ship and shore-to-ship fuel transfer procedures, safety checks and spill prevention protocols.",
+            ProgressPercent = 75,
+            IsCertified = false,
+            Category = "Operations"
+        },
+        new()
+        {
+            Title = "Wildlife Recognition",
+            Description = "Identification of African Penguins, Cape Gannets and marine mammals in the Algoa Bay area.",
+            ProgressPercent = 100,
+            IsCertified = true,
+            Category = "Environment"
+        },
+        new()
+        {
+            Title = "Emergency Response",
+            Description = "Oil spill containment, fire suppression, man-overboard and medical emergency procedures.",
+            ProgressPercent = 40,
+            IsCertified = false,
+            Category = "Safety"
+        },
+        new()
+        {
+            Title = "Environmental Compliance",
+            Description = "LOSCP requirements, EMP obligations and environmental impact monitoring protocols.",
+            ProgressPercent = 60,
+            IsCertified = false,
+            Category = "Compliance"
+        }
+    };
+
+    private static string GetProgressLevel(int percent) => percent switch
+    {
+        100 => "complete",
+        >= 60 => "good",
+        >= 30 => "moderate",
+        _ => "low"
+    };
+}

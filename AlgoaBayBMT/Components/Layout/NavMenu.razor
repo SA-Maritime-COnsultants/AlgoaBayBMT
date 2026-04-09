@@ -1,176 +1,138 @@
 ﻿@implements IDisposable
-
 @inject NavigationManager NavigationManager
 
-<nav class="nav-menu">
-    <!-- Main Navigation Section -->
-    <div class="nav-section">
-        <div class="nav-section-title">Navigation</div>
-        
-        <div class="nav-item" @onclick="HandleNavClick">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="nav-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                    </svg>
-                </span>
-                <span class="nav-text">Home</span>
-            </NavLink>
+<nav class="side-nav" aria-label="Primary navigation menu">
+    <a href="/" class="side-nav-brand" aria-label="Algoa Bay BMT home">
+        <img src="images/logo.png" alt="Algoa Bay BMT logo" class="side-nav-logo" />
+        <div class="side-nav-brand-copy">
+            <span class="side-nav-brand-title">Algoa Bay BMT</span>
+            <span class="side-nav-brand-subtitle">Bunkering Management &amp; Training</span>
         </div>
+    </a>
 
-        <div class="nav-item" @onclick="HandleNavClick">
-            <NavLink class="nav-link" href="wildlife-reporting">
-                <span class="nav-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 6c0 2-2 2-2 4"></path>
-                        <path d="M14 6c0 2-2 2-2 4"></path>
-                        <path d="M10 6c0 2-2 2-2 4"></path>
-                        <path d="M6 6c0 2-2 2-2 4"></path>
-                        <path d="M18 10c0 1-1.5 2-3 2s-3-1-3-2"></path>
-                        <path d="M12 10c0 1-1.5 2-3 2s-3-1-3-2"></path>
-                        <path d="M3 14h18"></path>
-                        <path d="M4 18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-1a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v1z"></path>
-                    </svg>
-                </span>
-                <span class="nav-text">Wildlife Reporting</span>
-            </NavLink>
-        </div>
-
-        <div class="nav-item" @onclick="HandleNavClick">
-            <NavLink class="nav-link" href="crew-training">
-                <span class="nav-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                    </svg>
-                </span>
-                <span class="nav-text">Crew Training</span>
-            </NavLink>
-        </div>
-
-        <div class="nav-item" @onclick="HandleNavClick">
-            <NavLink class="nav-link" href="emergency-response">
-                <span class="nav-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                    </svg>
-                </span>
-                <span class="nav-text">Emergency Response</span>
-            </NavLink>
-        </div>
-
-        <div class="nav-item" @onclick="HandleNavClick">
-            <NavLink class="nav-link" href="bunker-operations">
-                <span class="nav-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path>
-                        <path d="M17 18h1"></path>
-                        <path d="M12 18h1"></path>
-                        <path d="M7 18h1"></path>
-                    </svg>
-                </span>
-                <span class="nav-text">Bunker Operations</span>
-            </NavLink>
-        </div>
-
-        <div class="nav-item" @onclick="HandleNavClick">
-            <NavLink class="nav-link" href="about">
-                <span class="nav-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="10"></circle>
-                        <path d="M12 16v-4"></path>
-                        <path d="M12 8h.01"></path>
-                    </svg>
-                </span>
-                <span class="nav-text">About Us</span>
-            </NavLink>
-        </div>
-    </div>
-
-    <!-- Account Section -->
-    <div class="nav-section nav-section-bottom">
-        <div class="nav-section-title">Account</div>
-        
-        <AuthorizeView>
-            <Authorized>
-                <div class="nav-item" @onclick="HandleNavClick">
-                    <NavLink class="nav-link" href="Account/Manage">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="3"></circle>
-                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                            </svg>
-                        </span>
-                        <span class="nav-text">My Account</span>
-                    </NavLink>
-                </div>
-                <div class="nav-item">
-                    <form action="Account/Logout" method="post">
-                        <AntiforgeryToken />
-                        <input type="hidden" name="ReturnUrl" value="@currentUrl" />
-                        <button type="submit" class="nav-link logout-btn" @onclick="HandleNavClick">
-                            <span class="nav-icon">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                    <polyline points="16 17 21 12 16 7"></polyline>
-                                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                                </svg>
+    <div class="side-nav-scroll">
+        <section class="side-nav-group" aria-labelledby="operations-nav-heading">
+            <h2 id="operations-nav-heading" class="side-nav-group-title">Operations</h2>
+            <ul class="side-nav-items">
+                @foreach (var item in PrimaryNavItems)
+                {
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="@item.Href" Match="@item.Match" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)item.IconSvg)</span>
+                            <span class="side-nav-copy">
+                                <span class="side-nav-label">@item.Text</span>
+                                <span class="side-nav-meta">@item.Meta</span>
                             </span>
-                            <span class="nav-text">Logout</span>
-                        </button>
-                    </form>
-                </div>
-            </Authorized>
-            <NotAuthorized>
-                <div class="nav-item" @onclick="HandleNavClick">
-                    <NavLink class="nav-link" href="Account/Login">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
-                                <polyline points="10 17 15 12 10 7"></polyline>
-                                <line x1="15" y1="12" x2="3" y2="12"></line>
-                            </svg>
-                        </span>
-                        <span class="nav-text">Login</span>
-                    </NavLink>
-                </div>
-                <div class="nav-item" @onclick="HandleNavClick">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="nav-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="8.5" cy="7" r="4"></circle>
-                                <line x1="20" y1="8" x2="20" y2="14"></line>
-                                <line x1="23" y1="11" x2="17" y2="11"></line>
-                            </svg>
-                        </span>
-                        <span class="nav-text">Register</span>
-                    </NavLink>
-                </div>
-            </NotAuthorized>
-        </AuthorizeView>
+                        </NavLink>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <section class="side-nav-group" aria-labelledby="system-nav-heading">
+            <h2 id="system-nav-heading" class="side-nav-group-title">System</h2>
+            <ul class="side-nav-items">
+                @foreach (var item in SecondaryNavItems)
+                {
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="@item.Href" Match="@item.Match" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)item.IconSvg)</span>
+                            <span class="side-nav-copy">
+                                <span class="side-nav-label">@item.Text</span>
+                                <span class="side-nav-meta">@item.Meta</span>
+                            </span>
+                        </NavLink>
+                    </li>
+                }
+            </ul>
+        </section>
+
+        <section class="side-nav-group side-nav-group--account" aria-labelledby="account-nav-heading">
+            <h2 id="account-nav-heading" class="side-nav-group-title">Account</h2>
+            <ul class="side-nav-items">
+                <AuthorizeView>
+                    <Authorized>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="Account/Manage" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)AccountIcon)</span>
+                                <span class="side-nav-copy">
+                                    <span class="side-nav-label">My Account</span>
+                                    <span class="side-nav-meta">Identity and access</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <form action="Account/Logout" method="post" class="side-nav-form">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="ReturnUrl" value="@returnUrl" />
+                                <button type="submit" class="side-nav-button" @onclick="HandleNavClick">
+                                    <span class="side-nav-icon" aria-hidden="true">@((MarkupString)LogoutIcon)</span>
+                                    <span class="side-nav-copy">
+                                        <span class="side-nav-label">Logout</span>
+                                        <span class="side-nav-meta">End current session</span>
+                                    </span>
+                                </button>
+                            </form>
+                        </li>
+                    </Authorized>
+                    <NotAuthorized>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="Account/Login" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)LoginIcon)</span>
+                                <span class="side-nav-copy">
+                                    <span class="side-nav-label">Login</span>
+                                    <span class="side-nav-meta">Secure access</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="Account/Register" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)RegisterIcon)</span>
+                                <span class="side-nav-copy">
+                                    <span class="side-nav-label">Register</span>
+                                    <span class="side-nav-meta">Provision new user</span>
+                                </span>
+                            </NavLink>
+                        </li>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </ul>
+        </section>
     </div>
 </nav>
 
 @code {
-    private string? currentUrl;
-    
+    private string returnUrl = "/";
+
     [Parameter]
     public EventCallback OnNavigate { get; set; }
 
+    private IReadOnlyList<NavItem> PrimaryNavItems =>
+    [
+        new("Home", "", "Control room overview", HomeIcon, NavLinkMatch.All),
+        new("Training", "training", "Modules and certifications", TrainingIcon),
+        new("Bunkering Operations", "bunkering-operations", "Transfer procedures", OperationsIcon),
+        new("Wildlife & Environment", "wildlife-environment", "Marine safeguards", WildlifeIcon),
+        new("Emergency Response", "emergency-response", "Incident command", EmergencyIcon),
+        new("Compliance & Documents", "compliance-documents", "Controlled records", ComplianceIcon)
+    ];
+
+    private IReadOnlyList<NavItem> SecondaryNavItems =>
+    [
+        new("Dashboards", "dashboards", "Metrics and reporting", DashboardIcon),
+        new("Settings", "settings", "System preferences", SettingsIcon)
+    ];
+
     protected override void OnInitialized()
     {
-        currentUrl = NavigationManager.ToBaseRelativePath(NavigationManager.Uri);
+        returnUrl = BuildReturnUrl(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
     {
-        currentUrl = NavigationManager.ToBaseRelativePath(e.Location);
-        StateHasChanged();
+        returnUrl = BuildReturnUrl(e.Location);
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private async Task HandleNavClick()
@@ -181,9 +143,30 @@
         }
     }
 
+    private static string BuildReturnUrl(string uri)
+    {
+        var relativePath = new Uri(uri).PathAndQuery;
+        return string.IsNullOrWhiteSpace(relativePath) ? "/" : relativePath;
+    }
+
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
+
+    private sealed record NavItem(string Text, string Href, string Meta, string IconSvg, NavLinkMatch Match = NavLinkMatch.Prefix);
+
+    private const string HomeIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='m3 9 9-7 9 7'></path><path d='M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10'></path><path d='M9 21v-6h6v6'></path></svg>""";
+    private const string TrainingIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 6v12'></path><path d='M17 9.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8.5'></path><path d='M21 6V3h-3'></path><path d='M10 14H7'></path><path d='M10 10H7'></path><path d='M18 3l-6 6'></path></svg>""";
+    private const string OperationsIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 18h18'></path><path d='M6 18V6l6 4 6-4v12'></path><path d='M10 13h4'></path></svg>""";
+    private const string WildlifeIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z'></path><circle cx='12' cy='12' r='3'></circle></svg>""";
+    private const string EmergencyIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z'></path><line x1='12' y1='9' x2='12' y2='13'></line><line x1='12' y1='17' x2='12.01' y2='17'></line></svg>""";
+    private const string ComplianceIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z'></path></svg>""";
+    private const string DashboardIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='7' height='9'></rect><rect x='14' y='3' width='7' height='5'></rect><rect x='14' y='12' width='7' height='9'></rect><rect x='3' y='16' width='7' height='5'></rect></svg>""";
+    private const string SettingsIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='3'></circle><path d='M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 8.91 4.6H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c0 .66.39 1.26 1 1.51.2.08.41.12.63.12H21a2 2 0 0 1 0 4h-.09c-.22 0-.43.04-.63.12-.61.25-1 .85-1 1.51Z'></path></svg>""";
+    private const string AccountIcon = SettingsIcon;
+    private const string LogoutIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4'></path><polyline points='16 17 21 12 16 7'></polyline><line x1='21' y1='12' x2='9' y2='12'></line></svg>""";
+    private const string LoginIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4'></path><polyline points='10 17 15 12 10 7'></polyline><line x1='15' y1='12' x2='3' y2='12'></line></svg>""";
+    private const string RegisterIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2'></path><circle cx='8.5' cy='7' r='4'></circle><line x1='20' y1='8' x2='20' y2='14'></line><line x1='23' y1='11' x2='17' y2='11'></line></svg>""";
 }
 
