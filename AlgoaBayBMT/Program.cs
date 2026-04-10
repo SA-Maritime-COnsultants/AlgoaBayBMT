@@ -66,6 +66,7 @@ builder.Services.AddScoped<ICrewDirectoryService, CrewDirectoryService>();
 builder.Services.AddScoped<ICrewDeploymentService, CrewDeploymentService>();
 builder.Services.AddScoped<INotificationRoutingService, NotificationRoutingService>();
 builder.Services.AddScoped<IAuthorityContactService, AuthorityContactService>();
+builder.Services.AddScoped<IRoleEditorService, RoleEditorService>();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 

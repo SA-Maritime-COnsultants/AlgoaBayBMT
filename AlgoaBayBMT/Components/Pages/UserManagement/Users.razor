@@ -89,8 +89,8 @@
                             <div class="pf-grid-actions">
                                 <AuthorizeView Roles="@RoleNames.Admin">
                                     <Authorized Context="adminActions">
-                                        <SfButton CssClass="e-flat" OnClick="@(_ => OpenEditDialog(user))">Edit</SfButton>
-                                        <SfButton CssClass="e-flat" OnClick="@(_ => ToggleActiveAsync(user))">@(user?.IsActive == true ? "Deactivate" : "Activate")</SfButton>
+                                        <SfButton CssClass="e-flat e-primary pf-btn-edit" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(user))">Edit</SfButton>
+                                        <SfButton CssClass="e-flat e-danger pf-btn-deactivate" IconCss="@(user?.IsActive == true ? "e-icons e-eye-slash" : "e-icons e-eye")" OnClick="@(_ => ToggleActiveAsync(user))">@(user?.IsActive == true ? "Deactivate" : "Activate")</SfButton>
                                     </Authorized>
                                 </AuthorizeView>
                             </div>

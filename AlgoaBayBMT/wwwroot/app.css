@@ -436,3 +436,42 @@ h1:focus {
     border-color: var(--color-info);
     color: var(--color-info);
 }
+
+/* Action button styles for Users and RoleEditor grids */
+.pf-grid-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.e-btn.e-flat.pf-btn-edit,
+.e-btn.pf-btn-edit {
+    background: rgba(14, 151, 170, 0.1) !important;
+    border-color: rgba(14, 151, 170, 0.3) !important;
+    color: #0e97aa !important;
+}
+
+.e-btn.e-flat.pf-btn-edit:hover,
+.e-btn.pf-btn-edit:hover {
+    background: rgba(14, 151, 170, 0.22) !important;
+    border-color: #0e97aa !important;
+}
+
+.e-btn.e-flat.pf-btn-deactivate,
+.e-btn.pf-btn-deactivate,
+.e-btn.e-flat.e-danger,
+.e-btn.e-danger {
+    background: rgba(220, 38, 38, 0.1) !important;
+    border-color: rgba(220, 38, 38, 0.3) !important;
+    color: var(--pf-danger) !important;
+}
+
+.e-btn.e-flat.pf-btn-deactivate:hover,
+.e-btn.pf-btn-deactivate:hover,
+.e-btn.e-flat.e-danger:hover,
+.e-btn.e-danger:hover {
+    background: rgba(220, 38, 38, 0.2) !important;
+    border-color: var(--pf-danger) !important;
+}
