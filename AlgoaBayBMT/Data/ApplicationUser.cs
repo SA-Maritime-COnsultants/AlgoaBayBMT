@@ -7,8 +7,18 @@ namespace AlgoaBayBMT.Data
     public class ApplicationUser : IdentityUser
     {
         public string? FullName { get; set; }
+        public string? CellNo { get; set; }
+        public string? Address { get; set; }
+        public string? Country { get; set; }
         public string? RequestedRole { get; set; }
         public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.PendingEmailConfirmation;
+        public bool IsCrew { get; set; }
+        public CrewRank? CrewRank { get; set; }
+        public string? SidNumber { get; set; }
+        public string? SidIssuingCountry { get; set; }
+        public string? SidIssuingAuthority { get; set; }
+        public DateTime? SidIssueDate { get; set; }
+        public DateTime? SidExpiryDate { get; set; }
         public bool IsAccountApproved { get; set; }
         public string? ApprovedByUserId { get; set; }
         public DateTime? ApprovedOnUtc { get; set; }

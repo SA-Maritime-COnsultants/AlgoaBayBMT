@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace AlgoaBayBMT.Shared.Models
 {
@@ -44,5 +45,47 @@ namespace AlgoaBayBMT.Shared.Models
         Expiring = 2,
         Expired = 3,
         NonCompliant = 4
+    }
+
+    public enum CrewRank
+    {
+        [Display(Name = "Captain")]
+        Captain = 0,
+
+        [Display(Name = "Chief Officer")]
+        ChiefOfficer = 1,
+
+        [Display(Name = "Chief Engineer")]
+        ChiefEngineer = 2,
+
+        [Display(Name = "2nd Engineer")]
+        SecondEngineer = 3,
+
+        [Display(Name = "3rd Engineer")]
+        ThirdEngineer = 4,
+
+        [Display(Name = "Bosun")]
+        Bosun = 5,
+
+        [Display(Name = "Able Seaman")]
+        AbleSeaman = 6,
+
+        [Display(Name = "Ordinary Seaman")]
+        OrdinarySeaman = 7,
+
+        [Display(Name = "Deck Cadet")]
+        DeckCadet = 8,
+
+        [Display(Name = "Engine Cadet")]
+        EngineCadet = 9,
+
+        [Display(Name = "Cook")]
+        Cook = 10,
+
+        [Display(Name = "Steward")]
+        Steward = 11,
+
+        [Display(Name = "Master")]
+        Master = 12
     }
 }

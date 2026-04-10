@@ -9,6 +9,7 @@ namespace AlgoaBayBMT.Shared.Security
         public const string Poac = "POAC";
         public const string CompanyManager = "COMPANY_MANAGER";
         public const string CompanyUser = "COMPANY_USER";
+        public const string Customer = "CUSTOMER";
         public const string Dffe = "DFFE";
         public const string Tnpa = "TNPA";
         public const string Samsa = "SAMSA";
@@ -22,6 +23,7 @@ namespace AlgoaBayBMT.Shared.Security
             Poac,
             CompanyManager,
             CompanyUser,
+            Customer,
             Dffe,
             Tnpa,
             Samsa

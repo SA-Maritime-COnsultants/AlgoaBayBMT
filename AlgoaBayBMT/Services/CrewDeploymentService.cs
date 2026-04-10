@@ -10,7 +10,7 @@ namespace AlgoaBayBMT.Services
     {
         public async Task<OperationResult<CrewDeployment>> DeployCrewAsync(CrewDeploymentRequest request, CancellationToken cancellationToken = default)
         {
-            var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.UserId, cancellationToken);
+            var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == request.UserId && x.IsCrew, cancellationToken);
             if (user is null)
             {
                 return OperationResult<CrewDeployment>.Failure("Crew member not found.");

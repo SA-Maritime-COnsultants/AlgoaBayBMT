@@ -437,6 +437,158 @@ h1:focus {
     color: var(--color-info);
 }
 
+.auth-page-shell {
+    min-height: calc(100vh - 110px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-page-inner {
+    width: 100%;
+    max-width: 920px;
+    margin: 0 auto;
+}
+
+.auth-page-inner--wide {
+    max-width: 1160px;
+}
+
+.auth-brand {
+    margin-bottom: 1.5rem;
+}
+
+.auth-title {
+    font-size: 2rem;
+    margin-bottom: 0.35rem;
+}
+
+.auth-subtitle {
+    color: var(--pf-text-soft);
+    font-size: 1rem;
+}
+
+.auth-card {
+    width: 100%;
+}
+
+.auth-card-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.auth-card--side {
+    min-height: 100%;
+}
+
+.auth-surface-card {
+    overflow: hidden;
+    background: var(--pf-surface);
+    border: 1px solid var(--pf-border);
+    border-radius: var(--pf-radius);
+    box-shadow: var(--pf-shadow);
+}
+
+.auth-surface-header {
+    background: linear-gradient(135deg, var(--pf-primary), var(--pf-primary-2));
+    color: #fff;
+    padding: 1.1rem 1.25rem;
+}
+
+.auth-surface-title {
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.auth-surface-subtitle {
+    margin-top: 0.2rem;
+    color: rgba(255,255,255,0.82);
+    font-size: 0.9rem;
+}
+
+.auth-surface-body {
+    padding: 1.25rem;
+    background: var(--pf-surface);
+}
+
+.auth-inline-checkbox {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.auth-inline-checkbox .e-checkbox-wrapper,
+.auth-inline-checkbox .e-css,
+.auth-inline-checkbox .e-control {
+    min-height: 40px;
+    align-items: center;
+}
+
+.auth-inline-checkbox--native {
+    justify-content: center;
+}
+
+.auth-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.auth-form-control {
+    min-height: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--pf-border);
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    color: var(--pf-text-soft);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--pf-border);
+}
+
+.auth-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.auth-links a,
+.auth-inline-link {
+    color: var(--pf-accent);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.auth-links a:hover,
+.auth-inline-link:hover {
+    color: var(--pf-accent-dark);
+    text-decoration: underline;
+}
+
+@media (max-width: 992px) {
+    .auth-card-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* Action button styles for Users and RoleEditor grids */
 .pf-grid-actions {
     display: flex;

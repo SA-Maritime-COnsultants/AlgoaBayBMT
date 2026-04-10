@@ -10,7 +10,7 @@ namespace AlgoaBayBMT.Services
     {
         public Task<List<ApplicationUser>> SearchSeafarersAsync(string? searchTerm, CancellationToken cancellationToken = default)
         {
-            var query = dbContext.Users.AsNoTracking().Include(x => x.Vessel).AsQueryable();
+            var query = dbContext.Users.AsNoTracking().Include(x => x.Vessel).Where(x => x.IsCrew).AsQueryable();
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 query = query.Where(x =>

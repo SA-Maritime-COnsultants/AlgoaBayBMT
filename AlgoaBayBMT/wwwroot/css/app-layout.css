@@ -279,7 +279,7 @@
 
 .side-nav-logo {
     display: block;
-    height: 275px;
+    height: 220px;
     width: auto;
     max-width: 100%;
     object-fit: contain;
@@ -576,7 +576,7 @@
     }
 
     .side-nav-logo {
-        height: 125px;
+        height: 100px;
         transform: none;
     }
 

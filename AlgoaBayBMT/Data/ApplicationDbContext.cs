@@ -29,7 +29,19 @@ namespace AlgoaBayBMT.Data
             builder.Entity<ApplicationUser>(entity =>
             {
                 entity.Property(x => x.FullName).HasMaxLength(256);
+                entity.Property(x => x.CellNo).HasMaxLength(30);
+                entity.Property(x => x.Address).HasMaxLength(300);
+                entity.Property(x => x.Country).HasMaxLength(100);
                 entity.Property(x => x.RequestedRole).HasMaxLength(64);
+                entity.Property(x => x.IsCrew).HasDefaultValue(false);
+                entity.Property(x => x.CrewRank)
+                    .HasConversion(
+                        value => value.HasValue ? value.Value.GetDisplayName() : null,
+                        value => CrewRankExtensions.ParseDisplayName(value))
+                    .HasMaxLength(50);
+                entity.Property(x => x.SidNumber).HasMaxLength(20);
+                entity.Property(x => x.SidIssuingCountry).HasMaxLength(100);
+                entity.Property(x => x.SidIssuingAuthority).HasMaxLength(150);
                 entity.Property(x => x.ApprovalNotes).HasMaxLength(1024);
                 entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
                 entity.HasOne(x => x.Company)

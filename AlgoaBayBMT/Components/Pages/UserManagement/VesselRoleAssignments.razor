@@ -151,7 +151,7 @@
     private async Task LoadPageDataAsync()
     {
         VesselItems = await VesselService.GetVesselsAsync();
-        UserItems = await UserManagementService.GetUsersAsync(null);
+        UserItems = await UserManagementService.GetUsersAsync(null, crewOnly: true);
         UserOptions = UserItems.Select(user => new UserOption
         {
             Value = user.Id,

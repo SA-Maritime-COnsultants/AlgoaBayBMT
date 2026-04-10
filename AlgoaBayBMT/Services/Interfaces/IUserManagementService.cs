@@ -6,7 +6,7 @@ namespace AlgoaBayBMT.Services.Interfaces
 {
     public interface IUserManagementService
     {
-        Task<List<ApplicationUser>> GetUsersAsync(string? searchTerm, CancellationToken cancellationToken = default);
+        Task<List<ApplicationUser>> GetUsersAsync(string? searchTerm, bool crewOnly = false, CancellationToken cancellationToken = default);
         Task<UserAdministrationModel?> GetUserEditorAsync(string userId, CancellationToken cancellationToken = default);
         Task<OperationResult<ApplicationUser>> CreateUserAsync(UserAdministrationModel model, CancellationToken cancellationToken = default);
         Task<OperationResult<ApplicationUser>> UpdateUserAsync(UserAdministrationModel model, CancellationToken cancellationToken = default);

@@ -35,7 +35,14 @@
                         </Template>
                     </GridColumn>
                     <GridColumn Field="@nameof(ApplicationUser.Email)" HeaderText="Email" Width="220" />
-                    <GridColumn Field="@nameof(ApplicationUser.RequestedRole)" HeaderText="Requested Role" Width="160" />
+                    <GridColumn HeaderText="Rank" Width="160">
+                        <Template>
+                            @{
+                                var user = context as ApplicationUser;
+                            }
+                            <span>@(user?.CrewRank?.GetDisplayName() ?? "-")</span>
+                        </Template>
+                    </GridColumn>
                     <GridColumn HeaderText="Assigned Vessel" Width="180">
                         <Template>
                             @{

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using AlgoaBayBMT.Shared.Models;
 
 namespace AlgoaBayBMT.Services.Models
 {
@@ -14,9 +15,16 @@ namespace AlgoaBayBMT.Services.Models
         public string ConfirmPassword { get; set; } = string.Empty;
 
         public string? FullName { get; set; }
-        public string RequestedRole { get; set; } = string.Empty;
+        public string? CellNo { get; set; }
+        public string? Address { get; set; }
+        public string? Country { get; set; }
         public int? CompanyId { get; set; }
-        public int? VesselId { get; set; }
-        public int? PrimaryAreaId { get; set; }
+        public bool IsCrew { get; set; }
+        public CrewRank? CrewRank { get; set; }
+        public string? SidNumber { get; set; }
+        public string? SidIssuingCountry { get; set; }
+        public string? SidIssuingAuthority { get; set; }
+        public DateTime? SidIssueDate { get; set; }
+        public DateTime? SidExpiryDate { get; set; }
     }
 }

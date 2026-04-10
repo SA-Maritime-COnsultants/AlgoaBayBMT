@@ -12,6 +12,12 @@ namespace AlgoaBayBMT.Services
 
         public async Task<OperationResult> AssignRoleAsync(int vesselId, string userId, VesselRoleType vesselRoleType, string? assignedByUserId, int? companyId, CancellationToken cancellationToken = default)
         {
+            var user = await dbContext.Users.FirstOrDefaultAsync(x => x.Id == userId && x.IsCrew, cancellationToken);
+            if (user is null)
+            {
+                return OperationResult.Failure("Crew member not found.");
+            }
+
             var exists = await dbContext.VesselRoleAssignments.AnyAsync(x =>
                 x.VesselId == vesselId && x.UserId == userId && x.VesselRoleType == vesselRoleType && x.IsActive,
                 cancellationToken);

@@ -13,7 +13,7 @@ namespace AlgoaBayBMT.Services
         UserManager<ApplicationUser> userManager,
         RoleManager<IdentityRole> roleManager) : IUserManagementService
     {
-        public Task<List<ApplicationUser>> GetUsersAsync(string? searchTerm, CancellationToken cancellationToken = default)
+        public Task<List<ApplicationUser>> GetUsersAsync(string? searchTerm, bool crewOnly = false, CancellationToken cancellationToken = default)
         {
             var query = dbContext.Users
                 .AsNoTracking()
@@ -21,6 +21,11 @@ namespace AlgoaBayBMT.Services
                 .Include(x => x.PrimaryArea)
                 .Include(x => x.Vessel)
                 .AsQueryable();
+
+            if (crewOnly)
+            {
+                query = query.Where(x => x.IsCrew);
+            }
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {

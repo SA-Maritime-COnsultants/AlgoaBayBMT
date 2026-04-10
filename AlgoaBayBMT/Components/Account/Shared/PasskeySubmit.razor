@@ -14,7 +14,7 @@
     private AntiforgeryTokenSet? tokens;
 
     [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
+    private HttpContext? HttpContext { get; set; }
 
     [Parameter]
     [EditorRequired]
@@ -35,6 +35,11 @@
 
     protected override void OnInitialized()
     {
+        if (HttpContext is null)
+        {
+            return;
+        }
+
         tokens = Services.GetService<IAntiforgery>()?.GetTokens(HttpContext);
     }
 }

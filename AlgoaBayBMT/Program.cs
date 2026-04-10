@@ -67,8 +67,11 @@ builder.Services.AddScoped<ICrewDeploymentService, CrewDeploymentService>();
 builder.Services.AddScoped<INotificationRoutingService, NotificationRoutingService>();
 builder.Services.AddScoped<IAuthorityContactService, AuthorityContactService>();
 builder.Services.AddScoped<IRoleEditorService, RoleEditorService>();
-
-builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.Configure<AlgoaBayBMT.Services.Models.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddSingleton<IEmailTemplateRenderer, EmailTemplateRenderer>();
+builder.Services.AddSingleton<ApplicationEmailService>();
+builder.Services.AddSingleton<IApplicationEmailService>(sp => sp.GetRequiredService<ApplicationEmailService>());
+builder.Services.AddSingleton<IEmailSender<ApplicationUser>>(sp => sp.GetRequiredService<ApplicationEmailService>());
 
 var app = builder.Build();
 //Register Syncfusion license https://help.syncfusion.com/common/essential-studio/licensing/how-to-generate
