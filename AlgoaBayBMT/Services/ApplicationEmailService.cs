@@ -31,7 +31,12 @@ namespace AlgoaBayBMT.Services
                 $"Use the code below to complete the password reset process:<br /><strong style='font-size:20px;letter-spacing:2px;'>{WebUtility.HtmlEncode(resetCode)}</strong>",
                 null, null, null);
 
-        public Task SendWelcomeEmailAsync(ApplicationUser user, string portalBaseUrl, CancellationToken cancellationToken = default)
+        public async Task SendWelcomeEmailAsync(ApplicationUser user, string portalBaseUrl, CancellationToken cancellationToken = default)
+        {
+            _ = await SendWelcomeEmailWithResultAsync(user, portalBaseUrl, cancellationToken);
+        }
+
+        public Task<OperationResult> SendWelcomeEmailWithResultAsync(ApplicationUser user, string portalBaseUrl, CancellationToken cancellationToken = default)
         {
             var greetingName = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : user.Email ?? "there";
             var portalLink = ResolvePortalLink(portalBaseUrl);
@@ -52,11 +57,11 @@ namespace AlgoaBayBMT.Services
             return SendHtmlEmailAsync(user.Email ?? string.Empty, "Welcome to Algoa Bay BMT", "Welcome to Algoa Bay BMT", "Your registration was successful.", body, "Open portal", portalLink, portalBaseUrl);
         }
 
-        private async Task SendHtmlEmailAsync(string toEmail, string subject, string heading, string intro, string bodyHtml, string? callToActionText, string? callToActionUrl, string? portalBaseUrl)
+        private async Task<OperationResult> SendHtmlEmailAsync(string toEmail, string subject, string heading, string intro, string bodyHtml, string? callToActionText, string? callToActionUrl, string? portalBaseUrl)
         {
             if (string.IsNullOrWhiteSpace(toEmail))
             {
-                return;
+                return OperationResult.Failure("The target email address is missing.");
             }
 
             var content = templateRenderer.Render(subject, heading, $"<p style='margin:0 0 12px;'>{WebUtility.HtmlEncode(intro)}</p><p style='margin:0;'>{bodyHtml}</p>", callToActionText, callToActionUrl, portalBaseUrl);
@@ -80,10 +85,12 @@ namespace AlgoaBayBMT.Services
                 };
 
                 await client.SendMailAsync(message);
+                return OperationResult.Success("Email sent successfully.");
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Failed to send email to {Email} with subject {Subject}", toEmail, subject);
+                return OperationResult.Failure("The email could not be sent. Check the email configuration or SMTP connection.");
             }
         }
 

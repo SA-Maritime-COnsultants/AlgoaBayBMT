@@ -177,6 +177,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     justify-content: center;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .pf-form-grid {
@@ -587,6 +588,10 @@ h1:focus {
     .auth-card-grid {
         grid-template-columns: 1fr;
     }
+
+    .pf-detail-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 /* Action button styles for Users and RoleEditor grids */
@@ -596,6 +601,24 @@ h1:focus {
     justify-content: center;
     gap: 0.375rem;
     flex-wrap: wrap;
+}
+
+.pf-grid-actions--compact {
+    flex-wrap: nowrap;
+    gap: 0.3rem;
+}
+
+.pf-icon-action {
+    display: inline-flex;
+}
+
+.pf-btn-icon.e-btn {
+    width: 2rem;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 999px;
+    justify-content: center;
 }
 
 .e-btn.e-flat.pf-btn-edit,
@@ -626,4 +649,82 @@ h1:focus {
 .e-btn.e-danger:hover {
     background: rgba(220, 38, 38, 0.2) !important;
     border-color: var(--pf-danger) !important;
+}
+
+.pf-btn-details {
+    color: var(--pf-text) !important;
+    border: 1px solid var(--pf-border) !important;
+}
+
+.pf-btn-roles {
+    color: #0f766e !important;
+    border: 1px solid rgba(15, 118, 110, 0.25) !important;
+}
+
+.pf-btn-email {
+    color: var(--pf-accent-dark) !important;
+    border: 1px solid rgba(14, 151, 170, 0.25) !important;
+}
+
+.pf-btn-delete {
+    border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+.pf-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.pf-detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--pf-border);
+    border-radius: 10px;
+    background: rgba(244, 247, 251, 0.75);
+}
+
+.pf-detail-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--pf-text-soft);
+}
+
+.pf-detail-value {
+    color: var(--pf-text);
+    font-weight: 600;
+    word-break: break-word;
+}
+
+@media (max-width: 768px) {
+    .page-shell {
+        padding: 1rem;
+    }
+
+    .page-header {
+        align-items: flex-start;
+    }
+
+    .pf-toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pf-toolbar-row .e-control,
+    .pf-toolbar-row .e-input-group,
+    .pf-toolbar-row .e-ddl,
+    .pf-toolbar-row .e-textbox,
+    .pf-toolbar-row .e-btn {
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .pf-dialog-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
 }

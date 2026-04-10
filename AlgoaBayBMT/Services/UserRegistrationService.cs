@@ -5,7 +5,6 @@ using AlgoaBayBMT.Shared.Models;
 using AlgoaBayBMT.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace AlgoaBayBMT.Services
 {
@@ -15,8 +14,6 @@ namespace AlgoaBayBMT.Services
         ApplicationDbContext dbContext,
         RoleManager<IdentityRole> roleManager) : IUserRegistrationService
     {
-        private static readonly Regex SidNumberRegex = new("^[A-Z0-9-]{6,20}$", RegexOptions.Compiled, TimeSpan.FromSeconds(1));
-
         public async Task<OperationResult<ApplicationUser>> RegisterAsync(RegistrationRequest request, CancellationToken cancellationToken = default)
         {
             if (!string.Equals(request.Password, request.ConfirmPassword, StringComparison.Ordinal))
@@ -45,16 +42,6 @@ namespace AlgoaBayBMT.Services
             }
 
             var normalizedSidNumber = request.IsCrew ? NormalizeSidNumber(request.SidNumber) : null;
-
-            if (request.IsCrew && string.IsNullOrWhiteSpace(normalizedSidNumber))
-            {
-                return OperationResult<ApplicationUser>.Failure("SID number is required for crew registrations.");
-            }
-
-            if (request.IsCrew && !string.IsNullOrWhiteSpace(normalizedSidNumber) && !SidNumberRegex.IsMatch(normalizedSidNumber))
-            {
-                return OperationResult<ApplicationUser>.Failure("SID must be 6–20 characters and may contain only letters, numbers, and hyphens.");
-            }
 
             if (request.IsCrew && string.IsNullOrWhiteSpace(request.SidIssuingCountry))
             {

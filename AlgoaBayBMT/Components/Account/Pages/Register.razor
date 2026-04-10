@@ -337,11 +337,6 @@
                 yield return new ValidationResult("Rank is required when Crew is selected.", [nameof(CrewRank)]);
             }
 
-            if (string.IsNullOrWhiteSpace(SidNumber) || !System.Text.RegularExpressions.Regex.IsMatch(SidNumber, "^[A-Z0-9-]{6,20}$"))
-            {
-                yield return new ValidationResult("SID must be 6–20 characters and may contain only letters, numbers, and hyphens.", [nameof(SidNumber)]);
-            }
-
             if (string.IsNullOrWhiteSpace(SidIssuingCountry))
             {
                 yield return new ValidationResult("SID issuing country is required when Crew is selected.", [nameof(SidIssuingCountry)]);
