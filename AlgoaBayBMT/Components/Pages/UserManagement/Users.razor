@@ -1,4 +1,5 @@
-@page "/user-management/users"
+﻿@page "/user-management/users"
+@rendermode InteractiveServer
 @attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
 @inject IUserManagementService UserManagementService

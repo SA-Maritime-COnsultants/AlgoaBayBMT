@@ -1,4 +1,5 @@
-@page "/user-management/crew-deployments"
+﻿@page "/user-management/crew-deployments"
+@rendermode InteractiveServer
 @attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
 @inject ICrewDeploymentService CrewDeploymentService

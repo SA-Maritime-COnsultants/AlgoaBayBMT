@@ -1,4 +1,5 @@
-@page "/user-management/vessel-roles"
+﻿@page "/user-management/vessel-roles"
+@rendermode InteractiveServer
 @attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
 @inject IVesselRoleAssignmentService VesselRoleAssignmentService

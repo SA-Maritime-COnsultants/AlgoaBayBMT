@@ -141,7 +141,7 @@
                 <AuthorizeView>
                     <Authorized>
                         <li class="side-nav-item">
-                            <NavLink class="side-nav-link" href="Account/Manage" @onclick="HandleNavClick">
+                            <NavLink class="side-nav-link" href="/Account/Manage" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)AccountIcon)</span>
                                 <span class="side-nav-copy">
                                     <span class="side-nav-label">My Account</span>
@@ -150,7 +150,7 @@
                             </NavLink>
                         </li>
                         <li class="side-nav-item">
-                            <form action="Account/Logout" method="post" class="side-nav-form" @formname="logout-form">
+                            <form action="/Account/Logout" method="post" class="side-nav-form" @formname="logout-form">
                                 <AntiforgeryToken />
                                 <input type="hidden" name="ReturnUrl" value="@returnUrl" />
                                 <button type="submit" class="side-nav-button" @onclick="HandleNavClick">
@@ -165,7 +165,7 @@
                     </Authorized>
                     <NotAuthorized>
                         <li class="side-nav-item">
-                            <NavLink class="side-nav-link" href="Account/Login" @onclick="HandleNavClick">
+                            <NavLink class="side-nav-link" href="/Account/Login" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)LoginIcon)</span>
                                 <span class="side-nav-copy">
                                     <span class="side-nav-label">Login</span>
@@ -174,7 +174,7 @@
                             </NavLink>
                         </li>
                         <li class="side-nav-item">
-                            <NavLink class="side-nav-link" href="Account/Register" @onclick="HandleNavClick">
+                            <NavLink class="side-nav-link" href="/Account/Register" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)RegisterIcon)</span>
                                 <span class="side-nav-copy">
                                     <span class="side-nav-label">Register</span>

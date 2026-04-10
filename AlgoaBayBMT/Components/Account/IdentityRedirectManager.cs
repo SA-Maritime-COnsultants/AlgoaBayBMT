@@ -18,12 +18,26 @@ namespace AlgoaBayBMT.Components.Account
 
         public void RedirectTo(string? uri)
         {
-            uri ??= "";
+            uri ??= "/";
+
+            if (string.IsNullOrWhiteSpace(uri))
+            {
+                uri = "/";
+            }
 
             // Prevent open redirects.
             if (!Uri.IsWellFormedUriString(uri, UriKind.Relative))
             {
                 uri = navigationManager.ToBaseRelativePath(uri);
+            }
+
+            if (string.IsNullOrWhiteSpace(uri))
+            {
+                uri = "/";
+            }
+            else if (!uri.StartsWith('/'))
+            {
+                uri = $"/{uri}";
             }
 
             navigationManager.NavigateTo(uri);
