@@ -1,35 +1,53 @@
 ﻿@page "/Account/ResendEmailConfirmation"
+@rendermode InteractiveServer
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
-@using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using AlgoaBayBMT.Data
 
 @inject UserManager<ApplicationUser> UserManager
-@inject IEmailSender<ApplicationUser> EmailSender
+@inject IApplicationEmailService EmailSender
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Resend email confirmation</PageTitle>
 
-<h1>Resend email confirmation</h1>
-<h2>Enter your email.</h2>
-<hr />
-<StatusMessage Message="@message" />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email" class="form-label">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Resend</button>
-        </EditForm>
+<div class="page-shell auth-page-shell">
+    <div class="auth-page-inner">
+        <div class="auth-brand text-center">
+            <h1 class="auth-title">Resend Confirmation</h1>
+            <div class="auth-subtitle">Enter your email address to receive a new confirmation link.</div>
+        </div>
+
+        <SfCard CssClass="pf-card-shell auth-card">
+            <CardHeader Title="Resend email confirmation" />
+            <CardContent>
+                <StatusMessage Message="@message" />
+
+                <EditForm Model="Input" FormName="resend-email-confirmation" OnValidSubmit="OnValidSubmitAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" role="alert" />
+
+                    <div class="pf-form-grid">
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Email address</label>
+                            <SfTextBox @bind-Value="Input.Email" Placeholder="name@example.com" />
+                            <ValidationMessage For="() => Input.Email" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <SfButton CssClass="e-primary e-large" IsPrimary="true" Type="ButtonType.Submit">Send confirmation email</SfButton>
+                    </div>
+                </EditForm>
+
+                <div class="text-center mt-3">
+                    <a href="/Account/Login" class="pf-link">Back to login</a>
+                </div>
+            </CardContent>
+        </SfCard>
     </div>
 </div>
 
@@ -59,7 +77,8 @@
         var callbackUrl = NavigationManager.GetUriWithQueryParameters(
             NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
             new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code });
-        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
+
+        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, callbackUrl);
 
         message = "Verification email sent. Please check your email.";
     }

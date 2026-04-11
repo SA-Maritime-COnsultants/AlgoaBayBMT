@@ -5,15 +5,18 @@ using Microsoft.Extensions.Options;
 
 namespace AlgoaBayBMT.Services
 {
-    public class EmailTemplateRenderer(IOptions<EmailSettings> options) : IEmailTemplateRenderer
+    public class EmailTemplateRenderer(IOptions<EmailSettings> options, IWebHostEnvironment env) : IEmailTemplateRenderer
     {
         private readonly EmailSettings settings = options.Value;
+        private readonly Lazy<string> _logoSrc = new(() => LoadLogoSrc(options.Value, env.WebRootPath));
 
         public string Render(string subject, string heading, string bodyHtml, string? callToActionText = null, string? callToActionUrl = null, string? portalBaseUrl = null)
         {
             var companyName = settings.CompanyName ?? settings.SenderName;
-            var logoUrl = ResolveLogoUrl(portalBaseUrl);
             var supportEmail = settings.SupportEmail ?? settings.AdminEmail ?? settings.SenderEmail;
+            var logoHtml = string.IsNullOrEmpty(_logoSrc.Value)
+                ? string.Empty
+                : $"<img src='{_logoSrc.Value}' alt='{WebUtility.HtmlEncode(companyName)} logo' style='max-width:176px;height:auto;display:block;margin:0 auto 14px;' />";
 
             var ctaHtml = string.IsNullOrWhiteSpace(callToActionText) || string.IsNullOrWhiteSpace(callToActionUrl)
                 ? string.Empty
@@ -49,7 +52,7 @@ namespace AlgoaBayBMT.Services
                 <table role='presentation' width='100%' cellspacing='0' cellpadding='0' border='0' style='max-width:720px;background:#ffffff;border-radius:18px;overflow:hidden;box-shadow:0 10px 30px rgba(15,23,42,.08);'>
                     <tr>
                         <td style='background:linear-gradient(135deg,#0b1f33,#12304d);padding:28px 32px;text-align:center;'>
-                            <img src='{WebUtility.HtmlEncode(logoUrl)}' alt='{WebUtility.HtmlEncode(companyName)} logo' style='max-width:176px;height:auto;display:block;margin:0 auto 14px;' />
+                            {logoHtml}
                             <div style='color:#ffffff;font-size:24px;font-weight:700;line-height:1.2;'>{WebUtility.HtmlEncode(companyName)}</div>
                             <div style='color:rgba(255,255,255,.8);font-size:13px;margin-top:6px;'>Bunkering Management &amp; Training</div>
                         </td>
@@ -78,24 +81,19 @@ namespace AlgoaBayBMT.Services
 """;
         }
 
-        private string ResolveLogoUrl(string? portalBaseUrl)
+        private static string LoadLogoSrc(EmailSettings settings, string webRootPath)
         {
             if (!string.IsNullOrWhiteSpace(settings.LogoUrl))
-            {
                 return settings.LogoUrl;
-            }
 
-            if (!string.IsNullOrWhiteSpace(portalBaseUrl) && Uri.TryCreate(portalBaseUrl, UriKind.Absolute, out var baseUri))
+            var logoPath = Path.Combine(webRootPath, "images", "Logo.png");
+            if (File.Exists(logoPath))
             {
-                return new Uri(baseUri, "images/logo.png").ToString();
+                var bytes = File.ReadAllBytes(logoPath);
+                return $"data:image/png;base64,{Convert.ToBase64String(bytes)}";
             }
 
-            if (!string.IsNullOrWhiteSpace(settings.BaseUrl) && Uri.TryCreate(settings.BaseUrl, UriKind.Absolute, out var configuredBaseUri))
-            {
-                return new Uri(configuredBaseUri, "images/logo.png").ToString();
-            }
-
-            return "images/logo.png";
+            return string.Empty;
         }
     }
 }

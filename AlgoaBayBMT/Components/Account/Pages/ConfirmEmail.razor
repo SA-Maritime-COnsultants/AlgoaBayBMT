@@ -13,8 +13,17 @@
 <h1>Confirm email</h1>
 <StatusMessage Message="@statusMessage" />
 
+@if (confirmFailed)
+{
+    <p>
+        If your confirmation link has expired or was invalid, you can
+        <a href="/Account/ResendEmailConfirmation">request a new confirmation email</a>.
+    </p>
+}
+
 @code {
     private string? statusMessage;
+    private bool confirmFailed;
 
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
@@ -47,11 +56,13 @@
             {
                 user.ApprovalStatus = ApprovalStatus.PendingAccountApproval;
                 await UserManager.UpdateAsync(user);
+                statusMessage = "Thank you for confirming your email. Your account is now awaiting approval.";
             }
-
-            statusMessage = result.Succeeded
-                ? "Thank you for confirming your email. Your account is now awaiting approval."
-                : "Error confirming your email.";
+            else
+            {
+                confirmFailed = true;
+                statusMessage = "Error confirming your email.";
+            }
         }
     }
 }
