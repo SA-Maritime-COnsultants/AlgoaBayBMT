@@ -4,16 +4,19 @@ using AlgoaBayBMT.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AlgoaBayBMT.Migrations
+namespace AlgoaBayBMT.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260411110850_AddCrewManagement")]
+    partial class AddCrewManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -114,9 +117,6 @@ namespace AlgoaBayBMT.Migrations
                         .HasColumnType("bit");
 
                     b.Property<int?>("PrimaryAreaId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Qualification")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("RegisteredOnUtc")
@@ -864,9 +864,6 @@ namespace AlgoaBayBMT.Migrations
                     b.Property<DateTime>("CreatedOnUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<DateTime?>("EndDateUtc")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("FlagState")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -886,9 +883,6 @@ namespace AlgoaBayBMT.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime?>("StartDateUtc")
-                        .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 

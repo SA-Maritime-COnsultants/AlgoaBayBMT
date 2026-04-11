@@ -7,5 +7,7 @@ namespace AlgoaBayBMT.Shared.Security
         public const string VesselCommand = nameof(VesselCommand);
         public const string AuditAuthorities = nameof(AuditAuthorities);
         public const string AreaScopedAccess = nameof(AreaScopedAccess);
+        public const string CrewListAccess = nameof(CrewListAccess);
+        public const string VesselCrewListsAccess = nameof(VesselCrewListsAccess);
     }
 }

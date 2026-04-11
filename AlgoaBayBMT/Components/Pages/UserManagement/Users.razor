@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
+@using Syncfusion.Blazor.Notifications
+
 @inject IUserManagementService UserManagementService
 @inject IAreaService AreaService
 @inject ICompanyService CompanyService
@@ -24,6 +26,10 @@
     {
         <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
     }
+
+    <SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+        <ToastPosition X="Right" Y="Top"></ToastPosition>
+    </SfToast>
 
     <SfCard CssClass="pf-card-shell">
         <CardHeader Title="User Directory" SubTitle="View and manage user profiles, approval state, crew metadata, and identity settings" />
@@ -72,6 +78,24 @@
                             <span>@(user?.SidNumber ?? "-")</span>
                         </Template>
                     </GridColumn>
+                    <GridColumn HeaderText="Roles" Width="200">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            @if (user is not null && UserRoles.TryGetValue(user.Id, out var userRoles) && userRoles.Count > 0)
+                            {
+                                <div class="pf-role-badge-list">
+                                    @foreach (var role in userRoles)
+                                    {
+                                        <span class="e-badge pf-role-badge">@role.Replace("_", " ")</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </Template>
+                    </GridColumn>
                     <GridColumn HeaderText="Approved" Width="150">
                         <Template>
                             @{ var user = context as ApplicationUser; }
@@ -104,28 +128,28 @@
                             @{ var user = context as ApplicationUser; }
                             @if (user is not null)
                             {
-                                <div class="pf-grid-actions pf-grid-actions--compact">
+                                <div class="pf-grid-actions pf-grid-actions--compact pf-grid-actions--no-gap">
                                     <span class="pf-icon-action" title="View Details">
-                                        <SfButton CssClass="e-flat pf-btn-details pf-btn-icon" IconCss="e-icons e-more-horizontal-1" OnClick="@(_ => OpenDetailsDialog(user))"><span class="visually-hidden">View Details</span></SfButton>
+                                        <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square" IconCss="e-icons e-more-horizontal-1" OnClick="@(_ => OpenDetailsDialog(user))"><span class="visually-hidden">View Details</span></SfButton>
                                     </span>
                                     @if (IsAdmin)
                                     {
                                         <span class="pf-icon-action" title="Edit User">
-                                            <SfButton CssClass="e-flat e-primary pf-btn-edit pf-btn-icon" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(user))"><span class="visually-hidden">Edit User</span></SfButton>
+                                            <SfButton CssClass="e-flat e-primary pf-btn-edit pf-btn-icon pf-btn-square" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(user))"><span class="visually-hidden">Edit User</span></SfButton>
                                         </span>
                                         <span class="pf-icon-action" title="Allocate Roles">
-                                            <SfButton CssClass="e-flat pf-btn-roles pf-btn-icon" IconCss="e-icons e-user" OnClick="@(_ => OpenRolesDialogAsync(user))"><span class="visually-hidden">Allocate Roles</span></SfButton>
+                                            <SfButton CssClass="e-flat pf-btn-roles pf-btn-icon pf-btn-square" IconCss="e-icons e-user" OnClick="@(_ => OpenRolesDialogAsync(user))"><span class="visually-hidden">Allocate Roles</span></SfButton>
                                         </span>
                                         <span class="pf-icon-action" title="Re-send Welcome Email">
-                                            <SfButton CssClass="e-flat pf-btn-email pf-btn-icon" IconCss="e-icons e-mail" OnClick="@(_ => ResendWelcomeEmailAsync(user))"><span class="visually-hidden">Re-send Welcome Email</span></SfButton>
+                                            <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" IconCss="e-icons e-mail" OnClick="@(_ => ResendWelcomeEmailAsync(user))"><span class="visually-hidden">Re-send Welcome Email</span></SfButton>
                                         </span>
                                         <span class="pf-icon-action" title="@(user.IsActive ? "Deactivate User" : "Activate User")">
-                                            <SfButton CssClass="@(user.IsActive ? "e-flat pf-btn-deactivate e-danger pf-btn-icon" : "e-flat pf-btn-deactivate e-warning pf-btn-icon")" IconCss="@(user.IsActive ? "e-icons e-eye-slash" : "e-icons e-eye")" OnClick="@(_ => ToggleActiveAsync(user))"><span class="visually-hidden">@(user.IsActive ? "Deactivate User" : "Activate User")</span></SfButton>
+                                            <SfButton CssClass="@(user.IsActive ? "e-flat pf-btn-deactivate e-danger pf-btn-icon pf-btn-square" : "e-flat pf-btn-deactivate e-warning pf-btn-icon pf-btn-square")" IconCss="@(user.IsActive ? "e-icons e-eye-slash" : "e-icons e-eye")" OnClick="@(_ => ToggleActiveAsync(user))"><span class="visually-hidden">@(user.IsActive ? "Deactivate User" : "Activate User")</span></SfButton>
                                         </span>
                                         @if (!user.IsActive)
                                         {
                                             <span class="pf-icon-action" title="Delete Permanently">
-                                                <SfButton CssClass="e-flat e-danger pf-btn-delete pf-btn-icon" IconCss="e-icons e-delete" OnClick="@(_ => OpenDeleteDialog(user))"><span class="visually-hidden">Delete Permanently</span></SfButton>
+                                                <SfButton CssClass="e-flat e-danger pf-btn-delete pf-btn-icon pf-btn-square" IconCss="e-icons e-delete" OnClick="@(_ => OpenDeleteDialog(user))"><span class="visually-hidden">Delete Permanently</span></SfButton>
                                             </span>
                                         }
                                     }
@@ -349,6 +373,7 @@
 
 @code {
     private List<ApplicationUser> UserItems = new();
+    private Dictionary<string, IReadOnlyList<string>> UserRoles = new();
     private List<OperationalArea> AreaItems = new();
     private List<BunkeringCompany> CompanyItems = new();
     private List<Vessel> VesselItems = new();
@@ -367,6 +392,7 @@
     private bool IsRolesDialogVisible;
     private bool IsDeleteDialogVisible;
     private bool IsAdmin;
+    private SfToast SuccessToast = default!;
 
     private static IReadOnlyList<CrewRankOption> CrewRankOptions => Enum.GetValues<CrewRank>()
         .Select(rank => new CrewRankOption { Value = rank, Text = rank.GetDisplayName() })
@@ -385,7 +411,11 @@
         ResetDialogModel();
     }
 
-    private async Task LoadAsync() => UserItems = await UserManagementService.GetUsersAsync(SearchTerm);
+    private async Task LoadAsync()
+    {
+        UserItems = await UserManagementService.GetUsersAsync(SearchTerm);
+        UserRoles = await UserManagementService.GetUserRolesBulkAsync(UserItems.Select(x => x.Id).ToList());
+    }
 
     private async Task LoadLookupsAsync()
     {
@@ -514,12 +544,14 @@
             ? await UserManagementService.UpdateUserAsync(EditModel)
             : await UserManagementService.CreateUserAsync(EditModel);
 
-        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
         if (!result.Succeeded)
         {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
             return;
         }
 
+        await ShowSuccessToastAsync(result.Message ?? (IsEditMode ? "User updated." : "User created."));
+        StatusMessage = null;
         IsDialogVisible = false;
         await LoadAsync();
         ResetDialogModel();
@@ -533,7 +565,15 @@
         }
 
         var result = await UserManagementService.SetUserActivationAsync(user.Id, !user.IsActive);
-        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (result.Succeeded)
+        {
+            await ShowSuccessToastAsync(result.Message ?? "User activation updated.");
+            StatusMessage = null;
+        }
+        else
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        }
         await LoadAsync();
     }
 
@@ -545,7 +585,15 @@
         }
 
         var result = await UserManagementService.SetUserApprovalAsync(user.Id, isApproved);
-        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (result.Succeeded)
+        {
+            await ShowSuccessToastAsync(result.Message ?? "User approval updated.");
+            StatusMessage = null;
+        }
+        else
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        }
         await LoadAsync();
     }
 
@@ -557,12 +605,14 @@
         }
 
         var result = await UserManagementService.UpdateUserRolesAsync(RolesTargetUser.Id, SelectedRoleNames);
-        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
         if (!result.Succeeded)
         {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
             return;
         }
 
+        await ShowSuccessToastAsync(result.Message ?? "Roles updated.");
+        StatusMessage = null;
         IsRolesDialogVisible = false;
         await LoadAsync();
     }
@@ -575,12 +625,14 @@
         }
 
         var result = await UserManagementService.DeleteUserAsync(DeleteTargetUser.Id);
-        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
         if (!result.Succeeded)
         {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
             return;
         }
 
+        await ShowSuccessToastAsync(result.Message ?? "User deleted.");
+        StatusMessage = null;
         IsDeleteDialogVisible = false;
         await LoadAsync();
     }
@@ -593,7 +645,15 @@
         }
 
         var result = await EmailService.SendWelcomeEmailWithResultAsync(user, NavigationManager.BaseUri);
-        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (result.Succeeded)
+        {
+            await ShowSuccessToastAsync(result.Message ?? "Welcome email resent.");
+            StatusMessage = null;
+        }
+        else
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        }
     }
 
     private async Task ResendWelcomeEmailAsync(string? userId)
@@ -637,6 +697,18 @@
     }
 
     private static string FormatDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "-";
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = message,
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 4000
+        });
+    }
 
     private sealed class RoleOption
     {

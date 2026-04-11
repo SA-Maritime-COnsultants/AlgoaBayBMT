@@ -2,6 +2,8 @@
 @rendermode InteractiveServer
 @attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
+@using Syncfusion.Blazor.Calendars
+
 @inject IVesselService VesselService
 @inject ICompanyService CompanyService
 
@@ -37,6 +39,18 @@
                     <GridColumn Field="@nameof(Vessel.ImoNumber)" HeaderText="IMO Number" Width="150" />
                     <GridColumn Field="@nameof(Vessel.CallSign)" HeaderText="Call Sign" Width="130" />
                     <GridColumn Field="@nameof(Vessel.FlagState)" HeaderText="Flag State" Width="130" />
+                    <GridColumn HeaderText="Deploy Start" Width="130">
+                        <Template>
+                            @{ var vessel = context as Vessel; }
+                            <span>@(vessel?.StartDateUtc?.ToString("yyyy-MM-dd") ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Deploy End" Width="130">
+                        <Template>
+                            @{ var vessel = context as Vessel; }
+                            <span>@(vessel?.EndDateUtc?.ToString("yyyy-MM-dd") ?? "-")</span>
+                        </Template>
+                    </GridColumn>
                     <GridColumn HeaderText="Company" Width="180">
                         <Template>
                             @{
@@ -102,8 +116,18 @@
                                     <DropDownListFieldSettings Text="Name" Value="Id" />
                                 </SfDropDownList>
                             </div>
-                            <div class="pf-col-12">
-                                <SfCheckBox Label="Active vessel" @bind-Checked="EditModel.IsActive" />
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Deployment Start Date</label>
+                                <SfDatePicker TValue="DateTime?" @bind-Value="EditModel.StartDateUtc" Format="yyyy-MM-dd" Placeholder="yyyy-MM-dd" />
+                            </div>
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Deployment End Date</label>
+                                <SfDatePicker TValue="DateTime?" @bind-Value="EditModel.EndDateUtc" Format="yyyy-MM-dd" Placeholder="yyyy-MM-dd" />
+                            </div>
+                            <div class="pf-col-4">
+                                <div style="padding-top:1.8rem;">
+                                    <SfCheckBox Label="Active vessel" @bind-Checked="EditModel.IsActive" />
+                                </div>
                             </div>
                         </div>
                     </CardContent>
@@ -176,7 +200,9 @@
             CallSign = vessel.CallSign,
             FlagState = vessel.FlagState,
             CompanyId = vessel.CompanyId,
-            IsActive = vessel.IsActive
+            IsActive = vessel.IsActive,
+            StartDateUtc = vessel.StartDateUtc,
+            EndDateUtc = vessel.EndDateUtc
         };
         DialogEditContext = new EditContext(EditModel);
         IsEditDialogVisible = true;

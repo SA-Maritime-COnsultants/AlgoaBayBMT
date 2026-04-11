@@ -5,6 +5,7 @@ using AlgoaBayBMT.Security;
 using AlgoaBayBMT.Services;
 using AlgoaBayBMT.Services.Interfaces;
 using AlgoaBayBMT.Shared.Security;
+using AlgoaBayBMT.Services.Crew;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -51,6 +52,10 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy(PolicyNames.AuditAuthorities, policy => policy.RequireRole(RoleNames.Dffe, RoleNames.Tnpa, RoleNames.Samsa));
     options.AddPolicy(PolicyNames.AreaScopedAccess, policy => policy.RequireAuthenticatedUser());
     options.AddPolicy(PolicyNames.VesselCommand, policy => policy.Requirements.Add(new VesselCommandRequirement()));
+    options.AddPolicy(PolicyNames.CrewListAccess, policy =>
+        policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager, RoleNames.Captain, RoleNames.Co));
+    options.AddPolicy(PolicyNames.VesselCrewListsAccess, policy =>
+        policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager));
 });
 
 builder.Services.AddScoped<IAuthorizationHandler, VesselCommandHandler>();
@@ -67,6 +72,9 @@ builder.Services.AddScoped<ICrewDeploymentService, CrewDeploymentService>();
 builder.Services.AddScoped<INotificationRoutingService, NotificationRoutingService>();
 builder.Services.AddScoped<IAuthorityContactService, AuthorityContactService>();
 builder.Services.AddScoped<IRoleEditorService, RoleEditorService>();
+builder.Services.AddScoped<ICrewAssignmentService, CrewAssignmentService>();
+builder.Services.AddScoped<ICrewChangeHistoryService, CrewChangeHistoryService>();
+builder.Services.AddSingleton<ITrainingComplianceNotifier, NoOpTrainingComplianceNotifier>();
 builder.Services.Configure<AlgoaBayBMT.Services.Models.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddSingleton<IEmailTemplateRenderer, EmailTemplateRenderer>();
 builder.Services.AddSingleton<ApplicationEmailService>();

@@ -13,6 +13,8 @@ namespace AlgoaBayBMT.Shared.Security
         public const string Dffe = "DFFE";
         public const string Tnpa = "TNPA";
         public const string Samsa = "SAMSA";
+        public const string Captain = "CAPTAIN";
+        public const string Co = "CO";
 
         public static readonly string[] All =
         [
@@ -26,7 +28,17 @@ namespace AlgoaBayBMT.Shared.Security
             Customer,
             Dffe,
             Tnpa,
-            Samsa
+            Samsa,
+            Captain,
+            Co
+        ];
+
+        public static readonly string[] CrewCommand =
+        [
+            Admin,
+            CompanyManager,
+            Captain,
+            Co
         ];
 
         public static readonly string[] AuditAuthorities =

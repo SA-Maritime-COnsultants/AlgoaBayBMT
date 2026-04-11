@@ -608,6 +608,116 @@ h1:focus {
     gap: 0.3rem;
 }
 
+.pf-grid-actions--no-gap {
+    gap: 0;
+}
+
+/* Square icon button variant for PortFlow-style compact grids */
+.pf-btn-square.e-btn,
+.pf-btn-icon.pf-btn-square.e-btn {
+    border-radius: 4px !important;
+    width: 2rem;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0;
+    justify-content: center;
+}
+
+/* Role badge list in grid cell */
+.pf-role-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+}
+
+.pf-role-badge.e-badge {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    background: rgba(14, 151, 170, 0.12);
+    color: #0e7c8a;
+    border: 1px solid rgba(14, 151, 170, 0.25);
+    white-space: nowrap;
+}
+
+/* Auth page inline alert boxes */
+.pf-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+}
+
+.pf-alert--success {
+    background: rgba(22, 163, 74, 0.1);
+    border: 1px solid rgba(22, 163, 74, 0.3);
+    color: #15803d;
+}
+
+.pf-alert--warning {
+    background: rgba(234, 88, 12, 0.08);
+    border: 1px solid rgba(234, 88, 12, 0.25);
+    color: #c2410c;
+}
+
+.pf-alert--info {
+    background: rgba(14, 151, 170, 0.08);
+    border: 1px solid rgba(14, 151, 170, 0.25);
+    color: #0e6e7c;
+}
+
+.pf-alert--warning-strong {
+    background: rgba(185, 28, 28, 0.08);
+    border: 1px solid rgba(185, 28, 28, 0.25);
+    color: #b91c1c;
+}
+
+.pf-summary-panel {
+    border: 1px solid var(--pf-border);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgba(244, 247, 251, 0.9), rgba(255, 255, 255, 0.98));
+    padding: 1rem;
+}
+
+.pf-dialog-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--pf-text-soft);
+    margin-bottom: 0.85rem;
+}
+
+.pf-crew-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.pf-signon-search-row {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.pf-signon-search-row .e-control,
+.pf-signon-search-row .e-input-group,
+.pf-signon-search-row .e-textbox {
+    flex: 1 1 auto;
+}
+
+.pf-signon-not-found {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .pf-icon-action {
     display: inline-flex;
 }
@@ -664,6 +774,7 @@ h1:focus {
 .pf-btn-email {
     color: var(--pf-accent-dark) !important;
     border: 1px solid rgba(14, 151, 170, 0.25) !important;
+    background: rgba(14, 151, 170, 0.08) !important;
 }
 
 .pf-btn-delete {
@@ -726,5 +837,66 @@ h1:focus {
     .pf-dialog-actions {
         flex-direction: column;
         align-items: stretch;
+    }
+
+    .pf-crew-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-signon-search-row,
+    .pf-signon-not-found {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* Crew Lists page — date + vessel filter row */
+.pf-crew-list-filter-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+
+.pf-crew-list-filter-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 180px;
+}
+
+.pf-crew-list-filter-action {
+    padding-bottom: 0.05rem;
+}
+
+/* Crew detail dialog body */
+.pf-crew-detail-body {
+    padding: 0 0.25rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.e-btn.e-flat.pf-btn-email,
+.e-btn.pf-btn-email {
+    background: rgba(14, 151, 170, 0.08) !important;
+    border-color: rgba(14, 151, 170, 0.3) !important;
+    color: var(--pf-accent-dark) !important;
+}
+
+.e-btn.e-flat.pf-btn-email:hover,
+.e-btn.pf-btn-email:hover {
+    background: rgba(14, 151, 170, 0.18) !important;
+    border-color: #0e97aa !important;
+}
+
+@media (max-width: 768px) {
+    .pf-crew-list-filter-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pf-crew-list-filter-item {
+        min-width: 100%;
     }
 }

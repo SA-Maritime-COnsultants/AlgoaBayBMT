@@ -30,7 +30,14 @@
                 <GridPageSettings PageSize="12"></GridPageSettings>
                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
                 <GridColumns>
-                    <GridColumn Field="@nameof(CrewDeployment.UserId)" HeaderText="Crew Member" Width="190" />
+                    <GridColumn HeaderText="Crew Member" Width="190">
+                        <Template>
+                            @{
+                                var deployment = context as CrewDeployment;
+                            }
+                            <span>@(deployment is not null && UserNameCache.TryGetValue(deployment.UserId, out var n) ? n : deployment?.UserId)</span>
+                        </Template>
+                    </GridColumn>
                     <GridColumn HeaderText="Vessel" Width="170">
                         <Template>
                             @{
@@ -110,6 +117,7 @@
 @code {
     private List<ApplicationUser> CrewMembers = new();
     private List<CrewOption> CrewOptions = new();
+    private Dictionary<string, string> UserNameCache = new();
     private List<Vessel> VesselItems = new();
     private List<CrewDeployment> Deployments = new();
     private List<RoleOption> RoleOptions = Enum.GetValues<VesselRoleType>().Select(role => new RoleOption { Value = role, Text = role.ToString() }).ToList();
@@ -132,6 +140,7 @@
             Value = user.Id,
             Text = user.FullName ?? user.Email ?? user.Id
         }).ToList();
+        UserNameCache = CrewOptions.ToDictionary(x => x.Value, x => x.Text);
         VesselItems = await VesselService.GetVesselsAsync();
         var selectedVesselId = Input.VesselId != 0 ? Input.VesselId : VesselItems.FirstOrDefault()?.Id ?? 0;
         Deployments = selectedVesselId == 0

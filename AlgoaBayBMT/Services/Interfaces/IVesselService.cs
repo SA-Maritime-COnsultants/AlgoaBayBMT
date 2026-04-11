@@ -5,6 +5,8 @@ namespace AlgoaBayBMT.Services.Interfaces
     public interface IVesselService
     {
         Task<List<Vessel>> GetVesselsAsync(CancellationToken cancellationToken = default);
+        Task<List<Vessel>> GetActiveVesselsAsync(CancellationToken cancellationToken = default);
+        Task<List<Vessel>> GetVesselsForDateAsync(DateTime date, int? companyId = null, CancellationToken cancellationToken = default);
         Task<OperationResult<Vessel>> CreateVesselAsync(Vessel vessel, CancellationToken cancellationToken = default);
         Task<OperationResult<Vessel>> UpdateVesselAsync(Vessel vessel, CancellationToken cancellationToken = default);
         Task<OperationResult> DeleteVesselAsync(int vesselId, CancellationToken cancellationToken = default);

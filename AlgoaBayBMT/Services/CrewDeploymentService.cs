@@ -128,8 +128,69 @@ namespace AlgoaBayBMT.Services
         public Task<List<CrewDeployment>> GetDeploymentHistoryAsync(int vesselId, CancellationToken cancellationToken = default) =>
             dbContext.CrewDeployments
                 .Where(x => x.VesselId == vesselId)
+                .Include(x => x.Vessel)
                 .Include(x => x.ComplianceSnapshots)
                 .OrderByDescending(x => x.StartedOnUtc)
                 .ToListAsync(cancellationToken);
+
+        public async Task<List<CrewListDetailModel>> GetCrewOnboardAtDateAsync(int vesselId, DateTime date, CancellationToken cancellationToken = default)
+        {
+            var deployments = await dbContext.CrewDeployments
+                .AsNoTracking()
+                .Where(x => x.VesselId == vesselId
+                         && x.StartedOnUtc <= date
+                         && (x.EndedOnUtc == null || date <= x.EndedOnUtc))
+                .Include(x => x.Vessel)
+                .ToListAsync(cancellationToken);
+
+            var userIds = deployments.Select(x => x.UserId).Distinct().ToList();
+
+            var users = await dbContext.Users
+                .AsNoTracking()
+                .Where(x => userIds.Contains(x.Id))
+                .Include(x => x.CrewMemberDetails)
+                .ToListAsync(cancellationToken);
+
+            var userMap = users.ToDictionary(x => x.Id);
+
+            var result = deployments.Select(d =>
+            {
+                userMap.TryGetValue(d.UserId, out var user);
+                var details = user?.CrewMemberDetails;
+                var seniority = OnBoardRolesExtensions.GetSeniorityOrderByName(d.OnboardRoleName);
+                return new CrewListDetailModel
+                {
+                    DeploymentId = d.Id,
+                    UserId = d.UserId,
+                    FullName = user?.FullName ?? user?.Email ?? d.UserId,
+                    Email = user?.Email ?? string.Empty,
+                    CellNo = user?.CellNo,
+                    QualificationDisplay = user?.Qualification?.GetDisplayName() ?? "Not captured",
+                    OnboardRoleName = d.OnboardRoleName,
+                    SidNumber = user?.SidNumber,
+                    SidIssueDate = user?.SidIssueDate,
+                    SidExpiryDate = user?.SidExpiryDate,
+                    SidIssuingAuthority = user?.SidIssuingAuthority,
+                    Gender = details?.Gender,
+                    DateOfBirth = details?.DateOfBirth,
+                    Nationality = details?.Nationality,
+                    PassportNumber = details?.PassportNumber,
+                    PassportExpiry = details?.PassportExpiry,
+                    EmbarkationPort = d.EmbarkationPort,
+                    EmbarkationDate = d.StartedOnUtc,
+                    ContractStartDate = d.ContractStartDate,
+                    ContractEndDate = d.ContractEndDate,
+                    MedicalFitnessExpiry = d.MedicalFitnessExpiry,
+                    VaccinationStatus = d.VaccinationStatus,
+                    VesselName = d.Vessel?.Name ?? string.Empty,
+                    SeniorityOrder = seniority
+                };
+            })
+            .OrderBy(x => x.SeniorityOrder)
+            .ThenBy(x => x.FullName)
+            .ToList();
+
+            return result;
+        }
     }
 }

@@ -9,6 +9,8 @@ namespace AlgoaBayBMT.Shared.Models
         public string? CallSign { get; set; }
         public string? FlagState { get; set; }
         public bool IsActive { get; set; } = true;
+        public DateTime? StartDateUtc { get; set; }
+        public DateTime? EndDateUtc { get; set; }
 
         public BunkeringCompany? Company { get; set; }
         public ICollection<VesselRoleAssignment> RoleAssignments { get; set; } = new List<VesselRoleAssignment>();

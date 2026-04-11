@@ -1,9 +1,15 @@
 ﻿@page "/user-management/crew-lists"
 @rendermode InteractiveServer
-@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+@attribute [Authorize(Policy = PolicyNames.VesselCrewListsAccess)]
+
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Security
+@using Syncfusion.Blazor.Calendars
+@using System.Security.Claims
 
 @inject ICrewDeploymentService CrewDeploymentService
 @inject IVesselService VesselService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Vessel Crew Lists</PageTitle>
 
@@ -11,70 +17,189 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">Vessel Crew Lists</h1>
-            <div class="page-subtitle">Review the onboard crew composition and stored compliance snapshot for a selected vessel.</div>
+            <div class="page-subtitle">Review the onboard crew composition for a vessel on a selected date.</div>
         </div>
     </div>
 
     <SfCard CssClass="pf-card-shell">
-        <CardHeader Title="Crew On Board" SubTitle="Select a vessel to inspect the current onboard crew list" />
+        <CardHeader Title="Crew On Board" SubTitle="Select a date and vessel to load the onboard crew list" />
         <CardContent>
-            <div class="pf-toolbar-row">
-                <SfDropDownList TValue="int" TItem="Vessel" DataSource="@VesselItems" @bind-Value="SelectedVesselId" Placeholder="Select vessel">
-                    <DropDownListFieldSettings Text="Name" Value="Id" />
-                </SfDropDownList>
-                <SfButton CssClass="e-primary" OnClick="@(_ => LoadCrewAsync())">Load Crew List</SfButton>
+            <div class="pf-crew-list-filter-row">
+                <div class="pf-crew-list-filter-item">
+                    <label class="pf-field-label">Select a Date:</label>
+                    <SfDatePicker TValue="DateTime" @bind-Value="SelectedDate" Format="yyyy-MM-dd"
+                                  Max="DateTime.UtcNow.Date">
+                        <DatePickerEvents TValue="DateTime" ValueChange="OnDateChangedAsync" />
+                    </SfDatePicker>
+                </div>
+                <div class="pf-crew-list-filter-item">
+                    <label class="pf-field-label">Vessel:</label>
+                    <SfDropDownList TValue="int" TItem="Vessel" DataSource="@VesselItems"
+                                    @bind-Value="SelectedVesselId"
+                                    Placeholder="Select vessel"
+                                    AllowFiltering="true">
+                        <DropDownListFieldSettings Text="Name" Value="Id" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-crew-list-filter-item pf-crew-list-filter-action">
+                    <SfButton CssClass="e-primary" OnClick="@(_ => LoadCrewAsync())">Load Crew List</SfButton>
+                </div>
             </div>
 
-            <SfGrid DataSource="@CrewList" TValue="VesselCrewListEntry" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
-                <GridPageSettings PageSize="12"></GridPageSettings>
-                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
-                <GridColumns>
-                    <GridColumn Field="@nameof(VesselCrewListEntry.UserId)" HeaderText="User ID" Width="190" />
-                    <GridColumn Field="@nameof(VesselCrewListEntry.OnboardRoleName)" HeaderText="Role" Width="170" />
-                    <GridColumn Field="@nameof(VesselCrewListEntry.ComplianceState)" HeaderText="Compliance" Width="140" />
-                    <GridColumn HeaderText="Compliance Expiry" Width="180">
-                        <Template>
-                            @{
-                                var entry = context as VesselCrewListEntry;
-                            }
-                            <span>@entry?.ComplianceExpiresOnUtc?.ToString("yyyy-MM-dd")</span>
-                        </Template>
-                    </GridColumn>
-                    <GridColumn HeaderText="Joined" Width="180">
-                        <Template>
-                            @{
-                                var entry = context as VesselCrewListEntry;
-                            }
-                            <span>@entry?.JoinedOnUtc.ToString("yyyy-MM-dd HH:mm")</span>
-                        </Template>
-                    </GridColumn>
-                    <GridColumn HeaderText="Current" Width="120" TextAlign="TextAlign.Center">
-                        <Template>
-                            @{
-                                var entry = context as VesselCrewListEntry;
-                            }
-                            <span class="badge @(entry?.IsCurrent == true ? "bg-success" : "bg-secondary")">@(entry?.IsCurrent == true ? "Onboard" : "Historic")</span>
-                        </Template>
-                    </GridColumn>
-                </GridColumns>
-            </SfGrid>
+            @if (HasLoaded)
+            {
+                @if (CrewList.Count > 0)
+                {
+                    <SfGrid DataSource="@CrewList" TValue="CrewListDetailModel" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                        <GridPageSettings PageSize="15"></GridPageSettings>
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                        <GridColumns>
+                            <GridColumn HeaderText="Full Name" Width="200">
+                                <Template>
+                                    @{ var m = context as CrewListDetailModel; }
+                                    <span>@m?.FullName</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(CrewListDetailModel.OnboardRoleName)" HeaderText="Onboard Role" Width="180" />
+                            <GridColumn Field="@nameof(CrewListDetailModel.QualificationDisplay)" HeaderText="Qualification" Width="220" />
+                            <GridColumn HeaderText="Embarkation" Width="130">
+                                <Template>
+                                    @{ var m = context as CrewListDetailModel; }
+                                    <span>@m?.EmbarkationDate?.ToString("yyyy-MM-dd")</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Contract End" Width="130">
+                                <Template>
+                                    @{ var m = context as CrewListDetailModel; }
+                                    <span>@(m?.ContractEndDate?.ToString("yyyy-MM-dd") ?? "-")</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Medical Expiry" Width="140">
+                                <Template>
+                                    @{ var m = context as CrewListDetailModel; }
+                                    <span>@(m?.MedicalFitnessExpiry?.ToString("yyyy-MM-dd") ?? "-")</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Actions" Width="80" TextAlign="TextAlign.Center">
+                                <Template>
+                                    @{ var m = context as CrewListDetailModel; }
+                                    @if (m is not null)
+                                    {
+                                        <div class="pf-grid-actions pf-grid-actions--compact pf-grid-actions--no-gap">
+                                            <span class="pf-icon-action" title="Show Details">
+                                                <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square"
+                                                          IconCss="e-icons e-eye"
+                                                          OnClick="@(_ => OpenDetailDialog(m))">
+                                                    <span class="visually-hidden">Show Details</span>
+                                                </SfButton>
+                                            </span>
+                                        </div>
+                                    }
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                }
+                else
+                {
+                    <div class="pf-empty-state">No crew members found onboard for the selected vessel and date.</div>
+                }
+            }
         </CardContent>
     </SfCard>
 </div>
 
+<!-- Crew Detail Modal -->
+<SfDialog Width="900px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDetailVisible" CssClass="pf-crew-detail-dialog">
+    <DialogTemplates>
+        <Header>Crew Member Details — @(SelectedDetail?.FullName ?? "")</Header>
+        <Content>
+            @if (SelectedDetail is not null)
+            {
+                <div class="pf-crew-detail-body">
+
+                    <div class="pf-dialog-section-title">Personal Information</div>
+                    <div class="pf-crew-summary-grid">
+                        <div class="pf-detail-item"><span class="pf-detail-label">Full Name</span><span class="pf-detail-value">@Dv(SelectedDetail.FullName)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Email</span><span class="pf-detail-value">@Dv(SelectedDetail.Email)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Cell Number</span><span class="pf-detail-value">@Dv(SelectedDetail.CellNo)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Gender</span><span class="pf-detail-value">@Dv(SelectedDetail.Gender)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Date of Birth</span><span class="pf-detail-value">@Df(SelectedDetail.DateOfBirth)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Nationality</span><span class="pf-detail-value">@Dv(SelectedDetail.Nationality)</span></div>
+                    </div>
+
+                    <div class="pf-dialog-section-title">Qualification &amp; Onboard Role</div>
+                    <div class="pf-crew-summary-grid">
+                        <div class="pf-detail-item"><span class="pf-detail-label">Qualification</span><span class="pf-detail-value">@Dv(SelectedDetail.QualificationDisplay)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Onboard Role</span><span class="pf-detail-value">@Dv(SelectedDetail.OnboardRoleName)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Vessel</span><span class="pf-detail-value">@Dv(SelectedDetail.VesselName)</span></div>
+                    </div>
+
+                    <div class="pf-dialog-section-title">SID / Seafarer Identity Document</div>
+                    <div class="pf-crew-summary-grid">
+                        <div class="pf-detail-item"><span class="pf-detail-label">SID Number</span><span class="pf-detail-value">@Dv(SelectedDetail.SidNumber)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Issue Date</span><span class="pf-detail-value">@Df(SelectedDetail.SidIssueDate)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Expiry Date</span><span class="pf-detail-value">@Df(SelectedDetail.SidExpiryDate)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Issuing Authority</span><span class="pf-detail-value">@Dv(SelectedDetail.SidIssuingAuthority)</span></div>
+                    </div>
+
+                    <div class="pf-dialog-section-title">Passport</div>
+                    <div class="pf-crew-summary-grid">
+                        <div class="pf-detail-item"><span class="pf-detail-label">Passport Number</span><span class="pf-detail-value">@Dv(SelectedDetail.PassportNumber)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Passport Expiry</span><span class="pf-detail-value">@Df(SelectedDetail.PassportExpiry)</span></div>
+                    </div>
+
+                    <div class="pf-dialog-section-title">Deployment</div>
+                    <div class="pf-crew-summary-grid">
+                        <div class="pf-detail-item"><span class="pf-detail-label">Embarkation Port</span><span class="pf-detail-value">@Dv(SelectedDetail.EmbarkationPort)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Embarkation Date</span><span class="pf-detail-value">@Df(SelectedDetail.EmbarkationDate)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Contract Start</span><span class="pf-detail-value">@Df(SelectedDetail.ContractStartDate)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Contract End</span><span class="pf-detail-value">@Df(SelectedDetail.ContractEndDate)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Medical Fitness Expiry</span><span class="pf-detail-value">@Df(SelectedDetail.MedicalFitnessExpiry)</span></div>
+                        <div class="pf-detail-item"><span class="pf-detail-label">Vaccination Status</span><span class="pf-detail-value">@Dv(SelectedDetail.VaccinationStatus)</span></div>
+                    </div>
+                </div>
+            }
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => IsDetailVisible = false)">Close</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
 @code {
     private List<Vessel> VesselItems = new();
-    private List<VesselCrewListEntry> CrewList = new();
+    private List<CrewListDetailModel> CrewList = new();
+    private DateTime SelectedDate = DateTime.UtcNow.Date;
     private int SelectedVesselId;
+    private bool HasLoaded;
+    private bool IsDetailVisible;
+    private CrewListDetailModel? SelectedDetail;
+    private int? _currentCompanyId;
 
     protected override async Task OnInitializedAsync()
     {
-        VesselItems = await VesselService.GetVesselsAsync();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userIdStr = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        await LoadVesselsForCurrentDateAsync();
         SelectedVesselId = VesselItems.FirstOrDefault()?.Id ?? 0;
-        if (SelectedVesselId != 0)
+    }
+
+    private async Task OnDateChangedAsync(Syncfusion.Blazor.Calendars.ChangedEventArgs<DateTime> args)
+    {
+        SelectedDate = args.Value;
+        await LoadVesselsForCurrentDateAsync();
+        if (!VesselItems.Any(x => x.Id == SelectedVesselId))
         {
-            await LoadCrewAsync();
+            SelectedVesselId = VesselItems.FirstOrDefault()?.Id ?? 0;
         }
+        HasLoaded = false;
+        CrewList = new();
+    }
+
+    private async Task LoadVesselsForCurrentDateAsync()
+    {
+        VesselItems = await VesselService.GetVesselsForDateAsync(SelectedDate);
     }
 
     private async Task LoadCrewAsync()
@@ -82,9 +207,20 @@
         if (SelectedVesselId == 0)
         {
             CrewList = new();
+            HasLoaded = true;
             return;
         }
 
-        CrewList = await CrewDeploymentService.GetCrewListAsync(SelectedVesselId);
+        CrewList = await CrewDeploymentService.GetCrewOnboardAtDateAsync(SelectedVesselId, SelectedDate);
+        HasLoaded = true;
     }
+
+    private void OpenDetailDialog(CrewListDetailModel model)
+    {
+        SelectedDetail = model;
+        IsDetailVisible = true;
+    }
+
+    private static string Dv(string? value) => string.IsNullOrWhiteSpace(value) ? "Not captured" : value;
+    private static string Df(DateTime? value) => value.HasValue ? value.Value.ToString("yyyy-MM-dd") : "Not captured";
 }

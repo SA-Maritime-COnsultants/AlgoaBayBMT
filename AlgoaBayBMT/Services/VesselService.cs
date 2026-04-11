@@ -10,6 +10,27 @@ namespace AlgoaBayBMT.Services
         public Task<List<Vessel>> GetVesselsAsync(CancellationToken cancellationToken = default) =>
             dbContext.Vessels.AsNoTracking().Include(x => x.Company).OrderBy(x => x.Name).ToListAsync(cancellationToken);
 
+        public Task<List<Vessel>> GetActiveVesselsAsync(CancellationToken cancellationToken = default) =>
+            dbContext.Vessels.AsNoTracking()
+                .Include(x => x.Company)
+                .Where(x => x.StartDateUtc != null && x.EndDateUtc == null)
+                .OrderBy(x => x.Name)
+                .ToListAsync(cancellationToken);
+
+        public Task<List<Vessel>> GetVesselsForDateAsync(DateTime date, int? companyId = null, CancellationToken cancellationToken = default)
+        {
+            var query = dbContext.Vessels.AsNoTracking()
+                .Include(x => x.Company)
+                .Where(x => x.StartDateUtc != null
+                         && x.StartDateUtc <= date
+                         && (x.EndDateUtc == null || date <= x.EndDateUtc));
+            if (companyId.HasValue)
+            {
+                query = query.Where(x => x.CompanyId == companyId.Value);
+            }
+            return query.OrderBy(x => x.Name).ToListAsync(cancellationToken);
+        }
+
         public Task<Vessel?> GetVesselAsync(int vesselId, CancellationToken cancellationToken = default) =>
             dbContext.Vessels.Include(x => x.Company)
                 .Include(x => x.RoleAssignments)
@@ -41,6 +62,8 @@ namespace AlgoaBayBMT.Services
             existing.FlagState = vessel.FlagState;
             existing.CompanyId = vessel.CompanyId;
             existing.IsActive = vessel.IsActive;
+            existing.StartDateUtc = vessel.StartDateUtc;
+            existing.EndDateUtc = vessel.EndDateUtc;
             existing.ModifiedOnUtc = DateTime.UtcNow;
             await dbContext.SaveChangesAsync(cancellationToken);
             return OperationResult<Vessel>.Success(existing, "Vessel updated.");

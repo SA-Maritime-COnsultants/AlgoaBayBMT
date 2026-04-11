@@ -39,7 +39,7 @@
             </div>
         </section>
 
-        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager},{RoleNames.SeniorManager},{RoleNames.Officer}")">
+        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager},{RoleNames.SeniorManager},{RoleNames.Officer},{RoleNames.Captain},{RoleNames.Co}")">
             <section class="side-nav-group" aria-labelledby="crew-mgmt-nav-heading">
                 <button id="crew-mgmt-nav-heading" type="button" class="side-nav-group-toggle"
                         @onclick="ToggleCrewManagementAsync"
@@ -50,21 +50,29 @@
                 <div class="side-nav-collapsible @(_crewMgmtExpanded ? "side-nav-collapsible--open" : "")">
                     <ul class="side-nav-items">
                         <li class="side-nav-item">
-                            <NavLink class="side-nav-link" href="user-management/crew-directory" @onclick="HandleNavClick">
-                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
-                                <span class="side-nav-copy"><span class="side-nav-label">Crew Directory</span><span class="side-nav-meta">Seafarer search</span></span>
-                            </NavLink>
-                        </li>
-                        <li class="side-nav-item">
                             <NavLink class="side-nav-link" href="user-management/crew-deployments" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)DashboardIcon)</span>
                                 <span class="side-nav-copy"><span class="side-nav-label">Crew Deployments</span><span class="side-nav-meta">Deployment history</span></span>
                             </NavLink>
                         </li>
+                        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager}")" Context="crewListsAuth">
                         <li class="side-nav-item">
                             <NavLink class="side-nav-link" href="user-management/crew-lists" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)HomeIcon)</span>
                                 <span class="side-nav-copy"><span class="side-nav-label">Vessel Crew Lists</span><span class="side-nav-meta">Onboard composition</span></span>
+                            </NavLink>
+                        </li>
+                        </AuthorizeView>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="crew/crew-list" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)OperationsIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Crew List Editor</span><span class="side-nav-meta">Sign on / sign off</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="crew/vessel-users" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)AccountIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Vessel Users</span><span class="side-nav-meta">Vessel crew accounts</span></span>
                             </NavLink>
                         </li>
                     </ul>

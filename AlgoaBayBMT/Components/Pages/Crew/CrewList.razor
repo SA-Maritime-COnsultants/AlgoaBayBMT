@@ -1,0 +1,648 @@
+@page "/crew/crew-list"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.CrewListAccess)]
+
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Notifications
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using AlgoaBayBMT.Shared.Security
+@using System.Security.Claims
+
+@inject ICrewAssignmentService CrewAssignmentService
+@inject IVesselService VesselService
+@inject IUserManagementService UserManagementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Crew List Editor</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Crew List Editor</h1>
+            <div class="page-subtitle">Manage the active crew list — sign on and sign off crew members.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@ErrorMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Vessel Selection" />
+        <CardContent>
+            @if (IsAdminOrManager)
+            {
+                <div class="pf-form-grid">
+                    <div class="pf-col-4">
+                        <label class="pf-field-label">Select Vessel</label>
+                        <SfDropDownList TValue="int?" TItem="Vessel" DataSource="@VesselItems"
+                                        @bind-Value="SelectedVesselId"
+                                        Placeholder="Select a vessel"
+                                        AllowFiltering="true">
+                            <DropDownListFieldSettings Text="Name" Value="Id" />
+                            <DropDownListEvents TValue="int?" TItem="Vessel" ValueChange="OnVesselChangedAsync" />
+                        </SfDropDownList>
+                    </div>
+                </div>
+            }
+            else
+            {
+                @if (CurrentVessel is not null)
+                {
+                    <div class="pf-detail-grid">
+                        <div class="pf-detail-item">
+                            <span class="pf-detail-label">Assigned Vessel</span>
+                            <span class="pf-detail-value">@CurrentVessel.Name</span>
+                        </div>
+                        <div class="pf-detail-item">
+                            <span class="pf-detail-label">IMO Number</span>
+                            <span class="pf-detail-value">@(CurrentVessel.ImoNumber)</span>
+                        </div>
+                        <div class="pf-detail-item">
+                            <span class="pf-detail-label">Flag State</span>
+                            <span class="pf-detail-value">@(CurrentVessel.FlagState ?? "-")</span>
+                        </div>
+                        <div class="pf-detail-item">
+                            <span class="pf-detail-label">Call Sign</span>
+                            <span class="pf-detail-value">@(CurrentVessel.CallSign ?? "-")</span>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="pf-empty-state">You do not have an active vessel assignment. Contact your administrator.</div>
+                }
+            }
+        </CardContent>
+    </SfCard>
+
+    @if (SelectedVesselId.HasValue)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardHeader Title="Active Crew List" SubTitle="@($"Current crew on board — {ActiveCrew.Count} member(s)")" />
+            <CardContent>
+                <div class="pf-toolbar-row">
+                    @if (CanManageCrew)
+                    {
+                        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenSignOnDialog())">Sign On Crew</SfButton>
+                    }
+                </div>
+
+                <SfGrid DataSource="@ActiveCrew" TValue="CrewDeployment" AllowSorting="true" AllowFiltering="true" EnableHover="true">
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                    <GridColumns>
+                        <GridColumn HeaderText="Name" Width="180">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                @{ var user = dep is not null ? GetUser(dep.UserId) : null; }
+                                <span>@(user?.FullName ?? user?.Email ?? dep?.UserId)</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Qualification" Width="220">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                @{ var user = dep is not null ? GetUser(dep.UserId) : null; }
+                                <span>@GetQualificationDisplay(user)</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="OnboardRoleName" HeaderText="OnBoard Role" Width="180" />
+                        <GridColumn HeaderText="Embarkation" Width="140">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                <span>@FormatDate(dep?.StartedOnUtc)</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Port" Width="140">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                <span>@(dep?.EmbarkationPort ?? "-")</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Contract End" Width="130">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                <span>@FormatDate(dep?.ContractEndDate)</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Medical" Width="130">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                <span class="e-badge @MedicalBadgeClass(dep?.MedicalFitnessExpiry)">
+                                    @MedicalBadgeText(dep?.MedicalFitnessExpiry)
+                                </span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Compliance" Width="130" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                <span class="e-badge @ComplianceBadgeClass(dep)">@ComplianceBadgeText(dep)</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Actions" Width="100" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var dep = context as CrewDeployment; }
+                                @if (dep is not null && CanManageCrew)
+                                {
+                                    <div class="pf-grid-actions pf-grid-actions--compact pf-grid-actions--no-gap">
+                                        <span class="pf-icon-action" title="Sign Off">
+                                            <SfButton CssClass="e-flat e-danger pf-btn-deactivate pf-btn-icon pf-btn-square"
+                                                      IconCss="e-icons e-eye-slash"
+                                                      OnClick="@(_ => OpenSignOffDialog(dep))">
+                                                <span class="visually-hidden">Sign Off</span>
+                                            </SfButton>
+                                        </span>
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </CardContent>
+        </SfCard>
+    }
+</div>
+
+<SfDialog Width="980px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsSignOnVisible">
+    <DialogTemplates>
+        <Header>Sign On Crew Member</Header>
+        <Content>
+            <SfCard CssClass="pf-card-shell">
+                <CardContent>
+                    <div class="pf-form-grid">
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Search Crew Member</label>
+                            <div class="pf-signon-search-row">
+                                <SfTextBox Placeholder="Name, email, SID or passport number" @bind-Value="CrewSearchTerm" />
+                                <SfButton CssClass="e-primary" OnClick="@(_ => SearchUnassignedAsync())">Search</SfButton>
+                            </div>
+                        </div>
+
+                        @if (UnassignedCrew.Count > 0)
+                        {
+                            <div class="pf-col-12">
+                                <label class="pf-field-label">Select Crew Member</label>
+                                <SfDropDownList TValue="string" TItem="ApplicationUser"
+                                                DataSource="@UnassignedCrew"
+                                                @bind-Value="SignOnModel.UserId"
+                                                Placeholder="Select crew member"
+                                                AllowFiltering="true">
+                                    <DropDownListFieldSettings Text="FullName" Value="Id" />
+                                    <DropDownListEvents TValue="string" TItem="ApplicationUser" ValueChange="OnCrewMemberSelectedAsync" />
+                                </SfDropDownList>
+                            </div>
+                        }
+                        else if (CrewSearchPerformed)
+                        {
+                            <div class="pf-col-12">
+                                <div class="pf-alert pf-alert--warning pf-signon-not-found">
+                                    <div>
+                                        <strong>Crew member not found.</strong><br />
+                                        No unassigned crew member was found matching this search. Add the crew member and continue the sign-on workflow without leaving this vessel context.
+                                    </div>
+                                    <SfButton CssClass="e-warning" IconCss="e-icons e-add" OnClick="@(_ => IsAddCrewVisible = true)">Add New Crew Member</SfButton>
+                                </div>
+                            </div>
+                        }
+
+                        @if (SelectedCrewMember is not null)
+                        {
+                            <div class="pf-col-12">
+                                <div class="pf-summary-panel">
+                                    <div class="pf-dialog-section-title">Found Crew Member Details</div>
+                                    <div class="pf-crew-summary-grid">
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Full Name</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.FullName)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Qualification</span><span class="pf-detail-value">@GetQualificationDisplay(SelectedCrewMember)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Selected OnBoard Role</span><span class="pf-detail-value">@SignOnModel.OnBoardRole.GetDisplayName()</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">SID Number</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.SidNumber)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">SID Expiry Date</span><span class="pf-detail-value">@FormatDate(SelectedCrewMember.SidExpiryDate)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">SID Issue Date</span><span class="pf-detail-value">@FormatDate(SelectedCrewMember.SidIssueDate)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">SID Issuing Authority</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.SidIssuingAuthority)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Cell No</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.CellNo)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Email</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.Email)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Gender</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.CrewMemberDetails?.Gender)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Date Of Birth</span><span class="pf-detail-value">@FormatDate(SelectedCrewMember.CrewMemberDetails?.DateOfBirth)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Nationality</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.CrewMemberDetails?.Nationality)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Passport Number</span><span class="pf-detail-value">@DisplayValue(SelectedCrewMember.CrewMemberDetails?.PassportNumber)</span></div>
+                                        <div class="pf-detail-item"><span class="pf-detail-label">Passport Expiry</span><span class="pf-detail-value">@FormatDate(SelectedCrewMember.CrewMemberDetails?.PassportExpiry)</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Qualification</label>
+                            <SfDropDownList TValue="SeagoingCommercialQualification?" TItem="SeagoingCommercialQualificationOption" DataSource="@QualificationOptions" @bind-Value="SignOnModel.Qualification" Placeholder="Select qualification">
+                                <DropDownListFieldSettings Text="Text" Value="Value" />
+                            </SfDropDownList>
+                            @if (ShowSignOnValidation && SignOnModel.Qualification is null)
+                            {
+                                <div class="text-danger mt-1">Qualification is required.</div>
+                            }
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">OnBoard Role</label>
+                            <SfDropDownList TValue="OnBoardRoles?" TItem="OnBoardRoleOption" DataSource="@OnBoardRoleOptions" @bind-Value="SignOnModel.OnBoardRole" Placeholder="Select onboard role">
+                                <DropDownListFieldSettings Text="Text" Value="Value" />
+                            </SfDropDownList>
+                            @if (ShowSignOnValidation && SignOnModel.OnBoardRole is null)
+                            {
+                                <div class="text-danger mt-1">OnBoard Role is required.</div>
+                            }
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Duties</label>
+                            <SfTextBox Placeholder="Optional duties description" @bind-Value="SignOnModel.Duties" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Embarkation Port</label>
+                            <SfTextBox Placeholder="Port of embarkation" @bind-Value="SignOnModel.EmbarkationPort" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Embarkation Date</label>
+                            <SfDatePicker TValue="DateTime" @bind-Value="SignOnModel.EmbarkationDate" Format="yyyy-MM-dd" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Contract Start</label>
+                            <SfDatePicker TValue="DateTime" @bind-Value="SignOnModel.ContractStartDate" Format="yyyy-MM-dd" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Contract End</label>
+                            <SfDatePicker TValue="DateTime" @bind-Value="SignOnModel.ContractEndDate" Format="yyyy-MM-dd" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Medical Fitness Expiry</label>
+                            <SfDatePicker TValue="DateTime?" @bind-Value="SignOnModel.MedicalFitnessExpiry" Format="yyyy-MM-dd" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Vaccination Status</label>
+                            <SfTextBox Placeholder="e.g. Fully vaccinated" @bind-Value="SignOnModel.VaccinationStatus" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Notes</label>
+                            <SfTextBox Placeholder="Optional notes" @bind-Value="SignOnModel.Notes" />
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(MedicalWarningMessage))
+                        {
+                            <div class="pf-col-12">
+                                <div class="pf-alert @(MedicalWarningIsExpired ? "pf-alert--warning-strong" : "pf-alert--warning")">
+                                    <div>
+                                        <strong>Medical Fitness Warning</strong><br />
+                                        @MedicalWarningMessage
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </CardContent>
+            </SfCard>
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => IsSignOnVisible = false)">Cancel</SfButton>
+                <SfButton CssClass="e-primary" OnClick="@(_ => ConfirmSignOnAsync())">Sign On</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<AddCrewMemberDialog Visible="@IsAddCrewVisible"
+                     VisibleChanged="OnAddCrewDialogVisibleChangedAsync"
+                     CompanyId="@CurrentVessel?.CompanyId"
+                     VesselId="@SelectedVesselId"
+                     ApprovedByUserId="@CurrentUserId"
+                     CrewMemberCreated="OnCrewMemberCreatedAsync" />
+
+<SfDialog Width="620px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsSignOffVisible">
+    <DialogTemplates>
+        <Header>Sign Off Crew Member</Header>
+        <Content>
+            @if (SignOffTarget is not null)
+            {
+                <div class="pf-empty-state mb-3">
+                    Signing off <strong>@(GetUser(SignOffTarget.UserId)?.FullName ?? SignOffTarget.UserId)</strong>
+                    — <em>@SignOffTarget.OnboardRoleName</em>
+                </div>
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Disembarkation Port</label>
+                                <SfTextBox Placeholder="Port of disembarkation" @bind-Value="SignOffModel.DisembarkationPort" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Disembarkation Date</label>
+                                <SfDatePicker TValue="DateTime" @bind-Value="SignOffModel.DisembarkationDate" Format="yyyy-MM-dd" />
+                            </div>
+                            <div class="pf-col-12">
+                                <label class="pf-field-label">Reason</label>
+                                <SfTextBox Placeholder="e.g. End of contract, repatriation" @bind-Value="SignOffModel.DisembarkationReason" />
+                            </div>
+                            <div class="pf-col-12">
+                                <label class="pf-field-label">Notes</label>
+                                <SfTextBox Placeholder="Optional notes" @bind-Value="SignOffModel.Notes" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </SfCard>
+            }
+            <div class="pf-dialog-actions">
+                <SfButton OnClick="@(_ => IsSignOffVisible = false)">Cancel</SfButton>
+                <SfButton CssClass="e-danger" OnClick="@(_ => ConfirmSignOffAsync())">Confirm Sign Off</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private SfToast SuccessToast = default!;
+    private List<Vessel> VesselItems = new();
+    private List<CrewDeployment> ActiveCrew = new();
+    private Dictionary<string, ApplicationUser> UserCache = new();
+    private List<ApplicationUser> UnassignedCrew = new();
+    private ApplicationUser? SelectedCrewMember;
+    private Vessel? CurrentVessel;
+    private int? SelectedVesselId;
+    private string? ErrorMessage;
+    private string CurrentUserId = string.Empty;
+    private bool IsAdminOrManager;
+    private bool CanManageCrew;
+    private bool IsSignOnVisible;
+    private bool IsSignOffVisible;
+    private bool IsAddCrewVisible;
+    private bool CrewSearchPerformed;
+    private bool ShowSignOnValidation;
+    private string? CrewSearchTerm;
+    private SignOnRequest SignOnModel = new();
+    private SignOffRequest SignOffModel = new();
+    private CrewDeployment? SignOffTarget;
+
+    private IReadOnlyList<SeagoingCommercialQualificationOption> QualificationOptions => SeagoingCommercialQualificationExtensions.All;
+    private IReadOnlyList<OnBoardRoleOption> OnBoardRoleOptions => OnBoardRolesExtensions.All;
+    private string? MedicalWarningMessage => BuildMedicalWarningMessage();
+    private bool MedicalWarningIsExpired => SignOnModel.MedicalFitnessExpiry.HasValue && SignOnModel.MedicalFitnessExpiry.Value.Date < DateTime.Today;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        CurrentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        IsAdminOrManager = authState.User.IsInRole(RoleNames.Admin) || authState.User.IsInRole(RoleNames.CompanyManager);
+        CanManageCrew = authState.User.IsInRole(RoleNames.Admin)
+            || authState.User.IsInRole(RoleNames.CompanyManager)
+            || authState.User.IsInRole(RoleNames.Captain)
+            || authState.User.IsInRole(RoleNames.Co);
+
+        if (IsAdminOrManager)
+        {
+            VesselItems = await VesselService.GetActiveVesselsAsync();
+        }
+        else
+        {
+            var vesselId = await CrewAssignmentService.GetCurrentVesselIdAsync(CurrentUserId);
+            if (vesselId.HasValue)
+            {
+                CurrentVessel = await VesselService.GetVesselAsync(vesselId.Value);
+                SelectedVesselId = vesselId;
+                await LoadCrewListAsync();
+            }
+        }
+    }
+
+    private async Task OnVesselChangedAsync(ChangeEventArgs<int?, Vessel> args)
+    {
+        SelectedVesselId = args.Value;
+        if (SelectedVesselId.HasValue)
+        {
+            CurrentVessel = await VesselService.GetVesselAsync(SelectedVesselId.Value);
+            await LoadCrewListAsync();
+        }
+        else
+        {
+            ActiveCrew.Clear();
+            CurrentVessel = null;
+        }
+    }
+
+    private async Task LoadCrewListAsync()
+    {
+        if (!SelectedVesselId.HasValue)
+        {
+            return;
+        }
+
+        ActiveCrew = await CrewAssignmentService.GetActiveCrewAsync(SelectedVesselId.Value);
+        var userIds = ActiveCrew.Select(x => x.UserId).Distinct().ToList();
+        var users = await UserManagementService.GetUsersAsync(null);
+        UserCache = users.Where(u => userIds.Contains(u.Id)).ToDictionary(u => u.Id);
+    }
+
+    private ApplicationUser? GetUser(string userId) =>
+        UserCache.TryGetValue(userId, out var user) ? user : null;
+
+    private void OpenSignOnDialog()
+    {
+        ErrorMessage = null;
+        ShowSignOnValidation = false;
+        SignOnModel = new SignOnRequest
+        {
+            VesselId = SelectedVesselId!.Value,
+            EmbarkationDate = DateTime.Today,
+            ContractStartDate = DateTime.Today,
+            ContractEndDate = DateTime.Today.AddMonths(6),
+            DeployedByUserId = CurrentUserId
+        };
+        SelectedCrewMember = null;
+        UnassignedCrew.Clear();
+        CrewSearchTerm = null;
+        CrewSearchPerformed = false;
+        IsSignOnVisible = true;
+    }
+
+    private void OpenSignOffDialog(CrewDeployment dep)
+    {
+        SignOffTarget = dep;
+        SignOffModel = new SignOffRequest
+        {
+            DeploymentId = dep.Id,
+            DisembarkationDate = DateTime.Today,
+            SignedOffByUserId = CurrentUserId
+        };
+        IsSignOffVisible = true;
+    }
+
+    private async Task SearchUnassignedAsync()
+    {
+        UnassignedCrew = await CrewAssignmentService.SearchUnassignedCrewAsync(CrewSearchTerm);
+        CrewSearchPerformed = true;
+        SelectedCrewMember = null;
+        SignOnModel.UserId = string.Empty;
+
+        if (UnassignedCrew.Count == 1)
+        {
+            await SelectCrewMemberAsync(UnassignedCrew[0].Id);
+        }
+    }
+
+    private Task OnCrewMemberSelectedAsync(ChangeEventArgs<string, ApplicationUser> args) => SelectCrewMemberAsync(args.Value);
+
+    private Task SelectCrewMemberAsync(string? userId)
+    {
+        SelectedCrewMember = UnassignedCrew.FirstOrDefault(x => x.Id == userId);
+        SignOnModel.UserId = userId ?? string.Empty;
+
+        if (SelectedCrewMember is not null && SignOnModel.Qualification is null)
+        {
+            SignOnModel.Qualification = SelectedCrewMember.Qualification ?? SelectedCrewMember.CrewRank.ToQualification();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmSignOnAsync()
+    {
+        ShowSignOnValidation = true;
+
+        if (string.IsNullOrWhiteSpace(SignOnModel.UserId)
+            || SignOnModel.Qualification is null
+            || SignOnModel.OnBoardRole is null
+            || string.IsNullOrWhiteSpace(SignOnModel.EmbarkationPort))
+        {
+            ErrorMessage = "Please complete all required fields: crew member, qualification, onboard role, and embarkation port.";
+            return;
+        }
+
+        SignOnModel.OnboardRoleName = SignOnModel.OnBoardRole.Value.GetDisplayName();
+
+        var result = await CrewAssignmentService.SignOnAsync(SignOnModel);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        ErrorMessage = null;
+        IsSignOnVisible = false;
+        await ShowSuccessToastAsync(result.Message ?? "Crew member signed on.");
+        await LoadCrewListAsync();
+    }
+
+    private async Task OnCrewMemberCreatedAsync(ApplicationUser crewMember)
+    {
+        await SearchUnassignedAsync();
+        if (UnassignedCrew.All(x => x.Id != crewMember.Id))
+        {
+            UnassignedCrew.Add(crewMember);
+        }
+
+        await SelectCrewMemberAsync(crewMember.Id);
+        IsAddCrewVisible = false;
+        ErrorMessage = null;
+        await ShowSuccessToastAsync("Crew member created and ready for sign on.");
+    }
+
+    private Task OnAddCrewDialogVisibleChangedAsync(bool visible)
+    {
+        IsAddCrewVisible = visible;
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmSignOffAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SignOffModel.DisembarkationPort))
+        {
+            ErrorMessage = "Disembarkation port is required.";
+            return;
+        }
+
+        var result = await CrewAssignmentService.SignOffAsync(SignOffModel);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        ErrorMessage = null;
+        IsSignOffVisible = false;
+        SignOffTarget = null;
+        await ShowSuccessToastAsync(result.Message ?? "Crew member signed off.");
+        await LoadCrewListAsync();
+    }
+
+    private async Task ShowSuccessToastAsync(string message) =>
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = message,
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 4000
+        });
+
+    private static string FormatDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "Not captured";
+
+    private static string DisplayValue(string? value) => string.IsNullOrWhiteSpace(value) ? "Not captured" : value;
+
+    private static string GetQualificationDisplay(ApplicationUser? user) =>
+        user?.Qualification?.GetDisplayName()
+        ?? user?.CrewRank.ToQualification().GetDisplayName()
+        ?? "Not captured";
+
+    private string? BuildMedicalWarningMessage()
+    {
+        if (!SignOnModel.MedicalFitnessExpiry.HasValue)
+        {
+            return null;
+        }
+
+        if (SignOnModel.MedicalFitnessExpiry.Value.Date < DateTime.Today)
+        {
+            return "Medical fitness has already expired.";
+        }
+
+        if (SignOnModel.ContractEndDate.Date >= SignOnModel.MedicalFitnessExpiry.Value.Date)
+        {
+            return "Medical fitness expires before the end of the contract.";
+        }
+
+        return null;
+    }
+
+    private static string MedicalBadgeClass(DateTime? expiry)
+    {
+        if (!expiry.HasValue) return "e-badge e-badge-secondary";
+        var days = (expiry.Value - DateTime.Today).TotalDays;
+        return days < 0 ? "e-badge e-badge-danger" : days < 30 ? "e-badge e-badge-warning" : "e-badge e-badge-success";
+    }
+
+    private static string MedicalBadgeText(DateTime? expiry)
+    {
+        if (!expiry.HasValue) return "N/A";
+        var days = (expiry.Value - DateTime.Today).TotalDays;
+        return days < 0 ? "Expired" : days < 30 ? "Expiring" : "Valid";
+    }
+
+    private static string ComplianceBadgeClass(CrewDeployment? dep)
+    {
+        if (dep is null) return "e-badge e-badge-secondary";
+        if (dep.MedicalFitnessExpiry.HasValue && dep.MedicalFitnessExpiry.Value < DateTime.Today)
+            return "e-badge e-badge-danger";
+        if (dep.ContractEndDate.HasValue && dep.ContractEndDate.Value < DateTime.Today.AddDays(14))
+            return "e-badge e-badge-warning";
+        return "e-badge e-badge-success";
+    }
+
+    private static string ComplianceBadgeText(CrewDeployment? dep)
+    {
+        if (dep is null) return "Unknown";
+        if (dep.MedicalFitnessExpiry.HasValue && dep.MedicalFitnessExpiry.Value < DateTime.Today)
+            return "Non-Compliant";
+        if (dep.ContractEndDate.HasValue && dep.ContractEndDate.Value < DateTime.Today.AddDays(14))
+            return "Expiring";
+        return "Compliant";
+    }
+}

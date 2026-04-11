@@ -12,6 +12,14 @@ namespace AlgoaBayBMT.Shared.Models
         public DateTime? EndedOnUtc { get; set; }
         public string? DeployedByUserId { get; set; }
         public string? Notes { get; set; }
+        public string? EmbarkationPort { get; set; }
+        public string? DisembarkationPort { get; set; }
+        public string? DisembarkationReason { get; set; }
+        public DateTime? ContractStartDate { get; set; }
+        public DateTime? ContractEndDate { get; set; }
+        public DateTime? MedicalFitnessExpiry { get; set; }
+        public string? VaccinationStatus { get; set; }
+        public string? Duties { get; set; }
 
         public Vessel? Vessel { get; set; }
         public ICollection<CrewDeploymentComplianceSnapshot> ComplianceSnapshots { get; set; } = new List<CrewDeploymentComplianceSnapshot>();

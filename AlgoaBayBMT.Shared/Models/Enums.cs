@@ -88,4 +88,205 @@ namespace AlgoaBayBMT.Shared.Models
         [Display(Name = "Master")]
         Master = 12
     }
+
+    public enum SeagoingCommercialQualification
+    {
+        [Display(Name = "Master Foreign Going")]
+        MasterForeignGoing = 0,
+
+        [Display(Name = "Chief Officer Foreign Going")]
+        ChiefOfficerForeignGoing = 1,
+
+        [Display(Name = "Officer in Charge of a Navigational Watch")]
+        OfficerInChargeNavigationalWatch = 2,
+
+        [Display(Name = "Able Seafarer Deck")]
+        AbleSeafarerDeck = 3,
+
+        [Display(Name = "Rating Forming Part of a Navigational Watch")]
+        RatingFormingPartNavigationalWatch = 4,
+
+        [Display(Name = "Chief Engineer Officer")]
+        ChiefEngineerOfficer = 5,
+
+        [Display(Name = "Second Engineer Officer")]
+        SecondEngineerOfficer = 6,
+
+        [Display(Name = "Officer in Charge of an Engineering Watch")]
+        OfficerInChargeEngineeringWatch = 7,
+
+        [Display(Name = "Electro-Technical Officer")]
+        ElectroTechnicalOfficer = 8,
+
+        [Display(Name = "Electro-Technical Rating")]
+        ElectroTechnicalRating = 9,
+
+        [Display(Name = "Able Seafarer Engine")]
+        AbleSeafarerEngine = 10,
+
+        [Display(Name = "Rating Forming Part of an Engineering Watch")]
+        RatingFormingPartEngineeringWatch = 11,
+
+        [Display(Name = "Bosun")]
+        BosunQualification = 12,
+
+        [Display(Name = "Pumpman")]
+        PumpmanQualification = 13,
+
+        [Display(Name = "Deck Cadet")]
+        DeckCadetQualification = 14,
+
+        [Display(Name = "Engine Cadet")]
+        EngineCadetQualification = 15,
+
+        [Display(Name = "General Purpose Rating")]
+        GeneralPurposeRating = 16,
+
+        [Display(Name = "Catering Rating")]
+        CateringRating = 17,
+
+        [Display(Name = "Ordinary Seaman")]
+        OrdinarySeaman = 18,
+
+        [Display(Name = "Wiper")]
+        Wiper = 19,
+
+        [Display(Name = "Motorman")]
+        Motorman = 20,
+
+        [Display(Name = "Fitter")]
+        Fitter = 21,
+
+        [Display(Name = "Refrigeration Engineer")]
+        RefrigerationEngineer = 22,
+
+        [Display(Name = "Electrician")]
+        Electrician = 23,
+
+        [Display(Name = "Crane Operator")]
+        CraneOperator = 24,
+
+        [Display(Name = "Pumpman Tanker")]
+        PumpmanTanker = 25,
+
+        [Display(Name = "Other")]
+        Other = 26
+    }
+
+    public enum OnBoardRoles
+    {
+        [Display(Name = "Captain")]
+        Captain = 0,
+
+        [Display(Name = "Chief Officer")]
+        ChiefOfficer = 1,
+
+        [Display(Name = "Second Officer")]
+        SecondOfficer = 2,
+
+        [Display(Name = "Third Officer")]
+        ThirdOfficer = 3,
+
+        [Display(Name = "Junior Officer")]
+        JuniorOfficer = 4,
+
+        [Display(Name = "Deck Cadet")]
+        DeckCadet = 5,
+
+        [Display(Name = "Bosun")]
+        Bosun = 6,
+
+        [Display(Name = "Able Bodied Seaman")]
+        AbleBodiedSeaman = 7,
+
+        [Display(Name = "Ordinary Seaman")]
+        OrdinarySeaman = 8,
+
+        [Display(Name = "Deck Rating")]
+        DeckRating = 9,
+
+        [Display(Name = "Pumpman")]
+        Pumpman = 10,
+
+        [Display(Name = "Chief Engineer")]
+        ChiefEngineer = 11,
+
+        [Display(Name = "Second Engineer")]
+        SecondEngineer = 12,
+
+        [Display(Name = "Third Engineer")]
+        ThirdEngineer = 13,
+
+        [Display(Name = "Fourth Engineer")]
+        FourthEngineer = 14,
+
+        [Display(Name = "Junior Engineer")]
+        JuniorEngineer = 15,
+
+        [Display(Name = "Engine Cadet")]
+        EngineCadet = 16,
+
+        [Display(Name = "Electro-Technical Officer")]
+        ElectroTechnicalOfficer = 17,
+
+        [Display(Name = "Electrician")]
+        Electrician = 18,
+
+        [Display(Name = "Motorman")]
+        Motorman = 19,
+
+        [Display(Name = "Oiler")]
+        Oiler = 20,
+
+        [Display(Name = "Wiper")]
+        Wiper = 21,
+
+        [Display(Name = "Fitter")]
+        Fitter = 22,
+
+        [Display(Name = "Refrigeration Engineer")]
+        RefrigerationEngineer = 23,
+
+        [Display(Name = "Chief Cook")]
+        ChiefCook = 24,
+
+        [Display(Name = "Cook")]
+        Cook = 25,
+
+        [Display(Name = "Steward")]
+        Steward = 26,
+
+        [Display(Name = "Messman")]
+        Messman = 27,
+
+        [Display(Name = "POAC")]
+        Poac = 28,
+
+        [Display(Name = "Crane Operator")]
+        CraneOperator = 29,
+
+        [Display(Name = "Cargo Officer")]
+        CargoOfficer = 30,
+
+        [Display(Name = "Safety Officer")]
+        SafetyOfficer = 31,
+
+        [Display(Name = "Security Officer")]
+        SecurityOfficer = 32,
+
+        [Display(Name = "Environmental Officer")]
+        EnvironmentalOfficer = 33,
+
+        [Display(Name = "Medic")]
+        Medic = 34,
+
+        [Display(Name = "General Purpose Hand")]
+        GeneralPurposeHand = 35,
+
+        [Display(Name = "Trainee")]
+        Trainee = 36,
+
+        [Display(Name = "Other")]
+        Other = 37
+    }
 }

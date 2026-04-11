@@ -9,5 +9,6 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<OperationResult> EndDeploymentAsync(int deploymentId, DateTime endedOnUtc, CancellationToken cancellationToken = default);
         Task<List<VesselCrewListEntry>> GetCrewListAsync(int vesselId, DateTime? asOfUtc = null, CancellationToken cancellationToken = default);
         Task<List<CrewDeployment>> GetDeploymentHistoryAsync(int vesselId, CancellationToken cancellationToken = default);
+        Task<List<CrewListDetailModel>> GetCrewOnboardAtDateAsync(int vesselId, DateTime date, CancellationToken cancellationToken = default);
     }
 }

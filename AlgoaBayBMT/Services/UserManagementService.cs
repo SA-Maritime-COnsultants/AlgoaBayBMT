@@ -5,6 +5,8 @@ using AlgoaBayBMT.Shared.Models;
 using AlgoaBayBMT.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
 namespace AlgoaBayBMT.Services
@@ -21,6 +23,7 @@ namespace AlgoaBayBMT.Services
             var query = dbContext.Users
                 .AsNoTracking()
                 .Include(x => x.Company)
+                .Include(x => x.CrewMemberDetails)
                 .Include(x => x.PrimaryArea)
                 .Include(x => x.Vessel)
                 .AsQueryable();
@@ -38,7 +41,8 @@ namespace AlgoaBayBMT.Services
                     (x.RequestedRole != null && x.RequestedRole.Contains(searchTerm)) ||
                     (x.Country != null && x.Country.Contains(searchTerm)) ||
                     (x.CellNo != null && x.CellNo.Contains(searchTerm)) ||
-                    (x.SidNumber != null && x.SidNumber.Contains(searchTerm)));
+                    (x.SidNumber != null && x.SidNumber.Contains(searchTerm)) ||
+                    (x.CrewMemberDetails != null && x.CrewMemberDetails.PassportNumber != null && x.CrewMemberDetails.PassportNumber.Contains(searchTerm)));
             }
 
             return query.OrderBy(x => x.FullName).ThenBy(x => x.Email).ToListAsync(cancellationToken);
@@ -496,6 +500,160 @@ namespace AlgoaBayBMT.Services
 
             var normalized = sidNumber.Trim().ToUpperInvariant();
             return normalized.Any(char.IsWhiteSpace) ? null : normalized;
+        }
+
+        public async Task<Dictionary<string, IReadOnlyList<string>>> GetUserRolesBulkAsync(
+            IReadOnlyList<string> userIds,
+            CancellationToken cancellationToken = default)
+        {
+            if (userIds.Count == 0)
+            {
+                return new Dictionary<string, IReadOnlyList<string>>();
+            }
+
+            var rows = await dbContext.UserRoles
+                .Where(ur => userIds.Contains(ur.UserId))
+                .Join(dbContext.Roles,
+                    ur => ur.RoleId,
+                    r => r.Id,
+                    (ur, r) => new { ur.UserId, r.Name })
+                .ToListAsync(cancellationToken);
+
+            return rows
+                .GroupBy(x => x.UserId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => (IReadOnlyList<string>)g.Select(x => x.Name!).OrderBy(n => n).ToList());
+        }
+
+        public async Task<OperationResult<ApplicationUser>> CreateCrewMemberAsync(
+            AddCrewMemberViewModel model,
+            int? companyId,
+            int? vesselId,
+            string approvedByUserId,
+            CancellationToken cancellationToken = default)
+        {
+            var validationContext = new ValidationContext(model);
+            var validationResults = new List<ValidationResult>();
+            if (!Validator.TryValidateObject(model, validationContext, validationResults, true))
+            {
+                return OperationResult<ApplicationUser>.Failure(validationResults.Select(x => x.ErrorMessage ?? "Validation error.").ToArray());
+            }
+
+            var email = model.Email.Trim();
+            var sidNumber = NormalizeSidNumber(model.SidNumber);
+
+            if (await userManager.FindByEmailAsync(email) is not null)
+            {
+                return OperationResult<ApplicationUser>.Failure("A user with this email already exists.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(sidNumber) && await dbContext.Users.AnyAsync(x => x.SidNumber == sidNumber, cancellationToken))
+            {
+                return OperationResult<ApplicationUser>.Failure("A crew member with this SID number already exists.");
+            }
+
+            if (!await roleManager.RoleExistsAsync(RoleNames.Crew))
+            {
+                return OperationResult<ApplicationUser>.Failure("The CREW role is not configured in the system.");
+            }
+
+            if (companyId.HasValue && !await dbContext.BunkeringCompanies.AnyAsync(x => x.Id == companyId.Value, cancellationToken))
+            {
+                return OperationResult<ApplicationUser>.Failure("The selected vessel company was not found.");
+            }
+
+            if (vesselId.HasValue && !await dbContext.Vessels.AnyAsync(x => x.Id == vesselId.Value, cancellationToken))
+            {
+                return OperationResult<ApplicationUser>.Failure("The selected vessel was not found.");
+            }
+
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            var createdOnUtc = DateTime.UtcNow;
+            var password = GenerateCrewPassword();
+            var user = new ApplicationUser
+            {
+                UserName = email,
+                Email = email,
+                FullName = model.FullName.Trim(),
+                CellNo = model.CellNo.Trim(),
+                Country = model.Nationality.Trim(),
+                RequestedRole = RoleNames.Crew,
+                ApprovalStatus = ApprovalStatus.Approved,
+                IsCrew = true,
+                Qualification = model.Qualification,
+                CrewRank = model.Qualification?.ToCrewRank(),
+                SidNumber = sidNumber,
+                SidIssuingAuthority = model.SidIssuingAuthority.Trim(),
+                SidIssueDate = model.SidIssueDate,
+                SidExpiryDate = model.SidExpiryDate,
+                IsAccountApproved = true,
+                ApprovedByUserId = approvedByUserId,
+                ApprovedOnUtc = createdOnUtc,
+                CompanyId = companyId,
+                VesselId = vesselId,
+                IsActive = true,
+                RegisteredOnUtc = createdOnUtc
+            };
+
+            var createResult = await userManager.CreateAsync(user, password);
+            if (!createResult.Succeeded)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return OperationResult<ApplicationUser>.Failure(createResult.Errors.Select(x => x.Description).ToArray());
+            }
+
+            var roleResult = await AssignSingleRoleAsync(user, RoleNames.Crew, cancellationToken);
+            if (!roleResult.Succeeded)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return OperationResult<ApplicationUser>.Failure(roleResult.Errors.ToArray());
+            }
+
+            dbContext.CrewMemberDetails.Add(new CrewMemberDetails
+            {
+                UserId = user.Id,
+                Gender = model.Gender.Trim(),
+                DateOfBirth = model.DateOfBirth,
+                Nationality = model.Nationality.Trim(),
+                PassportNumber = model.PassportNumber.Trim(),
+                PassportExpiry = model.PassportExpiry
+            });
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            user.CrewMemberDetails = await dbContext.CrewMemberDetails.AsNoTracking().FirstOrDefaultAsync(x => x.UserId == user.Id, cancellationToken);
+            return OperationResult<ApplicationUser>.Success(user, $"Crew member created successfully. Temporary password: {password}");
+        }
+
+        private static string GenerateCrewPassword()
+        {
+            const string uppercase = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+            const string lowercase = "abcdefghijkmnopqrstuvwxyz";
+            const string digits = "23456789";
+            const string specials = "!@$?_-#";
+
+            Span<char> password = stackalloc char[8];
+            password[0] = uppercase[RandomNumberGenerator.GetInt32(uppercase.Length)];
+            password[1] = lowercase[RandomNumberGenerator.GetInt32(lowercase.Length)];
+            password[2] = digits[RandomNumberGenerator.GetInt32(digits.Length)];
+            password[3] = specials[RandomNumberGenerator.GetInt32(specials.Length)];
+
+            var all = string.Concat(uppercase, lowercase, digits, specials);
+            for (var i = 4; i < password.Length; i++)
+            {
+                password[i] = all[RandomNumberGenerator.GetInt32(all.Length)];
+            }
+
+            for (var i = password.Length - 1; i > 0; i--)
+            {
+                var swapIndex = RandomNumberGenerator.GetInt32(i + 1);
+                (password[i], password[swapIndex]) = (password[swapIndex], password[i]);
+            }
+
+            return new string(password);
         }
     }
 }

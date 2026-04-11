@@ -21,6 +21,8 @@ namespace AlgoaBayBMT.Data
         public DbSet<CrewDeployment> CrewDeployments => Set<CrewDeployment>();
         public DbSet<CrewDeploymentComplianceSnapshot> CrewDeploymentComplianceSnapshots => Set<CrewDeploymentComplianceSnapshot>();
         public DbSet<VesselCrewListEntry> VesselCrewListEntries => Set<VesselCrewListEntry>();
+        public DbSet<CrewMemberDetails> CrewMemberDetails => Set<CrewMemberDetails>();
+        public DbSet<CrewChangeHistory> CrewChangeHistory => Set<CrewChangeHistory>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -226,6 +228,11 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.OnboardRoleName).HasMaxLength(100).IsRequired();
                 entity.Property(x => x.DeployedByUserId).HasMaxLength(450);
                 entity.Property(x => x.Notes).HasMaxLength(1000);
+                entity.Property(x => x.EmbarkationPort).HasMaxLength(100);
+                entity.Property(x => x.DisembarkationPort).HasMaxLength(100);
+                entity.Property(x => x.DisembarkationReason).HasMaxLength(200);
+                entity.Property(x => x.VaccinationStatus).HasMaxLength(200);
+                entity.Property(x => x.Duties).HasMaxLength(200);
                 entity.HasOne(x => x.Vessel)
                     .WithMany(x => x.CrewDeployments)
                     .HasForeignKey(x => x.VesselId)
@@ -262,6 +269,36 @@ namespace AlgoaBayBMT.Data
                     .WithMany(x => x.VesselCrewListEntries)
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CrewMemberDetails>(entity =>
+            {
+                entity.HasIndex(x => x.UserId).IsUnique();
+                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.GivenNames).HasMaxLength(150);
+                entity.Property(x => x.Gender).HasMaxLength(20);
+                entity.Property(x => x.PlaceOfBirth).HasMaxLength(150);
+                entity.Property(x => x.Nationality).HasMaxLength(100);
+                entity.Property(x => x.PassportNumber).HasMaxLength(50);
+                entity.HasOne<ApplicationUser>()
+                    .WithOne(x => x.CrewMemberDetails)
+                    .HasForeignKey<CrewMemberDetails>(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CrewChangeHistory>(entity =>
+            {
+                entity.Property(x => x.ActionType).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.ChangedByUserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.ChangedByName).HasMaxLength(150).IsRequired();
+                entity.Property(x => x.ChangedBySurname).HasMaxLength(150).IsRequired();
+                entity.Property(x => x.ChangedByRank).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.UserId).HasMaxLength(450);
+                entity.Property(x => x.Notes).HasMaxLength(500);
+                entity.HasOne<Vessel>()
+                    .WithMany()
+                    .HasForeignKey(x => x.VesselId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

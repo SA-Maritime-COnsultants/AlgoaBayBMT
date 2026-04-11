@@ -13,6 +13,7 @@ namespace AlgoaBayBMT.Data
         public string? RequestedRole { get; set; }
         public ApprovalStatus ApprovalStatus { get; set; } = ApprovalStatus.PendingEmailConfirmation;
         public bool IsCrew { get; set; }
+        public SeagoingCommercialQualification? Qualification { get; set; }
         public CrewRank? CrewRank { get; set; }
         public string? SidNumber { get; set; }
         public string? SidIssuingCountry { get; set; }
@@ -32,6 +33,7 @@ namespace AlgoaBayBMT.Data
         public BunkeringCompany? Company { get; set; }
         public OperationalArea? PrimaryArea { get; set; }
         public Vessel? Vessel { get; set; }
+        public CrewMemberDetails? CrewMemberDetails { get; set; }
         public ICollection<UserAreaAssignment> UserAreaAssignments { get; set; } = new List<UserAreaAssignment>();
         public ICollection<VesselRoleAssignment> VesselRoleAssignments { get; set; } = new List<VesselRoleAssignment>();
         public ICollection<CrewDeployment> CrewDeployments { get; set; } = new List<CrewDeployment>();
