@@ -1165,3 +1165,151 @@ h1:focus {
         min-width: 100%;
     }
 }
+
+.pf-textarea {
+    min-height: 110px;
+    border-radius: 10px;
+    border: 1px solid var(--pf-border);
+}
+
+.pf-textarea--large {
+    min-height: 180px;
+}
+
+.pf-inline-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    color: var(--pf-text);
+}
+
+.pf-dialog-actions--split {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.pf-training-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pf-training-metric-card .e-card-content {
+    padding: 1rem 1.1rem !important;
+}
+
+.pf-training-metric-label {
+    font-size: 0.76rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pf-text-soft);
+}
+
+.pf-training-metric-value {
+    margin-top: 0.35rem;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--pf-primary);
+}
+
+.pf-training-builder-layout {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.pf-training-tree-panel,
+.pf-training-editor-panel {
+    min-width: 0;
+}
+
+.pf-training-builder-overview {
+    margin-bottom: 1rem;
+}
+
+.pf-training-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pf-training-tree-module {
+    border: 1px solid var(--pf-border);
+    border-radius: 12px;
+    background: rgba(244, 247, 251, 0.8);
+    overflow: hidden;
+}
+
+.pf-training-tree-children {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.55rem 0.65rem 0.75rem 1rem;
+}
+
+.pf-training-tree-node {
+    width: 100%;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    padding: 0.8rem 0.95rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: var(--pf-text);
+    font-weight: 700;
+}
+
+.pf-training-tree-node--child {
+    border-radius: 8px;
+    font-weight: 600;
+    padding: 0.65rem 0.75rem;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(217, 226, 236, 0.7);
+}
+
+.pf-training-tree-node:hover,
+.pf-training-tree-node.is-selected {
+    background: rgba(18, 181, 203, 0.12);
+    color: var(--pf-primary);
+}
+
+.pf-training-tree-label {
+    line-height: 1.35;
+}
+
+.pf-training-editor-card {
+    margin-bottom: 1rem;
+}
+
+.pf-training-block-card {
+    margin-bottom: 0.9rem;
+}
+
+@media (max-width: 1200px) {
+    .pf-training-dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 992px) {
+    .pf-training-builder-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .pf-training-dashboard-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-dialog-actions--split {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}

@@ -4,16 +4,19 @@ using AlgoaBayBMT.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace AlgoaBayBMT.Migrations
+namespace AlgoaBayBMT.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413111133_Update_Training_Classes")]
+    partial class Update_Training_Classes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -2157,7 +2160,7 @@ namespace AlgoaBayBMT.Migrations
                     b.HasOne("AlgoaBayBMT.Shared.Models.AssessmentOption", "SelectedOption")
                         .WithMany("Responses")
                         .HasForeignKey("SelectedOptionId")
-                        .OnDelete(DeleteBehavior.NoAction);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("AssessmentAttempt");
 

@@ -153,6 +153,33 @@
         </AuthorizeView>
 
         <AuthorizeView Roles="@RoleNames.Admin">
+            <section class="side-nav-group" aria-labelledby="training-management-nav-heading">
+                <button id="training-management-nav-heading" type="button" class="side-nav-group-toggle"
+                        @onclick="ToggleTrainingManagementAsync"
+                        aria-expanded="@_trainingMgmtExpanded.ToString().ToLower()">
+                    <span class="side-nav-group-label">TRAINING MANAGEMENT</span>
+                    <span class="side-nav-chevron @(_trainingMgmtExpanded ? "side-nav-chevron--open" : "")" aria-hidden="true">@((MarkupString)ChevronIcon)</span>
+                </button>
+                <div class="side-nav-collapsible @(_trainingMgmtExpanded ? "side-nav-collapsible--open" : "")">
+                    <ul class="side-nav-items">
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management" Match="NavLinkMatch.All" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)DashboardIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Training Dashboard</span><span class="side-nav-meta">Authoring control centre</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management/courses" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Courses</span><span class="side-nav-meta">Create and edit courses</span></span>
+                            </NavLink>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="@RoleNames.Admin">
             <section class="side-nav-group" aria-labelledby="user-management-nav-heading">
                 <button id="user-management-nav-heading" type="button" class="side-nav-group-toggle"
                         @onclick="ToggleUserManagementAsync"
@@ -257,6 +284,7 @@
     private bool _crewMgmtExpanded = true;
     private bool _systemExpanded = true;
     private bool _adminExpanded = true;
+    private bool _trainingMgmtExpanded = true;
     private bool _userMgmtExpanded = true;
     private bool _menuStateLoaded;
     private string? _menuStorageKey;
@@ -316,6 +344,8 @@
 
     private Task ToggleAdminAsync() => ToggleSectionAsync(() => _adminExpanded = !_adminExpanded);
 
+    private Task ToggleTrainingManagementAsync() => ToggleSectionAsync(() => _trainingMgmtExpanded = !_trainingMgmtExpanded);
+
     private Task ToggleUserManagementAsync() => ToggleSectionAsync(() => _userMgmtExpanded = !_userMgmtExpanded);
 
     private async Task ToggleSectionAsync(System.Action toggleAction)
@@ -339,6 +369,7 @@
                     _crewMgmtExpanded = state.CrewManagementExpanded;
                     _systemExpanded = state.SystemExpanded;
                     _adminExpanded = state.AdminExpanded;
+                    _trainingMgmtExpanded = state.TrainingManagementExpanded;
                     _userMgmtExpanded = state.UserManagementExpanded;
                 }
             }
@@ -369,6 +400,7 @@
                 _crewMgmtExpanded,
                 _systemExpanded,
                 _adminExpanded,
+                _trainingMgmtExpanded,
                 _userMgmtExpanded));
 
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", _menuStorageKey, json);
@@ -410,6 +442,7 @@
         bool CrewManagementExpanded,
         bool SystemExpanded,
         bool AdminExpanded,
+        bool TrainingManagementExpanded,
         bool UserManagementExpanded);
 
     private const string ChevronIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>""";

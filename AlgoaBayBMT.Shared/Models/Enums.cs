@@ -289,4 +289,139 @@ namespace AlgoaBayBMT.Shared.Models
         [Display(Name = "Other")]
         Other = 37
     }
+
+    public enum CourseVersionStatus
+    {
+        [Display(Name = "Draft")]
+        Draft = 0,
+
+        [Display(Name = "Published")]
+        Published = 1,
+
+        [Display(Name = "Archived")]
+        Archived = 2
+    }
+
+    public enum LessonType
+    {
+        [Display(Name = "Content Only")]
+        ContentOnly = 0,
+
+        [Display(Name = "Assessment Only")]
+        AssessmentOnly = 1,
+
+        [Display(Name = "Mixed")]
+        Mixed = 2
+    }
+
+    public enum LessonCompletionRule
+    {
+        [Display(Name = "Manual Button")]
+        ManualButton = 0,
+
+        [Display(Name = "Video Ended")]
+        VideoEnded = 1,
+
+        [Display(Name = "Scroll To Bottom")]
+        ScrollToBottom = 2,
+
+        [Display(Name = "Assessment Passed")]
+        AssessmentPassed = 3
+    }
+
+    public enum LessonBlockType
+    {
+        [Display(Name = "Markdown")]
+        Markdown = 0,
+
+        [Display(Name = "Video URL")]
+        VideoUrl = 1,
+
+        [Display(Name = "Uploaded Video")]
+        UploadedVideo = 2,
+
+        [Display(Name = "PDF Document")]
+        PdfDocument = 3,
+
+        [Display(Name = "Slide Deck")]
+        SlideDeck = 4,
+
+        [Display(Name = "Image")]
+        Image = 5,
+
+        [Display(Name = "Download")]
+        Download = 6,
+
+        [Display(Name = "Embed")]
+        Embed = 7,
+
+        [Display(Name = "Callout")]
+        Callout = 8
+    }
+
+    public enum QuestionType
+    {
+        [Display(Name = "Single Choice")]
+        SingleChoice = 0,
+
+        [Display(Name = "Multiple Choice")]
+        MultipleChoice = 1,
+
+        [Display(Name = "True / False")]
+        TrueFalse = 2,
+
+        [Display(Name = "Free Text")]
+        FreeText = 3
+    }
+
+    public enum ProgressStatus
+    {
+        [Display(Name = "Not Started")]
+        NotStarted = 0,
+
+        [Display(Name = "Started")]
+        Started = 1,
+
+        [Display(Name = "Completed")]
+        Completed = 2,
+
+        [Display(Name = "Expired")]
+        Expired = 3
+    }
+
+    public enum CourseAudienceRuleType
+    {
+        [Display(Name = "All Crew")]
+        AllCrew = 0,
+
+        [Display(Name = "Application Role")]
+        ApplicationRole = 1,
+
+        [Display(Name = "Onboard Role")]
+        OnBoardRole = 2,
+
+        [Display(Name = "Qualification")]
+        Qualification = 3,
+
+        [Display(Name = "Manual Assignment")]
+        ManualAssignment = 4
+    }
+
+    public enum AssignmentStatus
+    {
+        [Display(Name = "Assigned")]
+        Assigned = 0,
+
+        [Display(Name = "Started")]
+        Started = 1,
+
+        [Display(Name = "Completed")]
+        Completed = 2,
+
+        [Display(Name = "Expired")]
+        Expired = 3,
+
+        [Display(Name = "Cancelled")]
+        Cancelled = 4
+    }
 }

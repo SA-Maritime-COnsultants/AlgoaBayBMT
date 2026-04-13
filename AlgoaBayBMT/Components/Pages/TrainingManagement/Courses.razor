@@ -1,0 +1,214 @@
+@page "/training-management/courses"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Security
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Notifications
+
+@inject ITrainingManagementService TrainingManagementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Training Courses</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Training Courses</h1>
+            <div class="page-subtitle">Manage course masters, maintain current versions, and launch the training course builder.</div>
+        </div>
+        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="OpenCreateDialogAsync">Create Course</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Courses" SubTitle="Authoring entry point for training management content." />
+        <CardContent>
+            @if (CoursesData.Count == 0)
+            {
+                <div class="pf-empty-state">No training courses have been created yet.</div>
+            }
+            else
+            {
+                <SfGrid DataSource="@CoursesData" TValue="TrainingCourseListItemModel" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact">
+                    <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                    <GridColumns>
+                        <GridColumn Field="@nameof(TrainingCourseListItemModel.Code)" HeaderText="Code" Width="130" />
+                        <GridColumn Field="@nameof(TrainingCourseListItemModel.Title)" HeaderText="Title" Width="220" />
+                        <GridColumn HeaderText="Current Version" Width="150">
+                            <Template>
+                                @{ var course = context as TrainingCourseListItemModel; }
+                                <span>@GetVersionText(course)</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(TrainingCourseListItemModel.TargetAudienceSummary)" HeaderText="Audience" Width="220" />
+                        <GridColumn HeaderText="Validity" Width="110">
+                            <Template>
+                                @{ var course = context as TrainingCourseListItemModel; }
+                                <span>@(course?.ValidityMonths ?? 0) months</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Status" Width="110" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var course = context as TrainingCourseListItemModel; }
+                                <span class="e-badge @(course?.IsActive == true ? "e-badge-success" : "e-badge-warning")">@(course?.IsActive == true ? "Active" : "Inactive")</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Actions" Width="210" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var course = context as TrainingCourseListItemModel; }
+                                @if (course is not null)
+                                {
+                                    <div class="pf-grid-actions pf-grid-actions--compact">
+                                        <span class="pf-icon-action" title="Edit Course">
+                                            <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square" OnClick="@(() => OpenEditDialogAsync(course.CourseId))" aria-label="Edit Course">
+                                                <span class="e-icons e-edit" aria-hidden="true"></span>
+                                            </SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="Open Builder">
+                                            <a class="e-btn e-flat pf-btn-details pf-btn-icon pf-btn-square" href="@($"/training-management/course-builder/{course.CourseId}")" aria-label="Open Course Builder">
+                                                <span class="e-icons e-folder-open" aria-hidden="true"></span>
+                                            </a>
+                                        </span>
+                                        <span class="pf-icon-action" title="Create Next Version">
+                                            <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" OnClick="@(() => CreateNextVersionAsync(course.CourseId))" aria-label="Create Next Version">
+                                                <span class="e-icons e-copy" aria-hidden="true"></span>
+                                            </SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="Toggle Active">
+                                            <SfButton CssClass="e-flat pf-btn-deactivate pf-btn-icon pf-btn-square" OnClick="@(() => ToggleActiveAsync(course))" aria-label="Toggle Active">
+                                                <span class="e-icons e-check" aria-hidden="true"></span>
+                                            </SfButton>
+                                        </span>
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+@if (EditModel is not null)
+{
+    <CourseEditDialog @bind-Visible="IsDialogVisible" Model="EditModel" SaveRequested="SaveCourseAsync" />
+}
+
+@code {
+    private SfToast SuccessToast = default!;
+    private List<TrainingCourseListItemModel> CoursesData = new();
+    private TrainingCourseEditModel? EditModel;
+    private bool IsDialogVisible;
+    private string? ErrorMessage;
+    private string? CurrentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await LoadCoursesAsync();
+    }
+
+    private async Task LoadCoursesAsync()
+    {
+        CoursesData = await TrainingManagementService.GetCoursesAsync();
+        ErrorMessage = null;
+    }
+
+    private Task OpenCreateDialogAsync()
+    {
+        EditModel = new TrainingCourseEditModel();
+        IsDialogVisible = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task OpenEditDialogAsync(Guid courseId)
+    {
+        EditModel = await TrainingManagementService.GetCourseAsync(courseId);
+        if (EditModel is null)
+        {
+            ErrorMessage = "Course could not be loaded.";
+            return;
+        }
+
+        IsDialogVisible = true;
+    }
+
+    private async Task SaveCourseAsync(TrainingCourseEditModel model)
+    {
+        var result = await TrainingManagementService.SaveCourseAsync(model, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        IsDialogVisible = false;
+        await LoadCoursesAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Course saved.");
+    }
+
+    private async Task ToggleActiveAsync(TrainingCourseListItemModel course)
+    {
+        var result = await TrainingManagementService.ToggleCourseActiveAsync(course.CourseId, !course.IsActive, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadCoursesAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Course updated.");
+    }
+
+    private async Task CreateNextVersionAsync(Guid courseId)
+    {
+        var result = await TrainingManagementService.CreateNextCourseVersionAsync(courseId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadCoursesAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Course version created.");
+    }
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        ErrorMessage = null;
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = message,
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 3500
+        });
+    }
+
+    private static string GetVersionText(TrainingCourseListItemModel? course)
+    {
+        if (course?.CurrentVersionNumber is null)
+        {
+            return "No version";
+        }
+
+        var label = string.IsNullOrWhiteSpace(course.CurrentVersionLabel)
+            ? $"v{course.CurrentVersionNumber}"
+            : course.CurrentVersionLabel;
+
+        return $"{label} · {course.CurrentVersionStatus}";
+    }
+}

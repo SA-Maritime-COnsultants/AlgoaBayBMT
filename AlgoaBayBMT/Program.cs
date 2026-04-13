@@ -30,8 +30,9 @@ builder.Services.AddAuthentication(options =>
     .AddIdentityCookies();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
+builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext());
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -74,6 +75,7 @@ builder.Services.AddScoped<IAuthorityContactService, AuthorityContactService>();
 builder.Services.AddScoped<IRoleEditorService, RoleEditorService>();
 builder.Services.AddScoped<ICrewAssignmentService, CrewAssignmentService>();
 builder.Services.AddScoped<ICrewChangeHistoryService, CrewChangeHistoryService>();
+builder.Services.AddScoped<ITrainingManagementService, TrainingManagementService>();
 builder.Services.AddSingleton<ITrainingComplianceNotifier, NoOpTrainingComplianceNotifier>();
 builder.Services.Configure<AlgoaBayBMT.Services.Models.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddSingleton<IEmailTemplateRenderer, EmailTemplateRenderer>();

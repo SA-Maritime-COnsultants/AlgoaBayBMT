@@ -1,0 +1,95 @@
+@using AlgoaBayBMT.Services.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+
+<SfDialog Width="860px" IsModal="true" ShowCloseIcon="true" @bind-Visible="Visible">
+    <DialogTemplates>
+        <Header>@(Model.CourseId.HasValue ? "Edit Course" : "Create Course")</Header>
+        <Content>
+            <EditForm Model="Model" OnValidSubmit="HandleSaveAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message" />
+
+                <div class="pf-form-grid">
+                    <div class="pf-col-4">
+                        <label class="pf-field-label">Code</label>
+                        <SfTextBox @bind-Value="Model.Code" Placeholder="e.g. WILD-001" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="pf-col-8">
+                        <label class="pf-field-label">Title</label>
+                        <SfTextBox @bind-Value="Model.Title" Placeholder="Course title" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Description</label>
+                        <InputTextArea @bind-Value="Model.Description" class="form-control pf-textarea" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Target Audience Summary</label>
+                        <SfTextBox @bind-Value="Model.TargetAudienceSummary" Placeholder="Who this course is for" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Regulatory Reference</label>
+                        <SfTextBox @bind-Value="Model.RegulatoryReference" Placeholder="Reference or standard" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Thumbnail URL</label>
+                        <SfTextBox @bind-Value="Model.ThumbnailUrl" Placeholder="Optional image URL" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="pf-col-3">
+                        <label class="pf-field-label">Validity (Months)</label>
+                        <InputNumber @bind-Value="Model.ValidityMonths" class="form-control" />
+                    </div>
+                    <div class="pf-col-3">
+                        <label class="pf-field-label">Duration (Minutes)</label>
+                        <InputNumber @bind-Value="Model.EstimatedDurationMinutes" class="form-control" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Learning Objectives</label>
+                        <InputTextArea @bind-Value="Model.LearningObjectives" class="form-control pf-textarea pf-textarea--large" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-inline-check">
+                            <InputCheckbox @bind-Value="Model.IsMandatory" />
+                            <span>Mandatory training</span>
+                        </label>
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-inline-check">
+                            <InputCheckbox @bind-Value="Model.IsActive" />
+                            <span>Course active</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pf-dialog-actions">
+                    <SfButton OnClick="CloseAsync">Cancel</SfButton>
+                    <SfButton CssClass="e-primary" IsPrimary="true" type="submit">Save Course</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public TrainingCourseEditModel Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<TrainingCourseEditModel> SaveRequested { get; set; }
+
+    private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
+
+    private async Task CloseAsync()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+}

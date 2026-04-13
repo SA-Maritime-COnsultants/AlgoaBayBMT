@@ -23,6 +23,24 @@ namespace AlgoaBayBMT.Data
         public DbSet<VesselCrewListEntry> VesselCrewListEntries => Set<VesselCrewListEntry>();
         public DbSet<CrewMemberDetails> CrewMemberDetails => Set<CrewMemberDetails>();
         public DbSet<CrewChangeHistory> CrewChangeHistory => Set<CrewChangeHistory>();
+        public DbSet<Course> Courses => Set<Course>();
+        public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
+        public DbSet<TrainingModule> Modules => Set<TrainingModule>();
+        public DbSet<TrainingLesson> Lessons => Set<TrainingLesson>();
+        public DbSet<LessonBlock> LessonBlocks => Set<LessonBlock>();
+        public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+        public DbSet<Assessment> Assessments => Set<Assessment>();
+        public DbSet<AssessmentQuestion> AssessmentQuestions => Set<AssessmentQuestion>();
+        public DbSet<AssessmentOption> AssessmentOptions => Set<AssessmentOption>();
+        public DbSet<CourseAudienceRule> CourseAudienceRules => Set<CourseAudienceRule>();
+        public DbSet<UserTrainingAssignment> UserTrainingAssignments => Set<UserTrainingAssignment>();
+        public DbSet<UserLessonProgress> UserLessonProgress => Set<UserLessonProgress>();
+        public DbSet<UserCourseProgress> UserCourseProgress => Set<UserCourseProgress>();
+        public DbSet<AssessmentAttempt> AssessmentAttempts => Set<AssessmentAttempt>();
+        public DbSet<AssessmentResponse> AssessmentResponses => Set<AssessmentResponse>();
+        public DbSet<CourseCompletionRecord> CourseCompletionRecords => Set<CourseCompletionRecord>();
+        public DbSet<TrainingCertificate> TrainingCertificates => Set<TrainingCertificate>();
+        public DbSet<TrainingAuditLog> TrainingAuditLogs => Set<TrainingAuditLog>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -300,6 +318,309 @@ namespace AlgoaBayBMT.Data
                     .WithMany()
                     .HasForeignKey(x => x.VesselId)
                     .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            ConfigureTrainingEntities(builder);
+        }
+
+        private static void ConfigureTrainingEntities(ModelBuilder builder)
+        {
+            builder.Entity<Course>(entity =>
+            {
+                entity.ToTable("Courses");
+                entity.HasKey(x => x.CourseId);
+                entity.HasIndex(x => x.Code).IsUnique();
+                entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Description).HasMaxLength(2000);
+                entity.Property(x => x.ThumbnailUrl).HasMaxLength(500);
+                entity.Property(x => x.TargetAudienceSummary).HasMaxLength(500);
+                entity.Property(x => x.RegulatoryReference).HasMaxLength(250);
+                entity.Property(x => x.ValidityMonths).HasDefaultValue(12);
+                entity.Property(x => x.IsMandatory).HasDefaultValue(true);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+                entity.Property(x => x.UpdatedByUserId).HasMaxLength(450);
+                entity.HasOne(x => x.CurrentVersion)
+                    .WithMany()
+                    .HasForeignKey(x => x.CurrentVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<CourseVersion>(entity =>
+            {
+                entity.ToTable("CourseVersions");
+                entity.HasKey(x => x.CourseVersionId);
+                entity.HasIndex(x => new { x.CourseId, x.VersionNumber }).IsUnique();
+                entity.Property(x => x.VersionLabel).HasMaxLength(50);
+                entity.Property(x => x.ChangeSummary).HasMaxLength(1000);
+                entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
+                entity.HasOne(x => x.Course)
+                    .WithMany(x => x.Versions)
+                    .HasForeignKey(x => x.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<TrainingModule>(entity =>
+            {
+                entity.ToTable("Modules");
+                entity.HasKey(x => x.ModuleId);
+                entity.HasIndex(x => new { x.CourseVersionId, x.OrderIndex }).IsUnique();
+                entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Description).HasMaxLength(1000);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasOne(x => x.CourseVersion)
+                    .WithMany(x => x.Modules)
+                    .HasForeignKey(x => x.CourseVersionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<TrainingLesson>(entity =>
+            {
+                entity.ToTable("Lessons");
+                entity.HasKey(x => x.LessonId);
+                entity.HasIndex(x => new { x.ModuleId, x.OrderIndex }).IsUnique();
+                entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Summary).HasMaxLength(1000);
+                entity.Property(x => x.IsRequired).HasDefaultValue(true);
+                entity.Property(x => x.IsPreview).HasDefaultValue(false);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasOne(x => x.Module)
+                    .WithMany(x => x.Lessons)
+                    .HasForeignKey(x => x.ModuleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<LessonBlock>(entity =>
+            {
+                entity.ToTable("LessonBlocks");
+                entity.HasKey(x => x.LessonBlockId);
+                entity.HasIndex(x => new { x.LessonId, x.OrderIndex }).IsUnique();
+                entity.Property(x => x.Title).HasMaxLength(200);
+                entity.Property(x => x.FileUrl).HasMaxLength(1000);
+                entity.Property(x => x.ExternalUrl).HasMaxLength(1000);
+                entity.Property(x => x.MimeType).HasMaxLength(100);
+                entity.Property(x => x.IsRequired).HasDefaultValue(true);
+                entity.HasOne(x => x.Lesson)
+                    .WithMany(x => x.LessonBlocks)
+                    .HasForeignKey(x => x.LessonId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.MediaAsset)
+                    .WithMany(x => x.LessonBlocks)
+                    .HasForeignKey(x => x.MediaAssetId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            builder.Entity<MediaAsset>(entity =>
+            {
+                entity.ToTable("MediaAssets");
+                entity.HasKey(x => x.MediaAssetId);
+                entity.Property(x => x.FileName).HasMaxLength(255).IsRequired();
+                entity.Property(x => x.StoredFileName).HasMaxLength(255).IsRequired();
+                entity.Property(x => x.RelativePath).HasMaxLength(500).IsRequired();
+                entity.Property(x => x.ContentType).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.UploadedByUserId).HasMaxLength(450);
+                entity.Property(x => x.HashSha256).HasMaxLength(128);
+            });
+
+            builder.Entity<Assessment>(entity =>
+            {
+                entity.ToTable("Assessments");
+                entity.HasKey(x => x.AssessmentId);
+                entity.HasIndex(x => x.LessonId).IsUnique();
+                entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.PassMarkPercent).HasPrecision(5, 2).HasDefaultValue(80m);
+                entity.Property(x => x.MaxAttempts).HasDefaultValue(3);
+                entity.Property(x => x.ShowFeedbackAfterSubmit).HasDefaultValue(true);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasOne(x => x.Lesson)
+                    .WithOne(x => x.Assessment)
+                    .HasForeignKey<Assessment>(x => x.LessonId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AssessmentQuestion>(entity =>
+            {
+                entity.ToTable("AssessmentQuestions");
+                entity.HasKey(x => x.AssessmentQuestionId);
+                entity.HasIndex(x => new { x.AssessmentId, x.OrderIndex });
+                entity.Property(x => x.PromptMarkdown).IsRequired();
+                entity.Property(x => x.Points).HasPrecision(8, 2).HasDefaultValue(1m);
+                entity.HasOne(x => x.Assessment)
+                    .WithMany(x => x.Questions)
+                    .HasForeignKey(x => x.AssessmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AssessmentOption>(entity =>
+            {
+                entity.ToTable("AssessmentOptions");
+                entity.HasKey(x => x.AssessmentOptionId);
+                entity.HasIndex(x => new { x.AssessmentQuestionId, x.OrderIndex });
+                entity.Property(x => x.OptionText).HasMaxLength(1000).IsRequired();
+                entity.Property(x => x.IsCorrect).HasDefaultValue(false);
+                entity.HasOne(x => x.AssessmentQuestion)
+                    .WithMany(x => x.Options)
+                    .HasForeignKey(x => x.AssessmentQuestionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CourseAudienceRule>(entity =>
+            {
+                entity.ToTable("CourseAudienceRules");
+                entity.HasKey(x => x.CourseAudienceRuleId);
+                entity.Property(x => x.ApplicationRoleName).HasMaxLength(100);
+                entity.Property(x => x.OnBoardRole).HasMaxLength(100);
+                entity.Property(x => x.Qualification).HasMaxLength(150);
+                entity.Property(x => x.Notes).HasMaxLength(500);
+                entity.Property(x => x.IsMandatory).HasDefaultValue(true);
+                entity.HasOne(x => x.Course)
+                    .WithMany(x => x.AudienceRules)
+                    .HasForeignKey(x => x.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<UserTrainingAssignment>(entity =>
+            {
+                entity.ToTable("UserTrainingAssignments");
+                entity.HasKey(x => x.UserTrainingAssignmentId);
+                entity.HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.AssignedByUserId).HasMaxLength(450);
+                entity.Property(x => x.Reason).HasMaxLength(500);
+                entity.HasOne(x => x.Course)
+                    .WithMany(x => x.UserTrainingAssignments)
+                    .HasForeignKey(x => x.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<UserLessonProgress>(entity =>
+            {
+                entity.ToTable("UserLessonProgress");
+                entity.HasKey(x => x.UserLessonProgressId);
+                entity.HasIndex(x => new { x.UserId, x.LessonId }).IsUnique();
+                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.PercentComplete).HasPrecision(5, 2).HasDefaultValue(0m);
+                entity.Property(x => x.ScrollPercent).HasPrecision(5, 2);
+                entity.HasOne(x => x.Lesson)
+                    .WithMany(x => x.UserLessonProgressRecords)
+                    .HasForeignKey(x => x.LessonId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<UserCourseProgress>(entity =>
+            {
+                entity.ToTable("UserCourseProgress");
+                entity.HasKey(x => x.UserCourseProgressId);
+                entity.HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.PercentComplete).HasPrecision(5, 2).HasDefaultValue(0m);
+                entity.HasOne(x => x.Course)
+                    .WithMany(x => x.UserCourseProgressRecords)
+                    .HasForeignKey(x => x.CourseId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.CurrentLesson)
+                    .WithMany(x => x.CurrentCourseProgressRecords)
+                    .HasForeignKey(x => x.CurrentLessonId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AssessmentAttempt>(entity =>
+            {
+                entity.ToTable("AssessmentAttempts");
+                entity.HasKey(x => x.AssessmentAttemptId);
+                entity.HasIndex(x => new { x.AssessmentId, x.UserId, x.AttemptNumber }).IsUnique();
+                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.ScorePercent).HasPrecision(5, 2);
+                entity.Property(x => x.Passed).HasDefaultValue(false);
+                entity.HasOne(x => x.Assessment)
+                    .WithMany(x => x.Attempts)
+                    .HasForeignKey(x => x.AssessmentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AssessmentResponse>(entity =>
+            {
+                entity.ToTable("AssessmentResponses");
+                entity.HasKey(x => x.AssessmentResponseId);
+                entity.Property(x => x.AwardedPoints).HasPrecision(8, 2);
+                entity.HasOne(x => x.AssessmentAttempt)
+                    .WithMany(x => x.Responses)
+                    .HasForeignKey(x => x.AssessmentAttemptId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.AssessmentQuestion)
+                    .WithMany(x => x.Responses)
+                    .HasForeignKey(x => x.AssessmentQuestionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.SelectedOption)
+                    .WithMany(x => x.Responses)
+                    .HasForeignKey(x => x.SelectedOptionId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            builder.Entity<CourseCompletionRecord>(entity =>
+            {
+                entity.ToTable("CourseCompletionRecords");
+                entity.HasKey(x => x.CourseCompletionRecordId);
+                entity.HasIndex(x => x.CertificateNumber).IsUnique();
+                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
+                entity.Property(x => x.CertificateNumber).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.FinalScorePercent).HasPrecision(5, 2);
+                entity.HasOne(x => x.Course)
+                    .WithMany(x => x.CompletionRecords)
+                    .HasForeignKey(x => x.CourseId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.CourseVersion)
+                    .WithMany(x => x.CompletionRecords)
+                    .HasForeignKey(x => x.CourseVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<TrainingCertificate>(entity =>
+            {
+                entity.ToTable("TrainingCertificates");
+                entity.HasKey(x => x.TrainingCertificateId);
+                entity.HasIndex(x => x.CourseCompletionRecordId).IsUnique();
+                entity.HasIndex(x => x.CertificateNumber).IsUnique();
+                entity.HasIndex(x => x.VerificationCode).IsUnique();
+                entity.Property(x => x.CertificateNumber).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.FilePath).HasMaxLength(500);
+                entity.Property(x => x.VerificationCode).HasMaxLength(100).IsRequired();
+                entity.HasOne(x => x.CourseCompletionRecord)
+                    .WithOne(x => x.TrainingCertificate)
+                    .HasForeignKey<TrainingCertificate>(x => x.CourseCompletionRecordId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<TrainingAuditLog>(entity =>
+            {
+                entity.ToTable("TrainingAuditLogs");
+                entity.HasKey(x => x.TrainingAuditLogId);
+                entity.Property(x => x.EntityName).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.EntityId).HasMaxLength(150).IsRequired();
+                entity.Property(x => x.ActionType).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.ChangedByUserId).HasMaxLength(450);
+                entity.Property(x => x.Notes).HasMaxLength(500);
             });
         }
     }

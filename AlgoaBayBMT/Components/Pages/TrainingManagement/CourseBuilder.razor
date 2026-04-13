@@ -1,0 +1,480 @@
+@page "/training-management/course-builder/{CourseId:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Security
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Notifications
+
+@inject ITrainingManagementService TrainingManagementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Course Builder</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Course Builder</h1>
+            <div class="page-subtitle">Build the module, lesson, and content-block structure for the active training course version.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <a class="e-btn" href="/training-management/courses">Back to Courses</a>
+            <SfButton OnClick="CreateNewVersionAsync">Create Next Version</SfButton>
+            <SfButton CssClass="e-primary" OnClick="PublishCurrentVersionAsync">Publish Current Version</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    @if (Builder is null)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardContent>
+                <div class="pf-empty-state">Loading course builder...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="pf-manage-overview pf-training-builder-overview">
+            <div class="pf-manage-overview-copy">
+                <h2 class="pf-manage-overview-title">@Builder.Title</h2>
+                <div class="pf-manage-overview-subtitle">@Builder.Code · @GetVersionText()</div>
+                <div class="pf-role-badge-list">
+                    <span class="e-badge pf-role-badge">@Builder.CurrentVersionStatus</span>
+                    <span class="e-badge pf-role-badge">@Builder.Modules.Count module(s)</span>
+                    <span class="e-badge pf-role-badge">@Builder.Modules.Sum(x => x.Lessons.Count) lesson(s)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pf-training-builder-layout">
+            <SfCard CssClass="pf-card-shell pf-training-tree-panel">
+                <CardHeader Title="Course Structure" SubTitle="Select a module or lesson to edit its content." />
+                <CardContent>
+                    <div class="pf-toolbar-row">
+                        <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="CreateModuleAsync">New Module</SfButton>
+                    </div>
+
+                    @if (Builder.Modules.Count == 0)
+                    {
+                        <div class="pf-empty-state">No modules yet. Create the first module to begin designing this course.</div>
+                    }
+                    else
+                    {
+                        <div class="pf-training-tree">
+                            @foreach (var module in Builder.Modules.OrderBy(x => x.OrderIndex))
+                            {
+                                <div class="pf-training-tree-module" @key="GetModuleRenderKey(module)">
+                                    <button type="button" class="pf-training-tree-node @(SelectedModule?.ModuleId == module.ModuleId && SelectedLesson is null ? "is-selected" : string.Empty)" @onclick="() => SelectModule(module.ModuleId!.Value)">
+                                        <span class="pf-training-tree-label">Module @module.OrderIndex: @module.Title</span>
+                                    </button>
+                                    <div class="pf-training-tree-children">
+                                        @foreach (var lesson in module.Lessons.OrderBy(x => x.OrderIndex))
+                                        {
+                                            <button type="button" class="pf-training-tree-node pf-training-tree-node--child @(SelectedLesson?.LessonId == lesson.LessonId ? "is-selected" : string.Empty)" @onclick="() => SelectLesson(lesson.LessonId!.Value)" @key="GetLessonRenderKey(lesson)">
+                                                <span class="pf-training-tree-label">Lesson @lesson.OrderIndex: @lesson.Title</span>
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </CardContent>
+            </SfCard>
+
+            <div class="pf-training-editor-panel">
+                @if (SelectedLesson is not null)
+                {
+                    <TrainingLessonEditor @key="GetLessonRenderKey(SelectedLesson)" Model="SelectedLesson" SaveRequested="SaveLessonAsync" DeleteRequested="DeleteLessonAsync" MoveRequested="MoveLessonAsync" CreateBlockRequested="CreateBlockAsync" />
+
+                    <SfCard CssClass="pf-card-shell pf-training-editor-card" @key="GetLessonRenderKey(SelectedLesson)">
+                        <CardHeader Title="Lesson Content Blocks" SubTitle="Mixed lesson content is supported through ordered lesson blocks." />
+                        <CardContent>
+                            <div class="pf-toolbar-row">
+                                <SfButton CssClass="e-primary" OnClick="CreateBlockAsync">Add Content Block</SfButton>
+                            </div>
+
+                            @if (SelectedLesson.Blocks.Count == 0)
+                            {
+                                <div class="pf-empty-state">No content blocks have been created for this lesson yet.</div>
+                            }
+                            else
+                            {
+                                @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
+                                {
+                                    <TrainingLessonBlockEditor @key="GetBlockRenderKey(block)" Model="block" SaveRequested="SaveLessonBlockAsync" DeleteRequested="() => DeleteLessonBlockAsync(block)" MoveRequested="direction => MoveLessonBlockAsync(block, direction)" />
+                                }
+                            }
+                        </CardContent>
+                    </SfCard>
+                }
+                else if (SelectedModule is not null)
+                {
+                    <TrainingModuleEditor @key="GetModuleRenderKey(SelectedModule)" Model="SelectedModule" SaveRequested="SaveModuleAsync" DeleteRequested="DeleteModuleAsync" MoveRequested="MoveModuleAsync" CreateLessonRequested="CreateLessonAsync" />
+                }
+                else
+                {
+                    <SfCard CssClass="pf-card-shell">
+                        <CardContent>
+                            <div class="pf-empty-state">Select a module or lesson from the structure panel to start editing.</div>
+                        </CardContent>
+                    </SfCard>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid CourseId { get; set; }
+
+    private SfToast SuccessToast = default!;
+    private TrainingCourseBuilderModel? Builder;
+    private TrainingModuleEditModel? SelectedModule;
+    private TrainingLessonEditModel? SelectedLesson;
+    private string? ErrorMessage;
+    private string? CurrentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await LoadBuilderAsync();
+    }
+
+    private async Task LoadBuilderAsync(Guid? focusModuleId = null, Guid? focusLessonId = null)
+    {
+        Builder = await TrainingManagementService.GetCourseBuilderAsync(CourseId);
+        if (Builder is null)
+        {
+            ErrorMessage = "The selected course could not be loaded.";
+            return;
+        }
+
+        ErrorMessage = null;
+
+        if (focusLessonId.HasValue)
+        {
+            SelectLesson(focusLessonId.Value);
+            return;
+        }
+
+        if (focusModuleId.HasValue)
+        {
+            SelectModule(focusModuleId.Value);
+            return;
+        }
+
+        if (SelectedLesson?.LessonId is Guid lessonId)
+        {
+            SelectLesson(lessonId);
+        }
+        else if (SelectedModule?.ModuleId is Guid moduleId)
+        {
+            SelectModule(moduleId);
+        }
+        else if (Builder.Modules.FirstOrDefault() is { ModuleId: Guid firstModuleId })
+        {
+            SelectModule(firstModuleId);
+        }
+    }
+
+    private void SelectModule(Guid moduleId)
+    {
+        if (Builder is null)
+        {
+            return;
+        }
+
+        SelectedLesson = null;
+        SelectedModule = Builder.Modules.FirstOrDefault(x => x.ModuleId == moduleId);
+    }
+
+    private void SelectLesson(Guid lessonId)
+    {
+        if (Builder is null)
+        {
+            return;
+        }
+
+        SelectedLesson = Builder.Modules.SelectMany(x => x.Lessons).FirstOrDefault(x => x.LessonId == lessonId);
+        SelectedModule = SelectedLesson is null
+            ? null
+            : Builder.Modules.FirstOrDefault(x => x.ModuleId == SelectedLesson.ModuleId);
+    }
+
+    private Task CreateModuleAsync()
+    {
+        if (Builder is null)
+        {
+            return Task.CompletedTask;
+        }
+
+        SelectedLesson = null;
+        SelectedModule = new TrainingModuleEditModel
+        {
+            CourseVersionId = Builder.CurrentVersionId,
+            OrderIndex = Builder.Modules.Count + 1,
+            IsActive = true
+        };
+
+        return Task.CompletedTask;
+    }
+
+    private Task CreateLessonAsync()
+    {
+        if (SelectedModule?.ModuleId is not Guid moduleId)
+        {
+            ErrorMessage = "Save the module before adding lessons.";
+            return Task.CompletedTask;
+        }
+
+        SelectedLesson = new TrainingLessonEditModel
+        {
+            ModuleId = moduleId,
+            OrderIndex = SelectedModule.Lessons.Count + 1,
+            IsActive = true,
+            IsRequired = true
+        };
+
+        return Task.CompletedTask;
+    }
+
+    private Task CreateBlockAsync()
+    {
+        if (SelectedLesson?.LessonId is not Guid lessonId)
+        {
+            ErrorMessage = "Save the lesson before adding content blocks.";
+            return Task.CompletedTask;
+        }
+
+        SelectedLesson.Blocks.Add(new TrainingLessonBlockEditModel
+        {
+            LessonId = lessonId,
+            OrderIndex = SelectedLesson.Blocks.Count + 1,
+            BlockType = AlgoaBayBMT.Shared.Models.LessonBlockType.Markdown,
+            IsRequired = true
+        });
+
+        return Task.CompletedTask;
+    }
+
+    private async Task SaveModuleAsync(TrainingModuleEditModel model)
+    {
+        var result = await TrainingManagementService.SaveModuleAsync(model, CurrentUserId);
+        if (!result.Succeeded || result.Data?.ModuleId is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusModuleId: result.Data.ModuleId.Value);
+        await ShowSuccessToastAsync(result.Message ?? "Module saved.");
+    }
+
+    private async Task DeleteModuleAsync()
+    {
+        if (SelectedModule?.ModuleId is not Guid moduleId)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.DeleteModuleAsync(moduleId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        SelectedModule = null;
+        await LoadBuilderAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Module deleted.");
+    }
+
+    private async Task MoveModuleAsync(int direction)
+    {
+        if (SelectedModule?.ModuleId is not Guid moduleId)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.MoveModuleAsync(moduleId, direction, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusModuleId: moduleId);
+        await ShowSuccessToastAsync(result.Message ?? "Module order updated.");
+    }
+
+    private async Task SaveLessonAsync(TrainingLessonEditModel model)
+    {
+        var result = await TrainingManagementService.SaveLessonAsync(model, CurrentUserId);
+        if (!result.Succeeded || result.Data?.LessonId is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusLessonId: result.Data.LessonId.Value);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson saved.");
+    }
+
+    private async Task DeleteLessonAsync()
+    {
+        if (SelectedLesson?.LessonId is not Guid lessonId)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.DeleteLessonAsync(lessonId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        SelectedLesson = null;
+        await LoadBuilderAsync(focusModuleId: SelectedModule?.ModuleId);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson deleted.");
+    }
+
+    private async Task MoveLessonAsync(int direction)
+    {
+        if (SelectedLesson?.LessonId is not Guid lessonId)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.MoveLessonAsync(lessonId, direction, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusLessonId: lessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson order updated.");
+    }
+
+    private async Task SaveLessonBlockAsync(TrainingLessonBlockEditModel model)
+    {
+        var result = await TrainingManagementService.SaveLessonBlockAsync(model, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusLessonId: model.LessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson content saved.");
+    }
+
+    private async Task DeleteLessonBlockAsync(TrainingLessonBlockEditModel block)
+    {
+        if (block.LessonBlockId is not Guid blockId)
+        {
+            SelectedLesson?.Blocks.Remove(block);
+            return;
+        }
+
+        var result = await TrainingManagementService.DeleteLessonBlockAsync(blockId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusLessonId: block.LessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson content block deleted.");
+    }
+
+    private async Task MoveLessonBlockAsync(TrainingLessonBlockEditModel block, int direction)
+    {
+        if (block.LessonBlockId is not Guid blockId)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.MoveLessonBlockAsync(blockId, direction, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync(focusLessonId: block.LessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson content order updated.");
+    }
+
+    private async Task CreateNewVersionAsync()
+    {
+        var result = await TrainingManagementService.CreateNextCourseVersionAsync(CourseId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync();
+        await ShowSuccessToastAsync(result.Message ?? "New course version created.");
+    }
+
+    private async Task PublishCurrentVersionAsync()
+    {
+        if (Builder is null)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.PublishCourseVersionAsync(CourseId, Builder.CurrentVersionId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadBuilderAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Course version published.");
+    }
+
+    private string GetVersionText() => string.IsNullOrWhiteSpace(Builder?.CurrentVersionLabel)
+        ? $"v{Builder?.CurrentVersionNumber}"
+        : $"{Builder?.CurrentVersionLabel} · {(Builder?.PublishedOnUtc.HasValue == true ? "Published" : "Draft")}";
+
+    private static string GetModuleRenderKey(TrainingModuleEditModel module) =>
+        module.ModuleId?.ToString() ?? $"new-module-{module.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(module)}";
+
+    private static string GetLessonRenderKey(TrainingLessonEditModel lesson) =>
+        lesson.LessonId?.ToString() ?? $"new-lesson-{lesson.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(lesson)}";
+
+    private static string GetBlockRenderKey(TrainingLessonBlockEditModel block) =>
+        block.LessonBlockId?.ToString() ?? $"new-block-{block.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(block)}";
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        ErrorMessage = null;
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = message,
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 3500
+        });
+    }
+}
