@@ -27,6 +27,8 @@ namespace AlgoaBayBMT.Data
         public int? CompanyId { get; set; }
         public int? PrimaryAreaId { get; set; }
         public int? VesselId { get; set; }
+        public byte[]? ProfilePicture { get; set; }
+        public string? ProfilePictureContentType { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime RegisteredOnUtc { get; set; } = DateTime.UtcNow;
 

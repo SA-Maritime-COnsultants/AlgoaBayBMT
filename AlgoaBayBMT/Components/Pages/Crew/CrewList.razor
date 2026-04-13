@@ -52,33 +52,31 @@
                     </div>
                 </div>
             }
-            else
+
+            @if (CurrentVessel is not null)
             {
-                @if (CurrentVessel is not null)
-                {
-                    <div class="pf-detail-grid">
-                        <div class="pf-detail-item">
-                            <span class="pf-detail-label">Assigned Vessel</span>
-                            <span class="pf-detail-value">@CurrentVessel.Name</span>
-                        </div>
-                        <div class="pf-detail-item">
-                            <span class="pf-detail-label">IMO Number</span>
-                            <span class="pf-detail-value">@(CurrentVessel.ImoNumber)</span>
-                        </div>
-                        <div class="pf-detail-item">
-                            <span class="pf-detail-label">Flag State</span>
-                            <span class="pf-detail-value">@(CurrentVessel.FlagState ?? "-")</span>
-                        </div>
-                        <div class="pf-detail-item">
-                            <span class="pf-detail-label">Call Sign</span>
-                            <span class="pf-detail-value">@(CurrentVessel.CallSign ?? "-")</span>
-                        </div>
+                <dl class="pf-vessel-details">
+                    <div class="pf-vessel-detail-row">
+                        <dt class="pf-vessel-label">Assigned Vessel</dt>
+                        <dd class="pf-vessel-value">@CurrentVessel.Name</dd>
                     </div>
-                }
-                else
-                {
-                    <div class="pf-empty-state">You do not have an active vessel assignment. Contact your administrator.</div>
-                }
+                    <div class="pf-vessel-detail-row">
+                        <dt class="pf-vessel-label">IMO</dt>
+                        <dd class="pf-vessel-value">@CurrentVessel.ImoNumber</dd>
+                    </div>
+                    <div class="pf-vessel-detail-row">
+                        <dt class="pf-vessel-label">Call Sign</dt>
+                        <dd class="pf-vessel-value">@(CurrentVessel.CallSign ?? "-")</dd>
+                    </div>
+                    <div class="pf-vessel-detail-row">
+                        <dt class="pf-vessel-label">Flag State</dt>
+                        <dd class="pf-vessel-value">@(CurrentVessel.FlagState ?? "-")</dd>
+                    </div>
+                </dl>
+            }
+            else if (!IsAdminOrManager)
+            {
+                <div class="pf-empty-state">You do not have an active vessel assignment. Contact your administrator.</div>
             }
         </CardContent>
     </SfCard>
@@ -95,7 +93,7 @@
                     }
                 </div>
 
-                <SfGrid DataSource="@ActiveCrew" TValue="CrewDeployment" AllowSorting="true" AllowFiltering="true" EnableHover="true">
+                <SfGrid DataSource="@ActiveCrew" TValue="CrewDeployment" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact" RowHeight="36">
                     <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
                     <GridColumns>
                         <GridColumn HeaderText="Name" Width="180">
@@ -153,8 +151,8 @@
                                     <div class="pf-grid-actions pf-grid-actions--compact pf-grid-actions--no-gap">
                                         <span class="pf-icon-action" title="Sign Off">
                                             <SfButton CssClass="e-flat e-danger pf-btn-deactivate pf-btn-icon pf-btn-square"
-                                                      IconCss="e-icons e-eye-slash"
                                                       OnClick="@(_ => OpenSignOffDialog(dep))">
+                                                <span class="e-icons e-eye-slash" aria-hidden="true"></span>
                                                 <span class="visually-hidden">Sign Off</span>
                                             </SfButton>
                                         </span>

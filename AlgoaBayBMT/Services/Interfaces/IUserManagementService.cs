@@ -8,8 +8,10 @@ namespace AlgoaBayBMT.Services.Interfaces
     {
         Task<List<ApplicationUser>> GetUsersAsync(string? searchTerm, bool crewOnly = false, CancellationToken cancellationToken = default);
         Task<UserAdministrationModel?> GetUserEditorAsync(string userId, CancellationToken cancellationToken = default);
+        Task<UserProfileManageModel?> GetSelfProfileAsync(string userId, CancellationToken cancellationToken = default);
         Task<OperationResult<ApplicationUser>> CreateUserAsync(UserAdministrationModel model, CancellationToken cancellationToken = default);
         Task<OperationResult<ApplicationUser>> UpdateUserAsync(UserAdministrationModel model, CancellationToken cancellationToken = default);
+        Task<OperationResult<UserProfileManageModel>> UpdateSelfProfileAsync(string userId, UserProfileManageModel model, CancellationToken cancellationToken = default);
         Task<OperationResult> SetUserActivationAsync(string userId, bool isActive, CancellationToken cancellationToken = default);
         Task<OperationResult> SetUserApprovalAsync(string userId, bool isApproved, CancellationToken cancellationToken = default);
         Task<OperationResult> SetEmailConfirmedAsync(string userId, bool emailConfirmed, CancellationToken cancellationToken = default);

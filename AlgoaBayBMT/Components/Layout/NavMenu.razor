@@ -49,12 +49,14 @@
                 </button>
                 <div class="side-nav-collapsible @(_crewMgmtExpanded ? "side-nav-collapsible--open" : "")">
                     <ul class="side-nav-items">
+                        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager}")" Context="deploymentsAuth">
                         <li class="side-nav-item">
                             <NavLink class="side-nav-link" href="user-management/crew-deployments" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)DashboardIcon)</span>
                                 <span class="side-nav-copy"><span class="side-nav-label">Crew Deployments</span><span class="side-nav-meta">Deployment history</span></span>
                             </NavLink>
                         </li>
+                        </AuthorizeView>
                         <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager}")" Context="crewListsAuth">
                         <li class="side-nav-item">
                             <NavLink class="side-nav-link" href="user-management/crew-lists" @onclick="HandleNavClick">

@@ -1,17 +1,21 @@
 ﻿@inherits LayoutComponentBase
 @layout AlgoaBayBMT.Components.Layout.MainLayout
 
-<h1>Manage your account</h1>
+<div class="page-shell pf-manage-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Account Management</h1>
+            <div class="page-subtitle">Maintain your crew profile, contact data, identity documents, and security settings.</div>
+        </div>
+    </div>
 
-<div>
-    <h2>Change your account settings</h2>
-    <hr />
-    <div class="row">
-        <div class="col-lg-3">
+    <div class="pf-manage-layout">
+        <aside class="pf-manage-nav-panel" aria-label="Account management navigation">
             <ManageNavMenu />
-        </div>
-        <div class="col-lg-9">
+        </aside>
+
+        <section class="pf-manage-content-panel">
             @Body
-        </div>
+        </section>
     </div>
 </div>

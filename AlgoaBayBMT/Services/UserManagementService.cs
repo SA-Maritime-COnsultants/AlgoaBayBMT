@@ -90,6 +90,16 @@ namespace AlgoaBayBMT.Services
             };
         }
 
+        public async Task<UserProfileManageModel?> GetSelfProfileAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            var user = await dbContext.Users
+                .AsNoTracking()
+                .Include(x => x.CrewMemberDetails)
+                .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+
+            return user is null ? null : MapSelfProfile(user);
+        }
+
         public async Task<OperationResult<ApplicationUser>> CreateUserAsync(UserAdministrationModel model, CancellationToken cancellationToken = default)
         {
             var validation = await ValidateModelAsync(model, isEdit: false, cancellationToken);
@@ -226,6 +236,101 @@ namespace AlgoaBayBMT.Services
             }
 
             return OperationResult<ApplicationUser>.Success(user, "User updated.");
+        }
+
+        public async Task<OperationResult<UserProfileManageModel>> UpdateSelfProfileAsync(
+            string userId,
+            UserProfileManageModel model,
+            CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return OperationResult<UserProfileManageModel>.Failure("User id is required.");
+            }
+
+            if (string.IsNullOrWhiteSpace(model.FullName))
+            {
+                return OperationResult<UserProfileManageModel>.Failure("Full name is required.");
+            }
+
+            if (model.ProfilePicture is not null)
+            {
+                if (string.IsNullOrWhiteSpace(model.ProfilePictureContentType) ||
+                    !model.ProfilePictureContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                {
+                    return OperationResult<UserProfileManageModel>.Failure("Profile picture must be a supported image.");
+                }
+
+                if (model.ProfilePicture.Length > 2 * 1024 * 1024)
+                {
+                    return OperationResult<UserProfileManageModel>.Failure("Profile picture must be 2 MB or smaller.");
+                }
+            }
+
+            var normalizedSidNumber = NormalizeSidNumber(model.SidNumber);
+            if (!string.IsNullOrWhiteSpace(normalizedSidNumber) && !SidNumberRegex.IsMatch(normalizedSidNumber))
+            {
+                return OperationResult<UserProfileManageModel>.Failure("SID must be 6–20 characters and may contain only letters, numbers, and hyphens.");
+            }
+
+            var user = await dbContext.Users
+                .Include(x => x.CrewMemberDetails)
+                .FirstOrDefaultAsync(x => x.Id == userId, cancellationToken);
+
+            if (user is null)
+            {
+                return OperationResult<UserProfileManageModel>.Failure("User not found.");
+            }
+
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            user.FullName = model.FullName.Trim();
+            user.CellNo = model.CellNo?.Trim();
+            user.Address = model.Address?.Trim();
+            user.Country = model.Country?.Trim();
+            user.Qualification = model.Qualification;
+            user.CrewRank = model.Qualification?.ToCrewRank();
+            user.SidNumber = normalizedSidNumber;
+            user.SidIssuingCountry = model.SidIssuingCountry?.Trim();
+            user.SidIssuingAuthority = model.SidIssuingAuthority?.Trim();
+            user.SidIssueDate = model.SidIssueDate;
+            user.SidExpiryDate = model.SidExpiryDate;
+
+            if (model.ProfilePicture is not null)
+            {
+                user.ProfilePicture = model.ProfilePicture;
+                user.ProfilePictureContentType = model.ProfilePictureContentType?.Trim();
+            }
+
+            if (user.IsCrew)
+            {
+                user.CrewMemberDetails ??= new CrewMemberDetails
+                {
+                    UserId = user.Id,
+                    CreatedOnUtc = DateTime.UtcNow
+                };
+
+                user.CrewMemberDetails.GivenNames = model.GivenNames?.Trim();
+                user.CrewMemberDetails.Gender = model.Gender?.Trim();
+                user.CrewMemberDetails.DateOfBirth = model.DateOfBirth;
+                user.CrewMemberDetails.PlaceOfBirth = model.PlaceOfBirth?.Trim();
+                user.CrewMemberDetails.Nationality = model.Nationality?.Trim();
+                user.CrewMemberDetails.PassportNumber = model.PassportNumber?.Trim();
+                user.CrewMemberDetails.PassportExpiry = model.PassportExpiry;
+                user.CrewMemberDetails.ModifiedOnUtc = DateTime.UtcNow;
+            }
+
+            var updateResult = await userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return OperationResult<UserProfileManageModel>.Failure(updateResult.Errors.Select(x => x.Description).ToArray());
+            }
+
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            return OperationResult<UserProfileManageModel>.Success(MapSelfProfile(user), "Profile updated.");
         }
 
         private async Task<OperationResult<ApplicationUser>?> ValidateModelAsync(UserAdministrationModel model, bool isEdit, CancellationToken cancellationToken)
@@ -655,5 +760,33 @@ namespace AlgoaBayBMT.Services
 
             return new string(password);
         }
+
+        private static UserProfileManageModel MapSelfProfile(ApplicationUser user) => new()
+        {
+            UserId = user.Id,
+            UserName = user.UserName,
+            Email = user.Email,
+            EmailConfirmed = user.EmailConfirmed,
+            IsCrew = user.IsCrew,
+            FullName = user.FullName ?? string.Empty,
+            CellNo = user.CellNo,
+            Address = user.Address,
+            Country = user.Country,
+            Qualification = user.Qualification,
+            SidNumber = user.SidNumber,
+            SidIssuingCountry = user.SidIssuingCountry,
+            SidIssuingAuthority = user.SidIssuingAuthority,
+            SidIssueDate = user.SidIssueDate,
+            SidExpiryDate = user.SidExpiryDate,
+            GivenNames = user.CrewMemberDetails?.GivenNames,
+            Gender = user.CrewMemberDetails?.Gender,
+            DateOfBirth = user.CrewMemberDetails?.DateOfBirth,
+            PlaceOfBirth = user.CrewMemberDetails?.PlaceOfBirth,
+            Nationality = user.CrewMemberDetails?.Nationality,
+            PassportNumber = user.CrewMemberDetails?.PassportNumber,
+            PassportExpiry = user.CrewMemberDetails?.PassportExpiry,
+            ProfilePicture = user.ProfilePicture,
+            ProfilePictureContentType = user.ProfilePictureContentType
+        };
     }
 }

@@ -44,6 +44,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.SidNumber).HasMaxLength(20);
                 entity.Property(x => x.SidIssuingCountry).HasMaxLength(100);
                 entity.Property(x => x.SidIssuingAuthority).HasMaxLength(150);
+                entity.Property(x => x.ProfilePictureContentType).HasMaxLength(100);
                 entity.Property(x => x.ApprovalNotes).HasMaxLength(1024);
                 entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
                 entity.HasOne(x => x.Company)
