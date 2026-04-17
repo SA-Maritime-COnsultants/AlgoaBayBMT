@@ -6,3 +6,7 @@
 - Implement compact one-row action areas on data grids, utilizing colored icon-only buttons with tooltip text for a neater UI.
 - Ensure that auto-generated passwords comply with the application's configured Identity password requirements.
 - Use `IDbContextFactory<ApplicationDbContext>` in services instead of injecting a shared `DbContext` directly to ensure safe concurrent component loading in Blazor SSR.
+
+## Training Component Formatting
+- When converting training content for AlgoaBayBMT, expect the user to provide plain text plus a selected content type (Slide, Flashcard, Knowledge Check MCQ/True-False, Scenario, Lesson Narrative, Course Overview, Competency Task, or Question Bank Item).
+- Return the corresponding training component format while cleaning and structuring the text automatically.

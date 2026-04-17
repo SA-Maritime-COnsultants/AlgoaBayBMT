@@ -6,6 +6,7 @@ namespace AlgoaBayBMT.Shared.Security
         public const string SeniorManager = "SENIOR_MANAGER";
         public const string Officer = "OFFICER";
         public const string Crew = "CREW";
+        public const string Responder = "RESPONDER";
         public const string Poac = "POAC";
         public const string CompanyManager = "COMPANY_MANAGER";
         public const string CompanyUser = "COMPANY_USER";
@@ -22,6 +23,7 @@ namespace AlgoaBayBMT.Shared.Security
             SeniorManager,
             Officer,
             Crew,
+            Responder,
             Poac,
             CompanyManager,
             CompanyUser,
@@ -45,6 +47,13 @@ namespace AlgoaBayBMT.Shared.Security
         [
             Dffe,
             Tnpa,
+            Samsa
+        ];
+
+        public static readonly string[] TrainingFullAccess =
+        [
+            Admin,
+            Dffe,
             Samsa
         ];
     }

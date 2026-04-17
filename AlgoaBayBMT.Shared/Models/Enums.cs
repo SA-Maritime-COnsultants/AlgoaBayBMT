@@ -356,7 +356,52 @@ namespace AlgoaBayBMT.Shared.Models
         Embed = 7,
 
         [Display(Name = "Callout")]
-        Callout = 8
+        Callout = 8,
+
+        [Display(Name = "Course Overview")]
+        CourseOverview = 9,
+
+        [Display(Name = "Slide")]
+        Slide = 10,
+
+        [Display(Name = "Lesson Page")]
+        LessonPage = 11,
+
+        [Display(Name = "Video")]
+        Video = 12,
+
+        [Display(Name = "Flashcard")]
+        Flashcard = 13,
+
+        [Display(Name = "Card")]
+        Card = 14,
+
+        [Display(Name = "Knowledge Check Intro")]
+        KnowledgeCheckIntro = 15,
+
+        [Display(Name = "Scenario Prompt")]
+        ScenarioPrompt = 16,
+
+        [Display(Name = "Quiz")]
+        Quiz = 17,
+
+        [Display(Name = "Assessment")]
+        Assessment = 18
+    }
+
+    public enum TrainingAudienceType
+    {
+        [Display(Name = "All")]
+        All = 0,
+
+        [Display(Name = "Crew")]
+        Crew = 1,
+
+        [Display(Name = "Officers")]
+        Officers = 2,
+
+        [Display(Name = "Responders")]
+        Responders = 3
     }
 
     public enum QuestionType
@@ -371,7 +416,10 @@ namespace AlgoaBayBMT.Shared.Models
         TrueFalse = 2,
 
         [Display(Name = "Free Text")]
-        FreeText = 3
+        FreeText = 3,
+
+        [Display(Name = "Scenario")]
+        Scenario = 4
     }
 
     public enum ProgressStatus
@@ -386,7 +434,10 @@ namespace AlgoaBayBMT.Shared.Models
         Completed = 2,
 
         [Display(Name = "Expired")]
-        Expired = 3
+        Expired = 3,
+
+        [Display(Name = "Failed")]
+        Failed = 4
     }
 
     public enum CourseAudienceRuleType
@@ -396,6 +447,96 @@ namespace AlgoaBayBMT.Shared.Models
 
         [Display(Name = "Application Role")]
         ApplicationRole = 1,
+
+        [Display(Name = "Onboard Role")]
+        OnBoardRole = 2,
+
+        [Display(Name = "Qualification")]
+        Qualification = 3,
+
+        [Display(Name = "Manual Assignment")]
+        ManualAssignment = 4
+    }
+
+    public enum TrainingContentBlockType
+    {
+        [Display(Name = "Course Overview")]
+        CourseOverview = 0,
+
+        [Display(Name = "Slide")]
+        Slide = 1,
+
+        [Display(Name = "Lesson Page")]
+        LessonPage = 2,
+
+        [Display(Name = "Video")]
+        Video = 3,
+
+        [Display(Name = "Flashcard")]
+        Flashcard = 4,
+
+        [Display(Name = "PDF Document")]
+        PdfDocument = 5,
+
+        [Display(Name = "Download")]
+        Download = 6,
+
+        [Display(Name = "Image")]
+        Image = 7,
+
+        [Display(Name = "Card")]
+        Card = 8,
+
+        [Display(Name = "Knowledge Check Intro")]
+        KnowledgeCheckIntro = 9,
+
+        [Display(Name = "Scenario Prompt")]
+        ScenarioPrompt = 10,
+
+        [Display(Name = "Callout")]
+        Callout = 11,
+
+        [Display(Name = "Embed")]
+        Embed = 12
+    }
+
+    public enum TrainingQuestionType
+    {
+        [Display(Name = "Multiple Choice")]
+        MultipleChoice = 0,
+
+        [Display(Name = "True / False")]
+        TrueFalse = 1,
+
+        [Display(Name = "Scenario")]
+        Scenario = 2
+    }
+
+    public enum TrainingProgressStatus
+    {
+        [Display(Name = "Not Started")]
+        NotStarted = 0,
+
+        [Display(Name = "Started")]
+        Started = 1,
+
+        [Display(Name = "Completed")]
+        Completed = 2,
+
+        [Display(Name = "Failed")]
+        Failed = 3,
+
+        [Display(Name = "Expired")]
+        Expired = 4
+    }
+
+    public enum TrainingAudienceRuleType
+    {
+        [Display(Name = "All Crew")]
+        AllCrew = 0,
+
+        [Display(Name = "Application Role")]
+        AppRole = 1,
 
         [Display(Name = "Onboard Role")]
         OnBoardRole = 2,

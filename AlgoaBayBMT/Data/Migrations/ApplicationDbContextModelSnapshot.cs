@@ -17,7 +17,7 @@ namespace AlgoaBayBMT.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.0")
+                .HasAnnotation("ProductVersion", "10.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -181,6 +181,132 @@ namespace AlgoaBayBMT.Migrations
                     b.HasIndex("VesselId");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.Lesson", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuthoringLessons", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.LessonContentItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BackHtml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("BodyHtml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<bool?>("CorrectBool")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("CorrectOption")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int?>("CorrectOptionIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DescriptionHtml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FrontText")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("LessonId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Option1")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Option2")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Option3")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Option4")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OptionA")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OptionB")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OptionC")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("OptionD")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("QuestionHtml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ScenarioHtml")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VideoUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LessonId", "ContentType");
+
+                    b.ToTable("LessonContentItems", (string)null);
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.Anchorage", b =>
@@ -722,9 +848,19 @@ namespace AlgoaBayBMT.Migrations
                     b.Property<string>("LearningObjectives")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<decimal>("PassMarkPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(80m);
+
                     b.Property<string>("RegulatoryReference")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("TargetAudienceSummary")
                         .HasMaxLength(500)
@@ -1168,6 +1304,11 @@ namespace AlgoaBayBMT.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
                     b.Property<bool>("IsRequired")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
@@ -1191,6 +1332,14 @@ namespace AlgoaBayBMT.Migrations
 
                     b.Property<int>("OrderIndex")
                         .HasColumnType("int");
+
+                    b.Property<string>("Subtitle")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("Title")
                         .HasMaxLength(200)
@@ -1417,6 +1566,125 @@ namespace AlgoaBayBMT.Migrations
                     b.ToTable("TrainingCertificates", (string)null);
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingCourseAssessment", b =>
+                {
+                    b.Property<Guid>("TrainingCourseAssessmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Instructions")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("MaxAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("PassMarkPercent")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasDefaultValue(80m);
+
+                    b.Property<int>("RandomQuestionCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(25);
+
+                    b.Property<int?>("TimeLimitMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TrainingCourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TrainingCourseAssessmentId");
+
+                    b.HasIndex("TrainingCourseId");
+
+                    b.ToTable("TrainingCourseAssessments", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingKnowledgeCheckOption", b =>
+                {
+                    b.Property<Guid>("TrainingKnowledgeCheckOptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCorrect")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("OptionText")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TrainingKnowledgeCheckQuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TrainingKnowledgeCheckOptionId");
+
+                    b.HasIndex("TrainingKnowledgeCheckQuestionId", "OrderIndex")
+                        .IsUnique();
+
+                    b.ToTable("TrainingKnowledgeCheckOptions", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingKnowledgeCheckQuestion", b =>
+                {
+                    b.Property<Guid>("TrainingKnowledgeCheckQuestionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Explanation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Points")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("QuestionType")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TrainingLessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TrainingKnowledgeCheckQuestionId");
+
+                    b.HasIndex("TrainingLessonId", "OrderIndex")
+                        .IsUnique();
+
+                    b.ToTable("TrainingKnowledgeCheckQuestions", (string)null);
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingLesson", b =>
                 {
                     b.Property<Guid>("LessonId")
@@ -1507,6 +1775,84 @@ namespace AlgoaBayBMT.Migrations
                     b.ToTable("Modules", (string)null);
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankOption", b =>
+                {
+                    b.Property<Guid>("TrainingQuestionBankOptionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCorrect")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("OptionText")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("TrainingQuestionBankQuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TrainingQuestionBankOptionId");
+
+                    b.HasIndex("TrainingQuestionBankQuestionId", "OrderIndex")
+                        .IsUnique();
+
+                    b.ToTable("TrainingQuestionBankOptions", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankQuestion", b =>
+                {
+                    b.Property<Guid>("TrainingQuestionBankQuestionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int?>("DifficultyLevel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Explanation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<decimal>("Points")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("QuestionType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ScenarioText")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<Guid>("TrainingCourseAssessmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("TrainingModuleId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("TrainingQuestionBankQuestionId");
+
+                    b.HasIndex("TrainingCourseAssessmentId");
+
+                    b.HasIndex("TrainingModuleId");
+
+                    b.ToTable("TrainingQuestionBankQuestions", (string)null);
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAreaAssignment", b =>
                 {
                     b.Property<int>("Id")
@@ -1549,6 +1895,84 @@ namespace AlgoaBayBMT.Migrations
                         .IsUnique();
 
                     b.ToTable("UserAreaAssignments");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAssessmentAttempt", b =>
+                {
+                    b.Property<Guid>("UserAssessmentAttemptId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptNumber")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Passed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<decimal?>("ScorePercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<DateTime>("StartedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("SubmittedOnUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("TrainingCourseAssessmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("UserAssessmentAttemptId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("TrainingCourseAssessmentId", "UserId", "AttemptNumber")
+                        .IsUnique();
+
+                    b.ToTable("UserAssessmentAttempts", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAssessmentResponse", b =>
+                {
+                    b.Property<Guid>("UserAssessmentResponseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal?>("AwardedPoints")
+                        .HasPrecision(8, 2)
+                        .HasColumnType("decimal(8,2)");
+
+                    b.Property<string>("FreeTextAnswer")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool?>("IsCorrect")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid?>("SelectedOptionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("TrainingQuestionBankQuestionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserAssessmentAttemptId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("UserAssessmentResponseId");
+
+                    b.HasIndex("SelectedOptionId");
+
+                    b.HasIndex("TrainingQuestionBankQuestionId");
+
+                    b.HasIndex("UserAssessmentAttemptId");
+
+                    b.ToTable("UserAssessmentResponses", (string)null);
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserCourseProgress", b =>
@@ -1615,6 +2039,11 @@ namespace AlgoaBayBMT.Migrations
 
                     b.Property<string>("CompletionEvidenceJson")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("KnowledgeCheckPassed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<DateTime?>("LastAccessedOnUtc")
                         .HasColumnType("datetime2");
@@ -2040,6 +2469,17 @@ namespace AlgoaBayBMT.Migrations
                     b.Navigation("Vessel");
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.LessonContentItem", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Models.Authoring.Lesson", "Lesson")
+                        .WithMany("ContentItems")
+                        .HasForeignKey("LessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.Anchorage", b =>
                 {
                     b.HasOne("AlgoaBayBMT.Shared.Models.Bay", "Bay")
@@ -2365,6 +2805,39 @@ namespace AlgoaBayBMT.Migrations
                     b.Navigation("CourseCompletionRecord");
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingCourseAssessment", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.Course", "Course")
+                        .WithMany("Assessments")
+                        .HasForeignKey("TrainingCourseId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingKnowledgeCheckOption", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingKnowledgeCheckQuestion", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("TrainingKnowledgeCheckQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingKnowledgeCheckQuestion", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingLesson", "Lesson")
+                        .WithMany("KnowledgeCheckQuestions")
+                        .HasForeignKey("TrainingLessonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Lesson");
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingLesson", b =>
                 {
                     b.HasOne("AlgoaBayBMT.Shared.Models.TrainingModule", "Module")
@@ -2387,6 +2860,35 @@ namespace AlgoaBayBMT.Migrations
                     b.Navigation("CourseVersion");
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankOption", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingQuestionBankQuestion", "Question")
+                        .WithMany("Options")
+                        .HasForeignKey("TrainingQuestionBankQuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankQuestion", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingCourseAssessment", "Assessment")
+                        .WithMany("QuestionBankQuestions")
+                        .HasForeignKey("TrainingCourseAssessmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingModule", "Module")
+                        .WithMany("QuestionBankQuestions")
+                        .HasForeignKey("TrainingModuleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Assessment");
+
+                    b.Navigation("Module");
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAreaAssignment", b =>
                 {
                     b.HasOne("AlgoaBayBMT.Shared.Models.OperationalArea", "OperationalArea")
@@ -2402,6 +2904,49 @@ namespace AlgoaBayBMT.Migrations
                         .IsRequired();
 
                     b.Navigation("OperationalArea");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAssessmentAttempt", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingCourseAssessment", "Assessment")
+                        .WithMany("Attempts")
+                        .HasForeignKey("TrainingCourseAssessmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("AlgoaBayBMT.Data.ApplicationUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assessment");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAssessmentResponse", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingQuestionBankOption", "SelectedOption")
+                        .WithMany("Responses")
+                        .HasForeignKey("SelectedOptionId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingQuestionBankQuestion", "Question")
+                        .WithMany("Responses")
+                        .HasForeignKey("TrainingQuestionBankQuestionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("AlgoaBayBMT.Shared.Models.UserAssessmentAttempt", "Attempt")
+                        .WithMany("Responses")
+                        .HasForeignKey("UserAssessmentAttemptId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Attempt");
+
+                    b.Navigation("Question");
+
+                    b.Navigation("SelectedOption");
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserCourseProgress", b =>
@@ -2586,7 +3131,9 @@ namespace AlgoaBayBMT.Migrations
 
                             b1.ToTable("AspNetUserPasskeys");
 
-                            b1.ToJson("Data");
+                            b1
+                                .ToJson("Data")
+                                .HasColumnType("nvarchar(max)");
 
                             b1.WithOwner()
                                 .HasForeignKey("IdentityUserPasskeyCredentialId");
@@ -2631,6 +3178,11 @@ namespace AlgoaBayBMT.Migrations
                     b.Navigation("VesselCrewListEntries");
 
                     b.Navigation("VesselRoleAssignments");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.Lesson", b =>
+                {
+                    b.Navigation("ContentItems");
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.Assessment", b =>
@@ -2680,6 +3232,8 @@ namespace AlgoaBayBMT.Migrations
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.Course", b =>
                 {
+                    b.Navigation("Assessments");
+
                     b.Navigation("AudienceRules");
 
                     b.Navigation("CompletionRecords");
@@ -2739,11 +3293,25 @@ namespace AlgoaBayBMT.Migrations
                     b.Navigation("Bays");
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingCourseAssessment", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("QuestionBankQuestions");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingKnowledgeCheckQuestion", b =>
+                {
+                    b.Navigation("Options");
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingLesson", b =>
                 {
                     b.Navigation("Assessment");
 
                     b.Navigation("CurrentCourseProgressRecords");
+
+                    b.Navigation("KnowledgeCheckQuestions");
 
                     b.Navigation("LessonBlocks");
 
@@ -2753,6 +3321,25 @@ namespace AlgoaBayBMT.Migrations
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingModule", b =>
                 {
                     b.Navigation("Lessons");
+
+                    b.Navigation("QuestionBankQuestions");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankOption", b =>
+                {
+                    b.Navigation("Responses");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankQuestion", b =>
+                {
+                    b.Navigation("Options");
+
+                    b.Navigation("Responses");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Shared.Models.UserAssessmentAttempt", b =>
+                {
+                    b.Navigation("Responses");
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.Vessel", b =>

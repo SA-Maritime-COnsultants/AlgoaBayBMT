@@ -2,11 +2,17 @@ using AlgoaBayBMT.Data;
 using AlgoaBayBMT.Services.Interfaces;
 using AlgoaBayBMT.Services.Models;
 using AlgoaBayBMT.Shared.Models;
+using AlgoaBayBMT.Shared.Security;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace AlgoaBayBMT.Services
 {
-    public class TrainingManagementService(IDbContextFactory<ApplicationDbContext> dbContextFactory) : ITrainingManagementService
+    public class TrainingManagementService(
+        IDbContextFactory<ApplicationDbContext> dbContextFactory,
+        RoleManager<IdentityRole> roleManager,
+        ITrainingAssetStorageService trainingAssetStorageService) : ITrainingManagementService
     {
         public async Task<TrainingDashboardModel> GetDashboardAsync(CancellationToken cancellationToken = default)
         {
@@ -15,10 +21,14 @@ namespace AlgoaBayBMT.Services
             var dashboard = new TrainingDashboardModel
             {
                 TotalCourses = await dbContext.Courses.AsNoTracking().CountAsync(cancellationToken),
+                ActiveCourses = await dbContext.Courses.AsNoTracking().CountAsync(x => x.IsActive, cancellationToken),
                 PublishedCourses = await dbContext.CourseVersions.AsNoTracking().CountAsync(x => x.Status == CourseVersionStatus.Published, cancellationToken),
                 DraftCourses = await dbContext.CourseVersions.AsNoTracking().CountAsync(x => x.Status == CourseVersionStatus.Draft, cancellationToken),
                 TotalModules = await dbContext.Modules.AsNoTracking().CountAsync(cancellationToken),
-                TotalLessons = await dbContext.Lessons.AsNoTracking().CountAsync(cancellationToken)
+                TotalLessons = await dbContext.Lessons.AsNoTracking().CountAsync(cancellationToken),
+                TotalContentBlocks = await dbContext.LessonBlocks.AsNoTracking().CountAsync(cancellationToken),
+                TotalQuestionBankQuestions = await dbContext.TrainingQuestionBankQuestions.AsNoTracking().CountAsync(cancellationToken),
+                ActiveLearners = await dbContext.UserCourseProgress.AsNoTracking().Select(x => x.UserId).Distinct().CountAsync(cancellationToken)
             };
 
             dashboard.RecentCourses = (await GetCoursesAsync(cancellationToken))
@@ -27,6 +37,67 @@ namespace AlgoaBayBMT.Services
                 .ToList();
 
             return dashboard;
+        }
+
+        public async Task<OperationResult> ResetTrainingDataAsync(string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var trainingFileUrls = new List<string>();
+            trainingFileUrls.AddRange(await dbContext.Courses.AsNoTracking()
+                .Where(x => x.ThumbnailUrl != null)
+                .Select(x => x.ThumbnailUrl!)
+                .ToListAsync(cancellationToken));
+
+            var blockAssets = await dbContext.LessonBlocks.AsNoTracking()
+                .Select(x => new { x.ThumbnailUrl, x.FileUrl, x.ExternalUrl })
+                .ToListAsync(cancellationToken);
+            trainingFileUrls.AddRange(blockAssets.SelectMany(x => new[] { x.ThumbnailUrl, x.FileUrl, x.ExternalUrl }).Where(x => !string.IsNullOrWhiteSpace(x))!);
+
+            trainingFileUrls.AddRange(await dbContext.MediaAssets.AsNoTracking()
+                .Where(x => x.RelativePath.StartsWith("uploads/training"))
+                .Select(x => "/" + x.RelativePath)
+                .ToListAsync(cancellationToken));
+
+            var deletedCourseCount = await dbContext.Courses.AsNoTracking().CountAsync(cancellationToken);
+
+            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
+
+            await dbContext.UserAssessmentResponses.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.UserAssessmentAttempts.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingQuestionBankOptions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingQuestionBankQuestions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingCourseAssessments.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingKnowledgeCheckOptions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingKnowledgeCheckQuestions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingCertificates.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.CourseCompletionRecords.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.AssessmentResponses.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.AssessmentAttempts.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.AssessmentOptions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.AssessmentQuestions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.Assessments.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.UserLessonProgress.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.UserCourseProgress.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.UserTrainingAssignments.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.CourseAudienceRules.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.LessonBlocks.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.Lessons.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.Modules.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.CourseVersions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingAuditLogs.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.Courses.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.MediaAssets
+                .Where(x => x.RelativePath.StartsWith("uploads/training"))
+                .ExecuteDeleteAsync(cancellationToken);
+
+            await transaction.CommitAsync(cancellationToken);
+
+            await trainingAssetStorageService.DeleteFilesAsync(trainingFileUrls, cancellationToken);
+
+            return OperationResult.Success(deletedCourseCount == 0
+                ? "Training data was already empty."
+                : $"Training reset completed. {deletedCourseCount} course record(s) and related training data were removed.");
         }
 
         public async Task<List<TrainingCourseListItemModel>> GetCoursesAsync(CancellationToken cancellationToken = default)
@@ -41,15 +112,28 @@ namespace AlgoaBayBMT.Services
                     CourseId = x.CourseId,
                     Code = x.Code,
                     Title = x.Title,
+                    Summary = x.Summary,
                     Description = x.Description,
                     TargetAudienceSummary = x.TargetAudienceSummary,
+                    PassMarkPercent = x.PassMarkPercent,
+                    DurationMinutes = x.EstimatedDurationMinutes,
                     ValidityMonths = x.ValidityMonths,
                     IsMandatory = x.IsMandatory,
                     IsActive = x.IsActive,
+                    ThumbnailUrl = x.ThumbnailUrl,
                     CurrentVersionId = x.CurrentVersionId,
                     CreatedOnUtc = x.CreatedOnUtc
                 })
                 .ToListAsync(cancellationToken);
+
+            var courseIds = courses.Select(x => x.CourseId).ToList();
+            var audienceRules = await dbContext.CourseAudienceRules
+                .AsNoTracking()
+                .Where(x => courseIds.Contains(x.CourseId))
+                .ToListAsync(cancellationToken);
+            var audienceLookup = audienceRules
+                .GroupBy(x => x.CourseId)
+                .ToDictionary(x => x.Key, x => ResolveAudienceType(x));
 
             var currentVersionIds = courses
                 .Where(x => x.CurrentVersionId.HasValue)
@@ -89,6 +173,9 @@ namespace AlgoaBayBMT.Services
 
             foreach (var course in courses)
             {
+                course.AudienceType = audienceLookup.GetValueOrDefault(course.CourseId, TrainingAudienceType.All);
+                course.TargetAudienceSummary = GetAudienceSummary(course.AudienceType);
+
                 if (course.CurrentVersionId.HasValue && versionLookup.TryGetValue(course.CurrentVersionId.Value, out var version))
                 {
                     course.CurrentVersionNumber = version.VersionNumber;
@@ -106,29 +193,48 @@ namespace AlgoaBayBMT.Services
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-            return await dbContext.Courses
+            var course = await dbContext.Courses
                 .AsNoTracking()
                 .Where(x => x.CourseId == courseId)
                 .Select(x => new TrainingCourseEditModel
                 {
                     CourseId = x.CourseId,
                     Code = x.Code,
+                    Name = x.Title,
                     Title = x.Title,
+                    Summary = x.Summary,
                     Description = x.Description,
                     ThumbnailUrl = x.ThumbnailUrl,
                     TargetAudienceSummary = x.TargetAudienceSummary,
                     RegulatoryReference = x.RegulatoryReference,
                     LearningObjectives = x.LearningObjectives,
+                    PassMarkPercent = x.PassMarkPercent,
                     ValidityMonths = x.ValidityMonths,
+                    DurationMinutes = x.EstimatedDurationMinutes,
                     EstimatedDurationMinutes = x.EstimatedDurationMinutes,
                     IsMandatory = x.IsMandatory,
                     IsActive = x.IsActive
                 })
                 .FirstOrDefaultAsync(cancellationToken);
+
+            if (course is null)
+            {
+                return null;
+            }
+
+            var rules = await dbContext.CourseAudienceRules
+                .AsNoTracking()
+                .Where(x => x.CourseId == courseId)
+                .ToListAsync(cancellationToken);
+            course.AudienceType = ResolveAudienceType(rules);
+            course.TargetAudienceSummary = GetAudienceSummary(course.AudienceType);
+
+            return course;
         }
 
         public async Task<OperationResult<TrainingCourseEditModel>> SaveCourseAsync(TrainingCourseEditModel model, string? changedByUserId, CancellationToken cancellationToken = default)
         {
+            await EnsureTrainingRolesAsync();
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
             var normalizedCode = model.Code.Trim().ToUpperInvariant();
@@ -138,6 +244,7 @@ namespace AlgoaBayBMT.Services
             }
 
             Course course;
+            var isNewCourse = !model.CourseId.HasValue;
             if (model.CourseId.HasValue)
             {
                 course = await dbContext.Courses.FirstOrDefaultAsync(x => x.CourseId == model.CourseId.Value, cancellationToken)
@@ -157,16 +264,32 @@ namespace AlgoaBayBMT.Services
             }
 
             course.Code = normalizedCode;
-            course.Title = model.Title.Trim();
+            var normalizedTitle = string.IsNullOrWhiteSpace(model.Name) ? model.Title.Trim() : model.Name.Trim();
+            course.Title = normalizedTitle;
+            course.Summary = model.Summary?.Trim();
             course.Description = model.Description?.Trim();
             course.ThumbnailUrl = model.ThumbnailUrl?.Trim();
-            course.TargetAudienceSummary = model.TargetAudienceSummary?.Trim();
+            course.TargetAudienceSummary = GetAudienceSummary(model.AudienceType);
             course.RegulatoryReference = model.RegulatoryReference?.Trim();
             course.LearningObjectives = model.LearningObjectives?.Trim();
+            course.PassMarkPercent = model.PassMarkPercent;
             course.ValidityMonths = model.ValidityMonths;
-            course.EstimatedDurationMinutes = model.EstimatedDurationMinutes;
+            course.EstimatedDurationMinutes = model.DurationMinutes ?? model.EstimatedDurationMinutes;
             course.IsMandatory = model.IsMandatory;
             course.IsActive = model.IsActive;
+
+            var existingAudienceRules = await dbContext.CourseAudienceRules
+                .Where(x => x.CourseId == course.CourseId)
+                .ToListAsync(cancellationToken);
+            if (existingAudienceRules.Count > 0)
+            {
+                dbContext.CourseAudienceRules.RemoveRange(existingAudienceRules);
+            }
+
+            foreach (var audienceRule in CreateAudienceRules(course.CourseId, model.AudienceType))
+            {
+                dbContext.CourseAudienceRules.Add(audienceRule);
+            }
 
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -192,7 +315,12 @@ namespace AlgoaBayBMT.Services
             }
 
             model.CourseId = course.CourseId;
-            await WriteAuditLogAsync(dbContext, "Course", course.CourseId.ToString(), model.CourseId.HasValue ? "Save" : "Create", changedByUserId, notes: course.Title, cancellationToken: cancellationToken);
+            model.Title = course.Title;
+            model.Name = course.Title;
+            model.TargetAudienceSummary = course.TargetAudienceSummary;
+            model.EstimatedDurationMinutes = course.EstimatedDurationMinutes;
+            model.DurationMinutes = course.EstimatedDurationMinutes;
+            await WriteAuditLogAsync(dbContext, "Course", course.CourseId.ToString(), isNewCourse ? "Create" : "Save", changedByUserId, notes: course.Title, cancellationToken: cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
             return OperationResult<TrainingCourseEditModel>.Success(model, "Course saved.");
@@ -405,12 +533,27 @@ namespace AlgoaBayBMT.Services
                 .OrderBy(x => x.OrderIndex)
                 .ToListAsync(cancellationToken);
 
+            var assessments = await dbContext.TrainingCourseAssessments.AsNoTracking()
+                .Where(x => x.TrainingCourseId == course.CourseId)
+                .OrderBy(x => x.Name)
+                .ToListAsync(cancellationToken);
+            var assessmentLookup = assessments.ToDictionary(x => x.TrainingCourseAssessmentId, x => x.Name);
+
+            var assessmentIds = assessments.Select(x => x.TrainingCourseAssessmentId).ToList();
+            var questionCounts = await dbContext.TrainingQuestionBankQuestions.AsNoTracking()
+                .Where(x => assessmentIds.Contains(x.TrainingCourseAssessmentId))
+                .GroupBy(x => x.TrainingCourseAssessmentId)
+                .Select(x => new { AssessmentId = x.Key, Count = x.Count() })
+                .ToDictionaryAsync(x => x.AssessmentId, x => x.Count, cancellationToken);
+
             return new TrainingCourseBuilderModel
             {
                 CourseId = course.CourseId,
                 Code = course.Code,
                 Title = course.Title,
+                Summary = course.Summary,
                 Description = course.Description,
+                PassMarkPercent = course.PassMarkPercent,
                 CurrentVersionId = version.CourseVersionId,
                 CurrentVersionNumber = version.VersionNumber,
                 CurrentVersionLabel = version.VersionLabel,
@@ -444,25 +587,52 @@ namespace AlgoaBayBMT.Services
                             Blocks = blocks
                                 .Where(x => x.LessonId == lesson.LessonId)
                                 .OrderBy(x => x.OrderIndex)
-                                .Select(block => new TrainingLessonBlockEditModel
-                                {
-                                    LessonBlockId = block.LessonBlockId,
-                                    LessonId = block.LessonId,
-                                    BlockType = block.BlockType,
-                                    Title = block.Title,
-                                    OrderIndex = block.OrderIndex,
-                                    MarkdownBody = block.MarkdownBody,
-                                    FileUrl = block.FileUrl,
-                                    ExternalUrl = block.ExternalUrl,
-                                    MimeType = block.MimeType,
-                                    DurationSeconds = block.DurationSeconds,
-                                    MetadataJson = block.MetadataJson,
-                                    MediaAssetId = block.MediaAssetId,
-                                    IsRequired = block.IsRequired
-                                })
+                                 .Select(block =>
+                                 {
+                                     var metadata = DeserializeBlockMetadata(block.MetadataJson);
+                                     return new TrainingLessonBlockEditModel
+                                     {
+                                         LessonBlockId = block.LessonBlockId,
+                                         LessonId = block.LessonId,
+                                         BlockType = block.BlockType,
+                                         Title = block.Title,
+                                         Subtitle = block.Subtitle,
+                                         OrderIndex = block.OrderIndex,
+                                         ContentHtml = block.MarkdownBody,
+                                         SecondaryContentHtml = metadata.SecondaryContentHtml,
+                                         IntroTextHtml = metadata.IntroTextHtml,
+                                          AvatarVideoUrl = metadata.AvatarVideoUrl,
+                                          AvatarMediaAssetId = metadata.AvatarMediaAssetId,
+                                         ThumbnailUrl = block.ThumbnailUrl,
+                                         FileUrl = block.FileUrl,
+                                         ExternalUrl = block.ExternalUrl,
+                                         MimeType = block.MimeType,
+                                         DurationSeconds = block.DurationSeconds,
+                                         MetadataJson = block.MetadataJson,
+                                         MediaAssetId = block.MediaAssetId,
+                                         LinkedAssessmentId = metadata.LinkedAssessmentId,
+                                         LinkedAssessmentName = metadata.LinkedAssessmentName ?? (metadata.LinkedAssessmentId.HasValue ? assessmentLookup.GetValueOrDefault(metadata.LinkedAssessmentId.Value) : null),
+                                         QuizQuestions = NormalizeQuizQuestions(metadata.QuizQuestions),
+                                         IsRequired = block.IsRequired,
+                                         IsActive = block.IsActive
+                                     };
+                                 })
                                 .ToList()
                         })
                         .ToList()
+                }).ToList(),
+                Assessments = assessments.Select(x => new TrainingCourseAssessmentEditModel
+                {
+                    TrainingCourseAssessmentId = x.TrainingCourseAssessmentId,
+                    TrainingCourseId = x.TrainingCourseId,
+                    Name = x.Name,
+                    Instructions = x.Instructions,
+                    PassMarkPercent = x.PassMarkPercent,
+                    RandomQuestionCount = x.RandomQuestionCount,
+                    MaxAttempts = x.MaxAttempts,
+                    TimeLimitMinutes = x.TimeLimitMinutes,
+                    IsActive = x.IsActive,
+                    QuestionBankCount = questionCounts.GetValueOrDefault(x.TrainingCourseAssessmentId)
                 }).ToList()
             };
         }
@@ -649,6 +819,19 @@ namespace AlgoaBayBMT.Services
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
+            if (model.BlockType == LessonBlockType.Assessment && !model.LinkedAssessmentId.HasValue)
+            {
+                return OperationResult<TrainingLessonBlockEditModel>.Failure("Select an assessment for this lesson block.");
+            }
+
+            if (model.LinkedAssessmentId.HasValue)
+            {
+                model.LinkedAssessmentName = await dbContext.TrainingCourseAssessments
+                    .Where(x => x.TrainingCourseAssessmentId == model.LinkedAssessmentId.Value)
+                    .Select(x => x.Name)
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+
             LessonBlock block;
             if (model.LessonBlockId.HasValue)
             {
@@ -672,14 +855,17 @@ namespace AlgoaBayBMT.Services
 
             block.BlockType = model.BlockType;
             block.Title = model.Title?.Trim();
-            block.MarkdownBody = model.MarkdownBody?.Trim();
+            block.Subtitle = model.Subtitle?.Trim();
+            block.MarkdownBody = model.ContentHtml?.Trim();
+            block.ThumbnailUrl = model.ThumbnailUrl?.Trim();
             block.FileUrl = model.FileUrl?.Trim();
             block.ExternalUrl = model.ExternalUrl?.Trim();
             block.MimeType = model.MimeType?.Trim();
             block.DurationSeconds = model.DurationSeconds;
-            block.MetadataJson = model.MetadataJson?.Trim();
+            block.MetadataJson = SerializeBlockMetadata(model);
             block.MediaAssetId = model.MediaAssetId;
             block.IsRequired = model.IsRequired;
+            block.IsActive = model.IsActive;
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await ReindexBlocksAsync(dbContext, block.LessonId, cancellationToken);
@@ -689,6 +875,218 @@ namespace AlgoaBayBMT.Services
             model.LessonBlockId = block.LessonBlockId;
             model.OrderIndex = block.OrderIndex;
             return OperationResult<TrainingLessonBlockEditModel>.Success(model, "Lesson content saved.");
+        }
+
+        public async Task<TrainingQuestionBankPageModel?> GetQuestionBankPageAsync(Guid courseId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var course = await dbContext.Courses
+                .AsNoTracking()
+                .Where(x => x.CourseId == courseId)
+                .Select(x => new
+                {
+                    x.CourseId,
+                    x.Code,
+                    x.Title,
+                    x.PassMarkPercent,
+                    x.ValidityMonths,
+                    x.CurrentVersionId
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (course is null)
+            {
+                return null;
+            }
+
+            var modules = course.CurrentVersionId.HasValue
+                ? await dbContext.Modules.AsNoTracking()
+                    .Where(x => x.CourseVersionId == course.CurrentVersionId.Value)
+                    .OrderBy(x => x.OrderIndex)
+                    .Select(x => new TrainingModuleLookupModel
+                    {
+                        ModuleId = x.ModuleId,
+                        Name = x.Title
+                    })
+                    .ToListAsync(cancellationToken)
+                : new List<TrainingModuleLookupModel>();
+
+            var assessments = await dbContext.TrainingCourseAssessments.AsNoTracking()
+                .Where(x => x.TrainingCourseId == courseId)
+                .OrderBy(x => x.Name)
+                .ToListAsync(cancellationToken);
+
+            var assessmentIds = assessments.Select(x => x.TrainingCourseAssessmentId).ToList();
+            var questions = await dbContext.TrainingQuestionBankQuestions.AsNoTracking()
+                .Where(x => assessmentIds.Contains(x.TrainingCourseAssessmentId))
+                .OrderBy(x => x.TrainingModuleId)
+                .ThenBy(x => x.Prompt)
+                .ToListAsync(cancellationToken);
+
+            var questionIds = questions.Select(x => x.TrainingQuestionBankQuestionId).ToList();
+            var options = await dbContext.TrainingQuestionBankOptions.AsNoTracking()
+                .Where(x => questionIds.Contains(x.TrainingQuestionBankQuestionId))
+                .OrderBy(x => x.OrderIndex)
+                .ToListAsync(cancellationToken);
+
+            var questionCounts = questions
+                .GroupBy(x => x.TrainingCourseAssessmentId)
+                .ToDictionary(x => x.Key, x => x.Count());
+
+            return new TrainingQuestionBankPageModel
+            {
+                CourseId = course.CourseId,
+                CourseCode = course.Code,
+                CourseTitle = course.Title,
+                PassMarkPercent = course.PassMarkPercent,
+                ValidityMonths = course.ValidityMonths,
+                Modules = modules,
+                Assessments = assessments.Select(x => new TrainingCourseAssessmentEditModel
+                {
+                    TrainingCourseAssessmentId = x.TrainingCourseAssessmentId,
+                    TrainingCourseId = x.TrainingCourseId,
+                    Name = x.Name,
+                    Instructions = x.Instructions,
+                    PassMarkPercent = x.PassMarkPercent,
+                    RandomQuestionCount = x.RandomQuestionCount,
+                    MaxAttempts = x.MaxAttempts,
+                    TimeLimitMinutes = x.TimeLimitMinutes,
+                    IsActive = x.IsActive,
+                    QuestionBankCount = questionCounts.GetValueOrDefault(x.TrainingCourseAssessmentId)
+                }).ToList(),
+                Questions = questions.Select(x => new TrainingQuestionBankQuestionEditModel
+                {
+                    TrainingQuestionBankQuestionId = x.TrainingQuestionBankQuestionId,
+                    TrainingCourseAssessmentId = x.TrainingCourseAssessmentId,
+                    TrainingModuleId = x.TrainingModuleId,
+                    QuestionType = x.QuestionType,
+                    Prompt = x.Prompt,
+                    ScenarioText = x.ScenarioText,
+                    Explanation = x.Explanation,
+                    DifficultyLevel = x.DifficultyLevel,
+                    Points = x.Points,
+                    IsActive = x.IsActive,
+                    Options = options
+                        .Where(opt => opt.TrainingQuestionBankQuestionId == x.TrainingQuestionBankQuestionId)
+                        .Select(opt => new TrainingQuestionBankOptionEditModel
+                        {
+                            TrainingQuestionBankOptionId = opt.TrainingQuestionBankOptionId,
+                            OptionText = opt.OptionText,
+                            IsCorrect = opt.IsCorrect,
+                            OrderIndex = opt.OrderIndex
+                        })
+                        .ToList()
+                }).ToList()
+            };
+        }
+
+        public async Task<OperationResult<TrainingCourseAssessmentEditModel>> SaveCourseAssessmentAsync(TrainingCourseAssessmentEditModel model, string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            TrainingCourseAssessment assessment;
+            if (model.TrainingCourseAssessmentId.HasValue)
+            {
+                assessment = await dbContext.TrainingCourseAssessments.FirstOrDefaultAsync(x => x.TrainingCourseAssessmentId == model.TrainingCourseAssessmentId.Value, cancellationToken)
+                    ?? throw new InvalidOperationException("Assessment not found.");
+            }
+            else
+            {
+                assessment = new TrainingCourseAssessment
+                {
+                    TrainingCourseAssessmentId = Guid.NewGuid(),
+                    TrainingCourseId = model.TrainingCourseId
+                };
+                dbContext.TrainingCourseAssessments.Add(assessment);
+            }
+
+            assessment.Name = model.Name.Trim();
+            assessment.Instructions = model.Instructions?.Trim();
+            assessment.PassMarkPercent = model.PassMarkPercent;
+            assessment.RandomQuestionCount = model.RandomQuestionCount;
+            assessment.MaxAttempts = model.MaxAttempts;
+            assessment.TimeLimitMinutes = model.TimeLimitMinutes;
+            assessment.IsActive = model.IsActive;
+
+            await WriteAuditLogAsync(dbContext, "TrainingCourseAssessment", assessment.TrainingCourseAssessmentId.ToString(), "Save", changedByUserId, notes: assessment.Name, cancellationToken: cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            model.TrainingCourseAssessmentId = assessment.TrainingCourseAssessmentId;
+            return OperationResult<TrainingCourseAssessmentEditModel>.Success(model, "Assessment saved.");
+        }
+
+        public async Task<OperationResult<TrainingQuestionBankQuestionEditModel>> SaveQuestionBankQuestionAsync(TrainingQuestionBankQuestionEditModel model, string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            TrainingQuestionBankQuestion question;
+            if (model.TrainingQuestionBankQuestionId.HasValue)
+            {
+                question = await dbContext.TrainingQuestionBankQuestions
+                    .Include(x => x.Options)
+                    .FirstOrDefaultAsync(x => x.TrainingQuestionBankQuestionId == model.TrainingQuestionBankQuestionId.Value, cancellationToken)
+                    ?? throw new InvalidOperationException("Question bank question not found.");
+            }
+            else
+            {
+                question = new TrainingQuestionBankQuestion
+                {
+                    TrainingQuestionBankQuestionId = Guid.NewGuid(),
+                    TrainingCourseAssessmentId = model.TrainingCourseAssessmentId
+                };
+                dbContext.TrainingQuestionBankQuestions.Add(question);
+            }
+
+            question.TrainingCourseAssessmentId = model.TrainingCourseAssessmentId;
+            question.TrainingModuleId = model.TrainingModuleId;
+            question.QuestionType = model.QuestionType;
+            question.Prompt = model.Prompt.Trim();
+            question.ScenarioText = model.ScenarioText?.Trim();
+            question.Explanation = model.Explanation?.Trim();
+            question.DifficultyLevel = model.DifficultyLevel;
+            question.Points = model.Points;
+            question.IsActive = model.IsActive;
+
+            if (model.TrainingQuestionBankQuestionId.HasValue)
+            {
+                dbContext.TrainingQuestionBankOptions.RemoveRange(question.Options);
+            }
+
+            question.Options = model.Options
+                .Where(x => !string.IsNullOrWhiteSpace(x.OptionText))
+                .OrderBy(x => x.OrderIndex)
+                .Select(option => new TrainingQuestionBankOption
+                {
+                    TrainingQuestionBankOptionId = option.TrainingQuestionBankOptionId ?? Guid.NewGuid(),
+                    TrainingQuestionBankQuestionId = question.TrainingQuestionBankQuestionId,
+                    OptionText = option.OptionText.Trim(),
+                    IsCorrect = option.IsCorrect,
+                    OrderIndex = option.OrderIndex
+                })
+                .ToList();
+
+            await WriteAuditLogAsync(dbContext, "TrainingQuestionBankQuestion", question.TrainingQuestionBankQuestionId.ToString(), "Save", changedByUserId, notes: question.Prompt, cancellationToken: cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            model.TrainingQuestionBankQuestionId = question.TrainingQuestionBankQuestionId;
+            return OperationResult<TrainingQuestionBankQuestionEditModel>.Success(model, "Question bank item saved.");
+        }
+
+        public async Task<OperationResult> DeleteQuestionBankQuestionAsync(Guid trainingQuestionBankQuestionId, string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var question = await dbContext.TrainingQuestionBankQuestions.FirstOrDefaultAsync(x => x.TrainingQuestionBankQuestionId == trainingQuestionBankQuestionId, cancellationToken);
+            if (question is null)
+            {
+                return OperationResult.Failure("Question bank item not found.");
+            }
+
+            dbContext.TrainingQuestionBankQuestions.Remove(question);
+            await WriteAuditLogAsync(dbContext, "TrainingQuestionBankQuestion", trainingQuestionBankQuestionId.ToString(), "Delete", changedByUserId, notes: question.Prompt, cancellationToken: cancellationToken);
+            await dbContext.SaveChangesAsync(cancellationToken);
+            return OperationResult.Success("Question bank item deleted.");
         }
 
         public async Task<OperationResult> DeleteLessonBlockAsync(Guid lessonBlockId, string? changedByUserId, CancellationToken cancellationToken = default)
@@ -799,6 +1197,167 @@ namespace AlgoaBayBMT.Services
                 ChangedOnUtc = DateTime.UtcNow,
                 Notes = notes
             }, cancellationToken);
+        }
+
+        private async Task EnsureTrainingRolesAsync()
+        {
+            foreach (var roleName in new[] { RoleNames.Crew, RoleNames.Officer, RoleNames.Responder })
+            {
+                if (!await roleManager.RoleExistsAsync(roleName))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(roleName));
+                }
+            }
+        }
+
+        private static TrainingAudienceType ResolveAudienceType(IEnumerable<CourseAudienceRule> rules)
+        {
+            var applicableRules = rules.ToList();
+            if (applicableRules.Count == 0)
+            {
+                return TrainingAudienceType.All;
+            }
+
+            if (applicableRules.Any(x => x.RuleType == CourseAudienceRuleType.AllCrew))
+            {
+                return TrainingAudienceType.All;
+            }
+
+            var appRole = applicableRules
+                .FirstOrDefault(x => x.RuleType == CourseAudienceRuleType.ApplicationRole)
+                ?.ApplicationRoleName;
+
+            return appRole switch
+            {
+                RoleNames.Crew => TrainingAudienceType.Crew,
+                RoleNames.Officer => TrainingAudienceType.Officers,
+                RoleNames.Responder => TrainingAudienceType.Responders,
+                _ => TrainingAudienceType.All
+            };
+        }
+
+        private static string GetAudienceSummary(TrainingAudienceType audienceType) => audienceType switch
+        {
+            TrainingAudienceType.Crew => "Crew",
+            TrainingAudienceType.Officers => "Officers",
+            TrainingAudienceType.Responders => "Responders",
+            _ => "All"
+        };
+
+        private static IEnumerable<CourseAudienceRule> CreateAudienceRules(Guid courseId, TrainingAudienceType audienceType)
+        {
+            if (audienceType == TrainingAudienceType.All)
+            {
+                yield return new CourseAudienceRule
+                {
+                    CourseAudienceRuleId = Guid.NewGuid(),
+                    CourseId = courseId,
+                    RuleType = CourseAudienceRuleType.AllCrew,
+                    IsMandatory = true,
+                    Notes = "Visible to all training audiences."
+                };
+
+                yield break;
+            }
+
+            yield return new CourseAudienceRule
+            {
+                CourseAudienceRuleId = Guid.NewGuid(),
+                CourseId = courseId,
+                RuleType = CourseAudienceRuleType.ApplicationRole,
+                ApplicationRoleName = audienceType switch
+                {
+                    TrainingAudienceType.Crew => RoleNames.Crew,
+                    TrainingAudienceType.Officers => RoleNames.Officer,
+                    TrainingAudienceType.Responders => RoleNames.Responder,
+                    _ => null
+                },
+                IsMandatory = true,
+                Notes = $"Assigned to {GetAudienceSummary(audienceType)}."
+            };
+        }
+
+        private static TrainingLessonBlockMetadataModel DeserializeBlockMetadata(string? metadataJson)
+        {
+            if (string.IsNullOrWhiteSpace(metadataJson))
+            {
+                return new TrainingLessonBlockMetadataModel();
+            }
+
+            try
+            {
+                return JsonSerializer.Deserialize<TrainingLessonBlockMetadataModel>(metadataJson) ?? new TrainingLessonBlockMetadataModel();
+            }
+            catch
+            {
+                return new TrainingLessonBlockMetadataModel();
+            }
+        }
+
+        private static string? SerializeBlockMetadata(TrainingLessonBlockEditModel model)
+        {
+            var metadata = new TrainingLessonBlockMetadataModel
+            {
+                SecondaryContentHtml = string.IsNullOrWhiteSpace(model.SecondaryContentHtml) ? null : model.SecondaryContentHtml.Trim(),
+                IntroTextHtml = string.IsNullOrWhiteSpace(model.IntroTextHtml) ? null : model.IntroTextHtml.Trim(),
+                AvatarVideoUrl = string.IsNullOrWhiteSpace(model.AvatarVideoUrl) ? null : model.AvatarVideoUrl.Trim(),
+                AvatarMediaAssetId = model.AvatarMediaAssetId,
+                LinkedAssessmentId = model.LinkedAssessmentId,
+                LinkedAssessmentName = string.IsNullOrWhiteSpace(model.LinkedAssessmentName) ? null : model.LinkedAssessmentName.Trim(),
+                QuizQuestions = NormalizeQuizQuestions(model.QuizQuestions)
+            };
+
+            if (string.IsNullOrWhiteSpace(metadata.SecondaryContentHtml)
+                && string.IsNullOrWhiteSpace(metadata.IntroTextHtml)
+                && string.IsNullOrWhiteSpace(metadata.AvatarVideoUrl)
+                && !metadata.AvatarMediaAssetId.HasValue
+                && !metadata.LinkedAssessmentId.HasValue
+                && metadata.QuizQuestions.Count == 0)
+            {
+                return null;
+            }
+
+            return JsonSerializer.Serialize(metadata);
+        }
+
+        private static List<TrainingLessonQuizQuestionEditModel> NormalizeQuizQuestions(IEnumerable<TrainingLessonQuizQuestionEditModel>? questions)
+        {
+            return questions?
+                .Where(x => !string.IsNullOrWhiteSpace(x.Prompt))
+                .Select(question => new TrainingLessonQuizQuestionEditModel
+                {
+                    Prompt = question.Prompt.Trim(),
+                    QuestionType = question.QuestionType,
+                    ScenarioText = string.IsNullOrWhiteSpace(question.ScenarioText) ? null : question.ScenarioText.Trim(),
+                    Options = NormalizeQuizOptions(question.Options)
+                })
+                .ToList() ?? new List<TrainingLessonQuizQuestionEditModel>();
+        }
+
+        private static List<TrainingLessonQuizOptionEditModel> NormalizeQuizOptions(IEnumerable<TrainingLessonQuizOptionEditModel>? options)
+        {
+            var normalizedOptions = options?
+                .Where(x => !string.IsNullOrWhiteSpace(x.OptionText))
+                .OrderBy(x => x.OrderIndex)
+                .Select((option, index) => new TrainingLessonQuizOptionEditModel
+                {
+                    OptionText = option.OptionText.Trim(),
+                    IsCorrect = option.IsCorrect,
+                    OrderIndex = index + 1
+                })
+                .ToList() ?? new List<TrainingLessonQuizOptionEditModel>();
+
+            if (normalizedOptions.Count >= 2)
+            {
+                return normalizedOptions;
+            }
+
+            while (normalizedOptions.Count < 2)
+            {
+                normalizedOptions.Add(new TrainingLessonQuizOptionEditModel { OrderIndex = normalizedOptions.Count + 1 });
+            }
+
+            return normalizedOptions;
         }
     }
 }

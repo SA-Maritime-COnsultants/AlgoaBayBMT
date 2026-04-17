@@ -1,0 +1,217 @@
+@page "/authoring/lesson/{LessonId:int}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+@inherits LessonAuthoringBase
+
+<PageTitle>Lesson Authoring</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell pf-authoring-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Lesson Authoring</h1>
+            <div class="page-subtitle">Build learner-ready training content through simple forms. No HTML editing is required.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <span class="e-badge pf-role-badge">Lesson @LessonId</span>
+            @if (PageModel is not null)
+            {
+                <span class="e-badge pf-role-badge">@PageModel.Items.Count item(s)</span>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@StatusMessage</div>
+    }
+
+    @if (PageModel is null)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardContent>
+                <div class="pf-empty-state">Loading lesson authoring workspace...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="pf-training-builder-layout pf-authoring-layout">
+            <SfCard CssClass="pf-card-shell pf-training-tree-panel">
+                <CardHeader Title="Existing Content" SubTitle="Structured training items already saved for this lesson." />
+                <CardContent>
+                    @if (PageModel.Items.Count == 0)
+                    {
+                        <div class="pf-empty-state">No content items exist yet. Create the first learning item using the panel on the right.</div>
+                    }
+                    else
+                    {
+                        <div class="pf-authoring-item-list">
+                            @foreach (var item in PageModel.Items)
+                            {
+                                <SfCard CssClass="pf-card-shell pf-authoring-item-card" @key="item.Id">
+                                    <CardContent>
+                                        <div class="pf-authoring-item-header">
+                                            <div>
+                                                <div class="pf-training-check-type">@item.ContentType</div>
+                                                <h3 class="pf-authoring-item-title">@GetItemTitle(item)</h3>
+                                            </div>
+                                            <div class="pf-grid-actions pf-grid-actions--compact">
+                                                <SfButton type="button" CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square" OnClick="@(() => EditItem(item))" title="Edit content item" aria-label="Edit content item">
+                                                    <span class="e-icons e-edit" aria-hidden="true"></span>
+                                                </SfButton>
+                                                <SfButton type="button" CssClass="e-flat e-danger pf-btn-icon pf-btn-square" OnClick="@(() => DeleteItemAsync(item.Id))" title="Delete content item" aria-label="Delete content item">
+                                                    <span class="e-icons e-delete" aria-hidden="true"></span>
+                                                </SfButton>
+                                            </div>
+                                        </div>
+                                        <div class="pf-authoring-item-preview">@GetItemPreview(item)</div>
+                                    </CardContent>
+                                </SfCard>
+                            }
+                        </div>
+                    }
+                </CardContent>
+            </SfCard>
+
+            <SfCard CssClass="pf-card-shell pf-training-editor-card">
+                <CardHeader Title="Create New Content Item" SubTitle="Choose a content type and complete the friendly form below." />
+                <CardContent>
+                    <EditForm Model="EditorModel" OnValidSubmit="SaveAsync" FormName="lesson-authoring-form">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="validation-message" />
+
+                        <div class="pf-toolbar-row">
+                            <label class="pf-field-label pf-authoring-label-inline">Content Type</label>
+                            <SfDropDownList TValue="string" TItem="ContentTypeOption" DataSource="@ContentTypeOptions" @bind-Value="SelectedContentType" Placeholder="Select content type" Width="280px">
+                                <DropDownListFieldSettings Text="Text" Value="Value" />
+                                <DropDownListEvents TValue="string" TItem="ContentTypeOption" ValueChange="OnContentTypeChanged" />
+                            </SfDropDownList>
+                        </div>
+
+                        <div class="pf-form-grid">
+                            @if (SelectedContentType == LessonContentTypes.Slide)
+                            {
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Slide Title</label>
+                                    <SfTextBox @bind-Value="EditorModel.Title" Placeholder="Enter slide title" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Slide Body</label>
+                                    <SfRichTextEditor @bind-Value="EditorModel.BodyHtml" Height="280px" Placeholder="Enter the slide body content here"></SfRichTextEditor>
+                                </div>
+                            }
+                            else if (SelectedContentType == LessonContentTypes.Card)
+                            {
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Front Text</label>
+                                    <SfTextBox @bind-Value="EditorModel.FrontText" Placeholder="Enter flashcard front text" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Back Content</label>
+                                    <SfRichTextEditor @bind-Value="EditorModel.BackHtml" Height="260px" Placeholder="Enter flashcard back content here"></SfRichTextEditor>
+                                </div>
+                            }
+                            else if (SelectedContentType == LessonContentTypes.Video)
+                            {
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Video Title</label>
+                                    <SfTextBox @bind-Value="EditorModel.Title" Placeholder="Enter video title" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Description</label>
+                                    <SfRichTextEditor @bind-Value="EditorModel.DescriptionHtml" Height="240px" Placeholder="Explain what the learner should watch for"></SfRichTextEditor>
+                                </div>
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Video URL</label>
+                                    <SfTextBox @bind-Value="EditorModel.VideoUrl" Placeholder="https://..." FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                            }
+                            else if (SelectedContentType == LessonContentTypes.Mcq)
+                            {
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Question</label>
+                                    <SfRichTextEditor @bind-Value="EditorModel.QuestionHtml" Height="220px" Placeholder="Enter the multiple choice question"></SfRichTextEditor>
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option A</label>
+                                    <SfTextBox @bind-Value="EditorModel.OptionA" Placeholder="Option A" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option B</label>
+                                    <SfTextBox @bind-Value="EditorModel.OptionB" Placeholder="Option B" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option C</label>
+                                    <SfTextBox @bind-Value="EditorModel.OptionC" Placeholder="Option C" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option D</label>
+                                    <SfTextBox @bind-Value="EditorModel.OptionD" Placeholder="Option D" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Correct Answer</label>
+                                    <SfDropDownList TValue="string" TItem="string" DataSource="@McqAnswerOptions" @bind-Value="EditorModel.CorrectOption" Placeholder="Select correct answer"></SfDropDownList>
+                                </div>
+                            }
+                            else if (SelectedContentType == LessonContentTypes.TrueFalse)
+                            {
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Question</label>
+                                    <SfRichTextEditor @bind-Value="EditorModel.QuestionHtml" Height="220px" Placeholder="Enter the true/false statement"></SfRichTextEditor>
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Correct Answer</label>
+                                    <SfDropDownList TValue="bool?" TItem="BooleanOption" DataSource="@BooleanOptions" @bind-Value="EditorModel.CorrectBool" Placeholder="Select True or False">
+                                        <DropDownListFieldSettings Text="Text" Value="Value" />
+                                    </SfDropDownList>
+                                </div>
+                            }
+                            else if (SelectedContentType == LessonContentTypes.Scenario)
+                            {
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Scenario Description</label>
+                                    <SfRichTextEditor @bind-Value="EditorModel.ScenarioHtml" Height="240px" Placeholder="Describe the scenario for the learner"></SfRichTextEditor>
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option 1</label>
+                                    <SfTextBox @bind-Value="EditorModel.Option1" Placeholder="Option 1" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option 2</label>
+                                    <SfTextBox @bind-Value="EditorModel.Option2" Placeholder="Option 2" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option 3</label>
+                                    <SfTextBox @bind-Value="EditorModel.Option3" Placeholder="Option 3" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Option 4</label>
+                                    <SfTextBox @bind-Value="EditorModel.Option4" Placeholder="Option 4" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Correct Answer</label>
+                                    <SfDropDownList TValue="int?" TItem="IndexedOption" DataSource="@ScenarioAnswerOptions" @bind-Value="EditorModel.CorrectOptionIndex" Placeholder="Select correct option">
+                                        <DropDownListFieldSettings Text="Text" Value="Value" />
+                                    </SfDropDownList>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="pf-dialog-actions pf-dialog-actions--split">
+                            <div class="pf-grid-actions pf-grid-actions--compact">
+                                <SfButton type="button" OnClick="ResetEditor">Clear Form</SfButton>
+                            </div>
+                            <div class="pf-grid-actions pf-grid-actions--compact">
+                                <SfButton type="submit" CssClass="e-primary" IsPrimary="true">Save Content Item</SfButton>
+                            </div>
+                        </div>
+                    </EditForm>
+                </CardContent>
+            </SfCard>
+        </div>
+    }
+</div>

@@ -174,8 +174,34 @@
                                 <span class="side-nav-copy"><span class="side-nav-label">Courses</span><span class="side-nav-meta">Create and edit courses</span></span>
                             </NavLink>
                         </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management/courses" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)OperationsIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Course Builder</span><span class="side-nav-meta">Modules, lessons, preview</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management/courses" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)ComplianceIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Question Bank</span><span class="side-nav-meta">Exam pool and assessments</span></span>
+                            </NavLink>
+                        </li>
                     </ul>
                 </div>
+            </section>
+        </AuthorizeView>
+
+        <AuthorizeView>
+            <section class="side-nav-group" aria-labelledby="crew-training-nav-heading">
+                <h2 id="crew-training-nav-heading" class="side-nav-group-title">My Training</h2>
+                <ul class="side-nav-items">
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="my-training" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
+                            <span class="side-nav-copy"><span class="side-nav-label">My Training Dashboard</span><span class="side-nav-meta">Compliance, progress, certificates</span></span>
+                        </NavLink>
+                    </li>
+                </ul>
             </section>
         </AuthorizeView>
 
@@ -295,7 +321,7 @@
     private IReadOnlyList<NavItem> PrimaryNavItems =>
     [
         new("Home", "", "Control room overview", HomeIcon, NavLinkMatch.All),
-        new("Training", "training", "Modules and certifications", TrainingIcon),
+        new("Training", "my-training", "Modules and certifications", TrainingIcon),
         new("Bunkering Operations", "bunkering-operations", "Transfer procedures", OperationsIcon),
         new("Wildlife & Environment", "wildlife-environment", "Marine safeguards", WildlifeIcon),
         new("Emergency Response", "emergency-response", "Incident command", EmergencyIcon),

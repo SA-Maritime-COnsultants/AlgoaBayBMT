@@ -1,0 +1,94 @@
+@page "/training/environmental-law-compliance/{CourseSlug}/{LessonSlug}"
+@rendermode InteractiveServer
+
+@using TrainingCourse = AlgoaBayBMT.Models.Training.Course
+@using TrainingLesson = AlgoaBayBMT.Models.Training.Lesson
+@using AlgoaBayBMT.Models.Training
+@using Syncfusion.Blazor.Navigations
+
+@inject ICourseService CourseService
+
+<PageTitle>Training Lesson</PageTitle>
+
+<div class="page-shell">
+    @if (Lesson is null || Course is null)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardContent>
+                <div class="pf-empty-state">Loading lesson...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">@Lesson.Title</h1>
+                <div class="page-subtitle">@Course.Title</div>
+            </div>
+            <div class="pf-grid-actions pf-grid-actions--compact">
+                <a class="e-btn" href="@($"/training/environmental-law-compliance/{CourseSlug}")">Back to Course</a>
+            </div>
+        </div>
+
+        <SfTab CssClass="pf-training-tab-shell">
+            <TabItems>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Slide Deck" />
+                    </ChildContent>
+                    <ContentTemplate>
+                        <div class="pf-training-slide-stack">
+                            @foreach (var slide in Lesson.Slides)
+                            {
+                                <SlideComponent Title="@slide.Title" Bullets="@slide.Bullets" Image="@slide.Image" BodyHtml="@slide.BodyHtml" />
+                            }
+                        </div>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Narrative" />
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell">
+                            <CardContent>
+                                <div class="pf-training-card-copy">@((MarkupString)Lesson.NarrativeHtml)</div>
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Knowledge Checks" />
+                    </ChildContent>
+                    <ContentTemplate>
+                        <div class="pf-training-course-grid">
+                            @foreach (var question in Lesson.KnowledgeChecks)
+                            {
+                                <KnowledgeCheckComponent Question="question" />
+                            }
+                        </div>
+                    </ContentTemplate>
+                </TabItem>
+            </TabItems>
+        </SfTab>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string CourseSlug { get; set; } = string.Empty;
+
+    [Parameter]
+    public string LessonSlug { get; set; } = string.Empty;
+
+    private TrainingCourse? Course;
+    private TrainingLesson? Lesson;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Course = await CourseService.GetCourseAsync(CourseSlug);
+        Lesson = await CourseService.GetLessonAsync(CourseSlug, LessonSlug);
+    }
+}

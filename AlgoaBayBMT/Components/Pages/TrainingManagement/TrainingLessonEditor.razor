@@ -8,12 +8,12 @@
 <SfCard CssClass="pf-card-shell pf-training-editor-card">
     <CardHeader Title="Lesson Editor" SubTitle="Manage lesson details, completion rules, and content sequencing." />
     <CardContent>
-        <EditForm Model="Model" OnValidSubmit="HandleSaveAsync">
+        <EditForm Model="Model" OnValidSubmit="HandleSaveAsync" FormName="@GetFormName()">
             <DataAnnotationsValidator />
             <ValidationSummary class="validation-message" />
 
             <div class="pf-form-grid">
-                <div class="pf-col-8">
+                <div class="pf-col-12">
                     <label class="pf-field-label">Title</label>
                     <SfTextBox @bind-Value="Model.Title" Placeholder="Lesson title" FloatLabelType="FloatLabelType.Never" />
                 </div>
@@ -21,13 +21,13 @@
                     <label class="pf-field-label">Estimated Minutes</label>
                     <InputNumber @bind-Value="Model.EstimatedMinutes" class="form-control" />
                 </div>
-                <div class="pf-col-6">
+                <div class="pf-col-4">
                     <label class="pf-field-label">Lesson Type</label>
                     <SfDropDownList TValue="LessonType" TItem="LessonTypeOption" DataSource="@LessonTypeOptions" @bind-Value="Model.LessonType" Placeholder="Select lesson type">
                         <DropDownListFieldSettings Text="Text" Value="Value" />
                     </SfDropDownList>
                 </div>
-                <div class="pf-col-6">
+                <div class="pf-col-4">
                     <label class="pf-field-label">Completion Rule</label>
                     <SfDropDownList TValue="LessonCompletionRule" TItem="LessonCompletionRuleOption" DataSource="@CompletionRuleOptions" @bind-Value="Model.CompletionRule" Placeholder="Select completion rule">
                         <DropDownListFieldSettings Text="Text" Value="Value" />
@@ -59,17 +59,17 @@
 
             <div class="pf-dialog-actions pf-dialog-actions--split">
                 <div class="pf-grid-actions pf-grid-actions--compact">
-                    <SfButton OnClick="MoveUpAsync">Move Up</SfButton>
-                    <SfButton OnClick="MoveDownAsync">Move Down</SfButton>
+                    <SfButton type="button" OnClick="MoveUpAsync">Move Up</SfButton>
+                    <SfButton type="button" OnClick="MoveDownAsync">Move Down</SfButton>
                     @if (Model.LessonId.HasValue)
                     {
-                        <SfButton CssClass="e-danger" OnClick="DeleteAsync">Delete</SfButton>
+                        <SfButton type="button" CssClass="e-danger" OnClick="DeleteAsync">Delete</SfButton>
                     }
                 </div>
                 <div class="pf-grid-actions pf-grid-actions--compact">
                     @if (Model.LessonId.HasValue)
                     {
-                        <SfButton CssClass="e-primary" OnClick="CreateBlockAsync">New Content Block</SfButton>
+                        <SfButton type="button" CssClass="e-primary" OnClick="CreateBlockAsync">New Content Block</SfButton>
                     }
                     <SfButton CssClass="e-primary" IsPrimary="true" type="submit">Save Lesson</SfButton>
                 </div>
@@ -108,6 +108,10 @@
 
     [Parameter]
     public EventCallback CreateBlockRequested { get; set; }
+
+    private string GetFormName() => Model.LessonId.HasValue
+        ? $"training-lesson-{Model.LessonId.Value:N}"
+        : $"training-lesson-new-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Model)}";
 
     private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
     private async Task DeleteAsync() => await DeleteRequested.InvokeAsync();

@@ -4,7 +4,9 @@
 
 @using AlgoaBayBMT.Services.Interfaces
 @using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
 @using AlgoaBayBMT.Shared.Security
+@using Microsoft.AspNetCore.Components
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Notifications
 
@@ -18,10 +20,10 @@
     <ToastPosition X="Right" Y="Top"></ToastPosition>
 </SfToast>
 
-<div class="page-shell">
+<div class="page-shell pf-training-admin-shell">
     <div class="page-header">
         <div>
-            <h1 class="page-title">Course Builder</h1>
+            <h1 class="page-title pf-training-heading">Course Builder</h1>
             <div class="page-subtitle">Build the module, lesson, and content-block structure for the active training course version.</div>
         </div>
         <div class="pf-grid-actions pf-grid-actions--compact">
@@ -48,17 +50,18 @@
     {
         <div class="pf-manage-overview pf-training-builder-overview">
             <div class="pf-manage-overview-copy">
-                <h2 class="pf-manage-overview-title">@Builder.Title</h2>
+                <h2 class="pf-manage-overview-title pf-training-heading">@Builder.Title</h2>
                 <div class="pf-manage-overview-subtitle">@Builder.Code · @GetVersionText()</div>
                 <div class="pf-role-badge-list">
                     <span class="e-badge pf-role-badge">@Builder.CurrentVersionStatus</span>
+                    <span class="e-badge pf-role-badge">Pass mark @Builder.PassMarkPercent%</span>
                     <span class="e-badge pf-role-badge">@Builder.Modules.Count module(s)</span>
                     <span class="e-badge pf-role-badge">@Builder.Modules.Sum(x => x.Lessons.Count) lesson(s)</span>
                 </div>
             </div>
         </div>
 
-        <div class="pf-training-builder-layout">
+        <div class="pf-training-builder-layout pf-training-builder-layout--triple pf-training-builder-layout--stable">
             <SfCard CssClass="pf-card-shell pf-training-tree-panel">
                 <CardHeader Title="Course Structure" SubTitle="Select a module or lesson to edit its content." />
                 <CardContent>
@@ -82,7 +85,7 @@
                                     <div class="pf-training-tree-children">
                                         @foreach (var lesson in module.Lessons.OrderBy(x => x.OrderIndex))
                                         {
-                                            <button type="button" class="pf-training-tree-node pf-training-tree-node--child @(SelectedLesson?.LessonId == lesson.LessonId ? "is-selected" : string.Empty)" @onclick="() => SelectLesson(lesson.LessonId!.Value)" @key="GetLessonRenderKey(lesson)">
+                                            <button type="button" class="pf-training-tree-node pf-training-tree-node--child @(SelectedLesson?.LessonId == lesson.LessonId ? "is-selected" : string.Empty)" @onclick="() => SelectLessonAsync(lesson.LessonId!.Value)" @key="GetLessonRenderKey(lesson)">
                                                 <span class="pf-training-tree-label">Lesson @lesson.OrderIndex: @lesson.Title</span>
                                             </button>
                                         }
@@ -94,13 +97,13 @@
                 </CardContent>
             </SfCard>
 
-            <div class="pf-training-editor-panel">
+            <div class="pf-training-editor-panel pf-training-editor-panel--stable">
                 @if (SelectedLesson is not null)
                 {
-                    <TrainingLessonEditor @key="GetLessonRenderKey(SelectedLesson)" Model="SelectedLesson" SaveRequested="SaveLessonAsync" DeleteRequested="DeleteLessonAsync" MoveRequested="MoveLessonAsync" CreateBlockRequested="CreateBlockAsync" />
+                    <TrainingLessonEditor @key="GetSelectedLessonEditorKey(SelectedLesson)" Model="SelectedLesson" SaveRequested="SaveLessonAsync" DeleteRequested="DeleteLessonAsync" MoveRequested="MoveLessonAsync" CreateBlockRequested="CreateBlockAsync" />
 
-                    <SfCard CssClass="pf-card-shell pf-training-editor-card" @key="GetLessonRenderKey(SelectedLesson)">
-                        <CardHeader Title="Lesson Content Blocks" SubTitle="Mixed lesson content is supported through ordered lesson blocks." />
+                    <SfCard CssClass="pf-card-shell pf-training-editor-card" @key="GetSelectedLessonBlocksKey(SelectedLesson)">
+                        <CardHeader Title="Lesson Content Blocks" SubTitle="Design learner-friendly slides, cards, videos, inline quizzes, and linked assessments." />
                         <CardContent>
                             <div class="pf-toolbar-row">
                                 <SfButton CssClass="e-primary" OnClick="CreateBlockAsync">Add Content Block</SfButton>
@@ -114,7 +117,7 @@
                             {
                                 @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
                                 {
-                                    <TrainingLessonBlockEditor @key="GetBlockRenderKey(block)" Model="block" SaveRequested="SaveLessonBlockAsync" DeleteRequested="() => DeleteLessonBlockAsync(block)" MoveRequested="direction => MoveLessonBlockAsync(block, direction)" />
+                                    <TrainingLessonBlockEditor @key="GetBlockRenderKey(block)" Model="block" AssessmentOptions="Builder.Assessments" CurrentUserId="CurrentUserId" SaveRequested="SaveLessonBlockAsync" DeleteRequested="() => DeleteLessonBlockAsync(block)" MoveRequested="direction => MoveLessonBlockAsync(block, direction)" />
                                 }
                             }
                         </CardContent>
@@ -133,6 +136,146 @@
                     </SfCard>
                 }
             </div>
+
+            <SfCard CssClass="pf-card-shell pf-training-preview-panel pf-training-preview-panel--stable">
+                <CardHeader Title="Live Student Preview" SubTitle="See how the selected lesson content will render for the learner while you build it." />
+                <CardContent>
+                    @if (SelectedLesson is null)
+                    {
+                        <div class="pf-empty-state">Select a lesson to preview the learner experience.</div>
+                    }
+                    else
+                    {
+                        <div class="pf-training-preview-shell">
+                            <div class="pf-training-preview-hero">
+                                <h3>@SelectedLesson.Title</h3>
+                                <p>@SelectedLesson.Summary</p>
+                            </div>
+                            @if (SelectedLesson.Blocks.Count == 0)
+                            {
+                                <div class="pf-empty-state">No content blocks have been added yet.</div>
+                            }
+                            else
+                            {
+                                @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
+                                {
+                                    <div class="pf-training-preview-block" @key="GetBlockRenderKey(block)">
+                                        <div class="pf-training-check-type">@GetBlockDisplayName(block.BlockType)</div>
+                                        @if (!string.IsNullOrWhiteSpace(block.Title))
+                                        {
+                                            <h4>@block.Title</h4>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(block.Subtitle))
+                                        {
+                                            <div class="pf-training-preview-subtitle">@block.Subtitle</div>
+                                        }
+
+                                        @switch (block.BlockType)
+                                        {
+                                            case LessonBlockType.Flashcard:
+                                                <div class="pf-training-preview-dual">
+                                                    <div class="pf-training-preview-face">
+                                                        <div class="pf-training-preview-label">Front</div>
+                                                        @RenderHtml(block.ContentHtml)
+                                                    </div>
+                                                    <div class="pf-training-preview-face pf-training-preview-face--accent">
+                                                        <div class="pf-training-preview-label">Back</div>
+                                                        @RenderHtml(block.SecondaryContentHtml)
+                                                    </div>
+                                                </div>
+                                                break;
+
+                                            case LessonBlockType.Video:
+                                                if (!string.IsNullOrWhiteSpace(block.IntroTextHtml))
+                                                {
+                                                    @RenderHtml(block.IntroTextHtml)
+                                                }
+                                                if (!string.IsNullOrWhiteSpace(block.FileUrl))
+                                                {
+                                                    <video class="pf-training-scenario-video" controls src="@block.FileUrl"></video>
+                                                }
+                                                else if (!string.IsNullOrWhiteSpace(block.ExternalUrl))
+                                                {
+                                                    <a class="e-btn e-flat" href="@block.ExternalUrl" target="_blank" rel="noreferrer">Open linked video</a>
+                                                }
+                                                break;
+
+                                            case LessonBlockType.Download:
+                                                @RenderHtml(block.ContentHtml)
+                                                @if (!string.IsNullOrWhiteSpace(block.FileUrl))
+                                                {
+                                                    <div class="pf-training-preview-file">Attachment ready: @block.FileUrl</div>
+                                                }
+                                                break;
+
+                                            case LessonBlockType.Assessment:
+                                                if (!string.IsNullOrWhiteSpace(block.IntroTextHtml))
+                                                {
+                                                    @RenderHtml(block.IntroTextHtml)
+                                                }
+                                                <div class="pf-training-preview-file">Linked assessment: @(string.IsNullOrWhiteSpace(block.LinkedAssessmentName) ? "Select an assessment" : block.LinkedAssessmentName)</div>
+                                                break;
+
+                                            case LessonBlockType.Quiz:
+                                                <div class="pf-authoring-item-list">
+                                                    @foreach (var quizQuestion in block.QuizQuestions.Select((item, index) => new { Item = item, Index = index }))
+                                                    {
+                                                        <div class="pf-training-quiz-preview-item" @key="GetQuizPreviewKey(block, quizQuestion.Index)">
+                                                            <div class="pf-training-preview-label">Question @(quizQuestion.Index + 1) · @quizQuestion.Item.QuestionType</div>
+                                                            <div class="pf-training-preview-body">@quizQuestion.Item.Prompt</div>
+                                                            @if (!string.IsNullOrWhiteSpace(quizQuestion.Item.ScenarioText))
+                                                            {
+                                                                <div class="pf-training-check-context">@quizQuestion.Item.ScenarioText</div>
+                                                            }
+                                                            <ul class="pf-training-slide-list">
+                                                                @foreach (var option in quizQuestion.Item.Options.Where(x => !string.IsNullOrWhiteSpace(x.OptionText)).OrderBy(x => x.OrderIndex))
+                                                                {
+                                                                    <li>@option.OptionText</li>
+                                                                }
+                                                            </ul>
+                                                        </div>
+                                                    }
+                                                </div>
+                                                break;
+
+                                             case LessonBlockType.Slide:
+                                                 <div class="pf-training-preview-split-view">
+                                                     <div class="pf-training-preview-split-pane">
+                                                         @if (!string.IsNullOrWhiteSpace(block.ThumbnailUrl))
+                                                         {
+                                                             <img src="@block.ThumbnailUrl" alt="Preview asset" class="pf-training-slide-image" />
+                                                         }
+                                                         @RenderHtml(block.ContentHtml)
+                                                     </div>
+                                                      <div class="pf-training-preview-split-pane pf-training-preview-split-pane--avatar" @key="GetBlockAvatarPreviewKey(block)">
+                                                         <div class="pf-training-preview-label">Avatar</div>
+                                                         @if (!string.IsNullOrWhiteSpace(block.AvatarVideoUrl))
+                                                         {
+                                                             <video class="pf-training-scenario-video" controls src="@block.AvatarVideoUrl"></video>
+                                                         }
+                                                         else
+                                                         {
+                                                             <div class="pf-empty-state pf-empty-state--compact">Upload an avatar narration video for slide-based delivery.</div>
+                                                         }
+                                                     </div>
+                                                 </div>
+                                                 break;
+
+                                             default:
+                                                if (!string.IsNullOrWhiteSpace(block.ThumbnailUrl))
+                                                {
+                                                    <img src="@block.ThumbnailUrl" alt="Preview asset" class="pf-training-slide-image" />
+                                                }
+                                                @RenderHtml(block.ContentHtml)
+                                                break;
+                                        }
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                </CardContent>
+            </SfCard>
         </div>
     }
 </div>
@@ -167,7 +310,7 @@
 
         if (focusLessonId.HasValue)
         {
-            SelectLesson(focusLessonId.Value);
+            await SelectLessonAsync(focusLessonId.Value);
             return;
         }
 
@@ -179,7 +322,7 @@
 
         if (SelectedLesson?.LessonId is Guid lessonId)
         {
-            SelectLesson(lessonId);
+            await SelectLessonAsync(lessonId);
         }
         else if (SelectedModule?.ModuleId is Guid moduleId)
         {
@@ -202,17 +345,19 @@
         SelectedModule = Builder.Modules.FirstOrDefault(x => x.ModuleId == moduleId);
     }
 
-    private void SelectLesson(Guid lessonId)
+    private Task SelectLessonAsync(Guid lessonId)
     {
         if (Builder is null)
         {
-            return;
+            return Task.CompletedTask;
         }
 
         SelectedLesson = Builder.Modules.SelectMany(x => x.Lessons).FirstOrDefault(x => x.LessonId == lessonId);
         SelectedModule = SelectedLesson is null
             ? null
             : Builder.Modules.FirstOrDefault(x => x.ModuleId == SelectedLesson.ModuleId);
+
+        return InvokeAsync(StateHasChanged);
     }
 
     private Task CreateModuleAsync()
@@ -264,8 +409,9 @@
         {
             LessonId = lessonId,
             OrderIndex = SelectedLesson.Blocks.Count + 1,
-            BlockType = AlgoaBayBMT.Shared.Models.LessonBlockType.Markdown,
-            IsRequired = true
+            BlockType = LessonBlockType.Slide,
+            IsRequired = true,
+            IsActive = true
         });
 
         return Task.CompletedTask;
@@ -462,8 +608,29 @@
     private static string GetLessonRenderKey(TrainingLessonEditModel lesson) =>
         lesson.LessonId?.ToString() ?? $"new-lesson-{lesson.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(lesson)}";
 
+    private static string GetSelectedLessonEditorKey(TrainingLessonEditModel lesson) =>
+        $"lesson-editor-{GetLessonRenderKey(lesson)}";
+
+    private static string GetSelectedLessonBlocksKey(TrainingLessonEditModel lesson) =>
+        $"lesson-blocks-{GetLessonRenderKey(lesson)}";
+
     private static string GetBlockRenderKey(TrainingLessonBlockEditModel block) =>
         block.LessonBlockId?.ToString() ?? $"new-block-{block.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(block)}";
+
+    private static string GetBlockAvatarPreviewKey(TrainingLessonBlockEditModel block)
+        => $"{GetBlockRenderKey(block)}-avatar-{block.AvatarMediaAssetId?.ToString() ?? "none"}-{block.AvatarVideoUrl ?? "empty"}";
+
+    private static string GetBlockDisplayName(LessonBlockType blockType) => blockType switch
+    {
+        LessonBlockType.Flashcard => "Flash Card",
+        LessonBlockType.Callout => "Important Note",
+        LessonBlockType.Download => "Attachment",
+        _ => blockType.ToString()
+    };
+
+    private static string GetQuizPreviewKey(TrainingLessonBlockEditModel block, int quizIndex) => $"{GetBlockRenderKey(block)}-quiz-{quizIndex}";
+
+    private static MarkupString RenderHtml(string? html) => new(string.IsNullOrWhiteSpace(html) ? string.Empty : html);
 
     private async Task ShowSuccessToastAsync(string message)
     {

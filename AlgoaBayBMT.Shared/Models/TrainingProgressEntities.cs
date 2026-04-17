@@ -30,6 +30,7 @@ namespace AlgoaBayBMT.Shared.Models
         public int? VideoSecondsWatched { get; set; }
         public decimal? ScrollPercent { get; set; }
         public string? CompletionEvidenceJson { get; set; }
+        public bool KnowledgeCheckPassed { get; set; }
 
         public TrainingLesson? Lesson { get; set; }
     }
@@ -96,6 +97,36 @@ namespace AlgoaBayBMT.Shared.Models
         public Course? Course { get; set; }
         public CourseVersion? CourseVersion { get; set; }
         public TrainingCertificate? TrainingCertificate { get; set; }
+    }
+
+    public class UserAssessmentAttempt
+    {
+        public Guid UserAssessmentAttemptId { get; set; }
+        public Guid TrainingCourseAssessmentId { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public int AttemptNumber { get; set; }
+        public DateTime StartedOnUtc { get; set; } = DateTime.UtcNow;
+        public DateTime? SubmittedOnUtc { get; set; }
+        public decimal? ScorePercent { get; set; }
+        public bool Passed { get; set; }
+
+        public TrainingCourseAssessment? Assessment { get; set; }
+        public ICollection<UserAssessmentResponse> Responses { get; set; } = new List<UserAssessmentResponse>();
+    }
+
+    public class UserAssessmentResponse
+    {
+        public Guid UserAssessmentResponseId { get; set; }
+        public Guid UserAssessmentAttemptId { get; set; }
+        public Guid TrainingQuestionBankQuestionId { get; set; }
+        public Guid? SelectedOptionId { get; set; }
+        public string? FreeTextAnswer { get; set; }
+        public bool? IsCorrect { get; set; }
+        public decimal? AwardedPoints { get; set; }
+
+        public UserAssessmentAttempt? Attempt { get; set; }
+        public TrainingQuestionBankQuestion? Question { get; set; }
+        public TrainingQuestionBankOption? SelectedOption { get; set; }
     }
 
     public class TrainingCertificate

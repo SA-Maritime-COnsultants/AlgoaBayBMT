@@ -1,0 +1,448 @@
+@page "/my-training/course/{CourseId:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using Microsoft.AspNetCore.Components
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Notifications
+
+@inject ILearnerTrainingService LearnerTrainingService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Course Player</PageTitle>
+
+<SfToast @ref="Toast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell pf-training-learner-shell">
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    @if (Player is null)
+    {
+        <SfCard CssClass="pf-card-shell pf-training-learner-card">
+            <CardContent>
+                <div class="pf-empty-state">Loading training player...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="page-header pf-training-learner-header">
+            <div>
+                <h1 class="page-title">@Player.Title</h1>
+                <div class="page-subtitle">@Player.Summary</div>
+            </div>
+            <div class="pf-grid-actions pf-grid-actions--compact">
+                <a class="e-btn" href="/my-training">Back to My Training</a>
+                @if (!string.IsNullOrWhiteSpace(Player.CertificateUrl))
+                {
+                    <a class="e-btn e-primary" href="@Player.CertificateUrl">View Certificate</a>
+                }
+            </div>
+        </div>
+
+        <div class="pf-training-player-layout">
+            <SfCard CssClass="pf-card-shell pf-training-player-sidebar">
+                <CardHeader Title="Course Journey" SubTitle="Move lesson by lesson through the guided training path." />
+                <CardContent>
+                    <div class="pf-role-badge-list">
+                        <span class="e-badge pf-role-badge">@Player.Code</span>
+                        <span class="e-badge pf-role-badge">@Player.CompletedLessons / @Player.TotalLessons lessons complete</span>
+                        <span class="e-badge pf-role-badge">Pass mark @Player.PassMarkPercent%</span>
+                    </div>
+                    <div class="pf-training-player-progress">
+                        <div class="pf-training-linear-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Player.CourseProgressPercent">
+                            <div class="pf-training-linear-progress-fill" style="width:@($"{Player.CourseProgressPercent:0.##}%")"></div>
+                            <span class="pf-training-linear-progress-text">@Player.CourseProgressPercent%</span>
+                        </div>
+                    </div>
+                    <div class="pf-training-player-nav-list">
+                        @foreach (var module in Player.Modules)
+                        {
+                            <div class="pf-training-player-module" @key="module.ModuleId">
+                                <div class="pf-training-player-module-title">Module @module.OrderIndex · @module.Title</div>
+                                <div class="pf-training-player-module-meta">@module.CompletedLessons / @module.TotalLessons lesson(s) completed</div>
+                                <div class="pf-training-player-lesson-list">
+                                    @foreach (var lesson in module.Lessons)
+                                    {
+                                        <button type="button"
+                                                @key="lesson.LessonId"
+                                                class="pf-training-player-lesson-button @(lesson.IsCurrent ? "is-current" : string.Empty) @(lesson.IsLocked ? "is-locked" : string.Empty)"
+                                                disabled="@lesson.IsLocked"
+                                                @onclick="() => NavigateToLesson(lesson.LessonId)">
+                                            <span>@lesson.OrderIndex. @lesson.Title</span>
+                                            <span class="pf-training-player-lesson-meta">@(lesson.IsCompleted ? "Completed" : lesson.IsLocked ? "Locked" : $"{lesson.ProgressPercent:0.#}%")</span>
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </CardContent>
+            </SfCard>
+
+            <div class="pf-training-player-main">
+                <SfCard CssClass="pf-card-shell pf-training-learner-card">
+                    <CardHeader Title="@Player.CurrentLesson?.Title" SubTitle="@Player.CurrentLesson?.Summary" />
+                    <CardContent>
+                        <div class="pf-training-player-block-list">
+                            @foreach (var block in Player.CurrentLesson?.Blocks ?? Enumerable.Empty<TrainingPlayerBlockModel>())
+                            {
+                                <button type="button"
+                                        @key="block.BlockId"
+                                        class="pf-training-player-block-chip @(block.IsCurrent ? "is-current" : string.Empty) @(block.IsLocked ? "is-locked" : string.Empty) @(block.IsCompleted ? "is-complete" : string.Empty)"
+                                        disabled="@block.IsLocked"
+                                        @onclick="() => NavigateToBlock(block.BlockId)">
+                                    <span>@block.DisplayType</span>
+                                    <span>@block.CompletionLabel</span>
+                                </button>
+                            }
+                        </div>
+                    </CardContent>
+                </SfCard>
+
+                <div @key="GetCurrentBlockRenderKey()">
+                    <SfCard CssClass="pf-card-shell pf-training-learner-card pf-training-player-stage">
+                        <CardHeader Title="@Player.CurrentBlock?.Title" SubTitle="@Player.CurrentBlock?.Subtitle" />
+                        <CardContent>
+                        @if (Player.CurrentBlock is not null)
+                        {
+                            <div class="pf-training-check-type">@Player.CurrentBlock.DisplayType</div>
+
+                            @switch (Player.CurrentBlock.BlockType)
+                            {
+                                case LessonBlockType.Flashcard:
+                                    <div class="pf-training-preview-dual">
+                                        <div class="pf-training-preview-face">
+                                            <div class="pf-training-preview-label">Front</div>
+                                            @RenderHtml(Player.CurrentBlock.ContentHtml)
+                                        </div>
+                                        <div class="pf-training-preview-face pf-training-preview-face--accent">
+                                            <div class="pf-training-preview-label">Back</div>
+                                            @RenderHtml(Player.CurrentBlock.SecondaryContentHtml)
+                                        </div>
+                                    </div>
+                                    break;
+                                case LessonBlockType.Video:
+                                    if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.IntroTextHtml))
+                                    {
+                                        @RenderHtml(Player.CurrentBlock.IntroTextHtml)
+                                    }
+                                    if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.FileUrl))
+                                    {
+                                        <div class="pf-training-video-shell" @key="GetCurrentVideoKey()">
+                                            <video class="pf-training-scenario-video" controls src="@Player.CurrentBlock.FileUrl"></video>
+                                            <div class="pf-training-preview-file">
+                                                <a href="@Player.CurrentBlock.FileUrl" target="_blank" rel="noreferrer">Open video in a new tab</a>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.ExternalUrl))
+                                    {
+                                        <a class="e-btn e-primary" href="@Player.CurrentBlock.ExternalUrl" target="_blank" rel="noreferrer">Open Video</a>
+                                    }
+                                    break;
+                                case LessonBlockType.Download:
+                                    @RenderHtml(Player.CurrentBlock.ContentHtml)
+                                    @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.FileUrl))
+                                    {
+                                        <div class="pf-training-preview-file">Download available: <a href="@Player.CurrentBlock.FileUrl" target="_blank" rel="noreferrer">Open attachment</a></div>
+                                    }
+                                    break;
+                                case LessonBlockType.Callout:
+                                    <div class="pf-training-check-context">
+                                        @RenderHtml(Player.CurrentBlock.ContentHtml)
+                                    </div>
+                                    break;
+                                case LessonBlockType.Quiz:
+                                    <div class="pf-authoring-item-list">
+                                        @foreach (var question in Player.CurrentBlock.QuizQuestions)
+                                        {
+                                            <div class="pf-training-quiz-preview-item" @key="question.QuestionIndex">
+                                                <div class="pf-training-preview-label">Question @(question.QuestionIndex + 1) · @question.QuestionType</div>
+                                                <div class="pf-training-preview-body">@question.Prompt</div>
+                                                @if (!string.IsNullOrWhiteSpace(question.ScenarioText))
+                                                {
+                                                    <div class="pf-training-check-context">@question.ScenarioText</div>
+                                                }
+                                                <div class="pf-training-check-options">
+                                                    @foreach (var option in question.Options)
+                                                    {
+                                                        <label class="pf-training-check-option @(GetQuizSelection(question.QuestionIndex) == option.OptionIndex ? "is-selected" : string.Empty)" @key="GetQuizOptionRenderKey(question.QuestionIndex, option.OptionIndex)">
+                                                            <input type="radio"
+                                                                   name="@($"quiz-{question.QuestionIndex}")"
+                                                                   checked="@(GetQuizSelection(question.QuestionIndex) == option.OptionIndex)"
+                                                                   @onchange="() => SelectQuizOption(question.QuestionIndex, option.OptionIndex)" />
+                                                            <span>@option.OptionText</span>
+                                                        </label>
+                                                    }
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(QuizResultMessage))
+                                    {
+                                        <div class="pf-training-check-result @(QuizPassed ? "is-correct" : "is-incorrect")">@QuizResultMessage</div>
+                                    }
+                                    break;
+                                case LessonBlockType.Assessment:
+                                    if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.IntroTextHtml))
+                                    {
+                                        @RenderHtml(Player.CurrentBlock.IntroTextHtml)
+                                    }
+                                    <div class="pf-training-preview-file">Assessment: @Player.CurrentBlock.LinkedAssessmentName</div>
+                                    @foreach (var question in Player.CurrentBlock.AssessmentQuestions)
+                                    {
+                                        <div class="pf-training-quiz-preview-item" @key="question.QuestionId">
+                                            <div class="pf-training-preview-body">@question.Prompt</div>
+                                            @if (!string.IsNullOrWhiteSpace(question.ScenarioText))
+                                            {
+                                                <div class="pf-training-check-context">@question.ScenarioText</div>
+                                            }
+                                            <div class="pf-training-check-options">
+                                                @foreach (var option in question.Options)
+                                                {
+                                                    <label class="pf-training-check-option @(GetAssessmentSelection(question.QuestionId) == option.OptionId ? "is-selected" : string.Empty)" @key="option.OptionId">
+                                                        <input type="radio"
+                                                               name="@($"assessment-{question.QuestionId}")"
+                                                               checked="@(GetAssessmentSelection(question.QuestionId) == option.OptionId)"
+                                                               @onchange="() => SelectAssessmentOption(question.QuestionId, option.OptionId)" />
+                                                        <span>@option.OptionText</span>
+                                                    </label>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(AssessmentResultMessage))
+                                    {
+                                        <div class="pf-training-check-result @(AssessmentPassed ? "is-correct" : "is-incorrect")">@AssessmentResultMessage</div>
+                                    }
+                                    break;
+                                default:
+                                    if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.ThumbnailUrl))
+                                    {
+                                        <img src="@Player.CurrentBlock.ThumbnailUrl" alt="Training visual" class="pf-training-slide-image" />
+                                    }
+                                    @RenderHtml(Player.CurrentBlock.ContentHtml)
+                                    break;
+                            }
+                        }
+                        </CardContent>
+                    </SfCard>
+                </div>
+
+                <div class="pf-dialog-actions pf-dialog-actions--split pf-training-player-actions">
+                    <div class="pf-grid-actions pf-grid-actions--compact">
+                        <SfButton type="button" disabled="@(!Player.CanGoPrevious)" OnClick="GoPrevious">Previous</SfButton>
+                        <SfButton type="button" disabled="@(!Player.CanGoNext)" OnClick="GoNext">Next</SfButton>
+                    </div>
+                    <div class="pf-grid-actions pf-grid-actions--compact">
+                        @if (Player.CurrentBlock?.BlockType == LessonBlockType.Quiz)
+                        {
+                            <SfButton CssClass="e-primary" type="button" OnClick="SubmitQuizAsync">Submit Quiz</SfButton>
+                        }
+                        else if (Player.CurrentBlock?.BlockType == LessonBlockType.Assessment)
+                        {
+                            <SfButton CssClass="e-primary" type="button" OnClick="SubmitAssessmentAsync">Submit Assessment</SfButton>
+                        }
+                        else
+                        {
+                            <SfButton CssClass="e-primary" type="button" disabled="@(!Player.CanMarkCurrentBlockComplete)" OnClick="MarkCurrentBlockCompleteAsync">@Player.CurrentBlockActionText</SfButton>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid CourseId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public Guid? LessonId { get; set; }
+
+    [SupplyParameterFromQuery]
+    public Guid? BlockId { get; set; }
+
+    private SfToast Toast = default!;
+    private TrainingCoursePlayerModel? Player;
+    private string? CurrentUserId;
+    private string? ErrorMessage;
+    private readonly Dictionary<int, int> QuizSelections = new();
+    private readonly Dictionary<Guid, Guid> AssessmentSelections = new();
+    private string? QuizResultMessage;
+    private string? AssessmentResultMessage;
+    private bool QuizPassed;
+    private bool AssessmentPassed;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync())
+            .User
+            .FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            ErrorMessage = "A signed-in user profile is required to launch training.";
+            return;
+        }
+
+        await LoadPlayerAsync();
+    }
+
+    private async Task LoadPlayerAsync()
+    {
+        Player = await LearnerTrainingService.GetCoursePlayerAsync(CurrentUserId!, CourseId, LessonId, BlockId);
+        if (Player is null)
+        {
+            ErrorMessage = "This course could not be loaded or is not available to the current learner.";
+            return;
+        }
+
+        ErrorMessage = null;
+        QuizSelections.Clear();
+        AssessmentSelections.Clear();
+        QuizResultMessage = null;
+        AssessmentResultMessage = null;
+    }
+
+    private void NavigateToLesson(Guid lessonId)
+    {
+        var uri = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            [nameof(LessonId)] = lessonId,
+            [nameof(BlockId)] = null
+        });
+        NavigationManager.NavigateTo(uri);
+    }
+
+    private void NavigateToBlock(Guid blockId)
+    {
+        var uri = NavigationManager.GetUriWithQueryParameters(new Dictionary<string, object?>
+        {
+            [nameof(LessonId)] = Player?.CurrentLessonId,
+            [nameof(BlockId)] = blockId
+        });
+        NavigationManager.NavigateTo(uri);
+    }
+
+    private void GoPrevious()
+    {
+        if (Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null)
+        {
+            return;
+        }
+
+        var blocks = Player.CurrentLesson.Blocks;
+        var index = blocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
+        if (index > 0)
+        {
+            NavigateToBlock(blocks[index - 1].BlockId);
+        }
+    }
+
+    private void GoNext()
+    {
+        if (Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null)
+        {
+            return;
+        }
+
+        var blocks = Player.CurrentLesson.Blocks;
+        var index = blocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
+        if (index >= 0 && index < blocks.Count - 1)
+        {
+            NavigateToBlock(blocks[index + 1].BlockId);
+        }
+    }
+
+    private async Task MarkCurrentBlockCompleteAsync()
+    {
+        if (Player?.CurrentLesson is null || Player.CurrentBlock is null || string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            return;
+        }
+
+        var result = await LearnerTrainingService.CompleteBlockAsync(CurrentUserId, Player.CourseId, Player.CurrentLesson.LessonId, Player.CurrentBlock.BlockId);
+        await ShowToastAsync(result.Succeeded ? "Success" : "Warning", result.Message ?? "Progress updated.", result.Succeeded ? "e-toast-success" : "e-toast-warning");
+        await LoadPlayerAsync();
+    }
+
+    private void SelectQuizOption(int questionIndex, int optionIndex) => QuizSelections[questionIndex] = optionIndex;
+    private int? GetQuizSelection(int questionIndex) => QuizSelections.TryGetValue(questionIndex, out var selected) ? selected : null;
+
+    private async Task SubmitQuizAsync()
+    {
+        if (Player?.CurrentLesson is null || Player.CurrentBlock is null || string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            return;
+        }
+
+        var answers = QuizSelections.ToDictionary(x => x.Key, x => new List<int> { x.Value });
+        var result = await LearnerTrainingService.SubmitQuizBlockAsync(CurrentUserId, Player.CourseId, Player.CurrentLesson.LessonId, Player.CurrentBlock.BlockId, answers);
+        QuizPassed = result.Data?.Passed == true;
+        QuizResultMessage = result.Data?.Message ?? result.Message;
+        await ShowToastAsync(result.Succeeded ? "Quiz" : "Warning", result.Message ?? "Quiz submitted.", result.Succeeded ? "e-toast-success" : "e-toast-warning");
+        if (result.Data?.Passed == true)
+        {
+            await LoadPlayerAsync();
+        }
+    }
+
+    private void SelectAssessmentOption(Guid questionId, Guid optionId) => AssessmentSelections[questionId] = optionId;
+    private Guid? GetAssessmentSelection(Guid questionId) => AssessmentSelections.TryGetValue(questionId, out var selected) ? selected : null;
+
+    private async Task SubmitAssessmentAsync()
+    {
+        if (Player?.CurrentLesson is null || Player.CurrentBlock is null || string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            return;
+        }
+
+        var answers = AssessmentSelections.ToDictionary(x => x.Key, x => (Guid?)x.Value);
+        var result = await LearnerTrainingService.SubmitAssessmentBlockAsync(CurrentUserId, Player.CourseId, Player.CurrentLesson.LessonId, Player.CurrentBlock.BlockId, answers);
+        AssessmentPassed = result.Data?.Passed == true;
+        AssessmentResultMessage = result.Data?.Message ?? result.Message;
+        await ShowToastAsync(result.Succeeded ? "Assessment" : "Warning", result.Message ?? "Assessment submitted.", result.Succeeded ? "e-toast-success" : "e-toast-warning");
+        if (result.Data?.Passed == true)
+        {
+            await LoadPlayerAsync();
+        }
+    }
+
+    private static MarkupString RenderHtml(string? html) => new(string.IsNullOrWhiteSpace(html) ? string.Empty : html);
+
+    private static string GetQuizOptionRenderKey(int questionIndex, int optionIndex)
+        => $"quiz-{questionIndex}-{optionIndex}";
+
+    private string GetCurrentVideoKey()
+        => Player?.CurrentBlock is null
+            ? $"video-empty-{CourseId}"
+            : $"video-{Player.CurrentBlock.BlockId}-{Player.CurrentBlock.FileUrl}";
+
+    private string GetCurrentBlockRenderKey()
+        => Player?.CurrentBlock is null
+            ? $"course-player-empty-{CourseId}"
+            : $"course-player-{Player.CurrentLessonId}-{Player.CurrentBlock.BlockId}-{Player.CurrentBlock.BlockType}";
+
+    private async Task ShowToastAsync(string title, string content, string cssClass)
+    {
+        await Toast.ShowAsync(new ToastModel
+        {
+            Title = title,
+            Content = content,
+            CssClass = cssClass,
+            ShowCloseButton = true,
+            Timeout = 3200
+        });
+    }
+}

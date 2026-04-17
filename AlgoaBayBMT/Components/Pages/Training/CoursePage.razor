@@ -1,0 +1,118 @@
+@page "/training/environmental-law-compliance/{CourseSlug}"
+@rendermode InteractiveServer
+
+@using TrainingCourse = AlgoaBayBMT.Models.Training.Course
+@using AlgoaBayBMT.Models.Training
+@using Syncfusion.Blazor.Navigations
+
+@inject ICourseService CourseService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Training Course</PageTitle>
+
+<div class="page-shell">
+    @if (Course is null)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardContent>
+                <div class="pf-empty-state">Loading course content...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="page-header">
+            <div>
+                <h1 class="page-title">@Course.Title</h1>
+                <div class="page-subtitle">@Course.Overview</div>
+            </div>
+            <div class="pf-grid-actions pf-grid-actions--compact">
+                <a class="e-btn" href="/training/environmental-law-compliance/exam">Module Exam</a>
+            </div>
+        </div>
+
+        <div class="pf-manage-overview pf-training-builder-overview">
+            <div class="pf-manage-overview-copy">
+                <h2 class="pf-manage-overview-title">Course Overview</h2>
+                <div class="pf-manage-overview-subtitle">@Course.RegulatoryReference</div>
+                <div class="pf-role-badge-list">
+                    <span class="e-badge pf-role-badge">@Course.Audience</span>
+                    <span class="e-badge pf-role-badge">@Course.EstimatedMinutes minutes</span>
+                    <span class="e-badge pf-role-badge">@Course.QuestionBank.Count question bank items</span>
+                </div>
+            </div>
+        </div>
+
+        <SfTab CssClass="pf-training-tab-shell">
+            <TabItems>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Lessons" />
+                    </ChildContent>
+                    <ContentTemplate>
+                        <div class="pf-training-course-grid">
+                            @foreach (var lesson in Course.Lessons)
+                            {
+                                <SfCard CssClass="pf-card-shell pf-training-lesson-card">
+                                    <CardHeader Title="@lesson.Title" SubTitle="@lesson.LessonCode" />
+                                    <CardContent>
+                                        <div class="pf-training-card-copy">@((MarkupString)lesson.NarrativeHtml)</div>
+                                        <div class="pf-grid-actions pf-grid-actions--compact pf-training-card-actions">
+                                            <a class="e-btn e-primary" href="@($"/training/environmental-law-compliance/{CourseSlug}/{lesson.Slug}")">Open Lesson</a>
+                                        </div>
+                                    </CardContent>
+                                </SfCard>
+                            }
+                        </div>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Flashcards" />
+                    </ChildContent>
+                    <ContentTemplate>
+                        <div class="pf-training-flashcard-grid">
+                            @foreach (var card in Course.Flashcards)
+                            {
+                                <div class="pf-training-flashcard-item">
+                                    <div class="pf-training-flashcard-category">@card.Category</div>
+                                    <FlashcardComponent FrontText="@card.FrontText" BackText="@card.BackText" />
+                                </div>
+                            }
+                        </div>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Scenario Tasks" />
+                    </ChildContent>
+                    <ContentTemplate>
+                        <div class="pf-training-course-grid">
+                            @foreach (var task in Course.ScenarioTasks)
+                            {
+                                <ScenarioComponent Task="task" Completed="selected => HandleScenarioCompleted(task, selected)" />
+                            }
+                        </div>
+                    </ContentTemplate>
+                </TabItem>
+            </TabItems>
+        </SfTab>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string CourseSlug { get; set; } = string.Empty;
+
+    private TrainingCourse? Course;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Course = await CourseService.GetCourseAsync(CourseSlug);
+    }
+
+    private Task HandleScenarioCompleted(CompetencyTask task, IReadOnlyList<string> selectedChoices)
+    {
+        return Task.CompletedTask;
+    }
+}

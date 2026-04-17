@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Syncfusion.Blazor;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,6 +77,13 @@ builder.Services.AddScoped<IRoleEditorService, RoleEditorService>();
 builder.Services.AddScoped<ICrewAssignmentService, CrewAssignmentService>();
 builder.Services.AddScoped<ICrewChangeHistoryService, CrewChangeHistoryService>();
 builder.Services.AddScoped<ITrainingManagementService, TrainingManagementService>();
+builder.Services.AddScoped<ITrainingAssetStorageService, TrainingAssetStorageService>();
+builder.Services.AddScoped<ILearnerTrainingService, LearnerTrainingService>();
+builder.Services.AddScoped<IContentAuthoringService, ContentAuthoringService>();
+builder.Services.AddScoped<ICourseService, CourseService>();
+builder.Services.AddScoped<IRandomisationService, RandomisationService>();
+builder.Services.AddScoped<IExamService, ExamService>();
+builder.Services.AddScoped<ICompetencyService, CompetencyService>();
 builder.Services.AddSingleton<ITrainingComplianceNotifier, NoOpTrainingComplianceNotifier>();
 builder.Services.Configure<AlgoaBayBMT.Services.Models.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddSingleton<IEmailTemplateRenderer, EmailTemplateRenderer>();
@@ -100,6 +108,15 @@ else
 }
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
+
+var runtimeUploadsRoot = Path.Combine(app.Environment.WebRootPath, "uploads");
+Directory.CreateDirectory(runtimeUploadsRoot);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(runtimeUploadsRoot),
+    RequestPath = "/uploads"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();

@@ -8,7 +8,9 @@ namespace AlgoaBayBMT.Shared.Models
         public Guid CourseId { get; set; }
         public string Code { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
+        public string? Summary { get; set; }
         public string? Description { get; set; }
+        public decimal PassMarkPercent { get; set; } = 80m;
         public string? ThumbnailUrl { get; set; }
         public string? TargetAudienceSummary { get; set; }
         public string? RegulatoryReference { get; set; }
@@ -26,6 +28,7 @@ namespace AlgoaBayBMT.Shared.Models
         public CourseVersion? CurrentVersion { get; set; }
         public ICollection<CourseVersion> Versions { get; set; } = new List<CourseVersion>();
         public ICollection<CourseAudienceRule> AudienceRules { get; set; } = new List<CourseAudienceRule>();
+        public ICollection<TrainingCourseAssessment> Assessments { get; set; } = new List<TrainingCourseAssessment>();
         public ICollection<UserTrainingAssignment> UserTrainingAssignments { get; set; } = new List<UserTrainingAssignment>();
         public ICollection<UserCourseProgress> UserCourseProgressRecords { get; set; } = new List<UserCourseProgress>();
         public ICollection<CourseCompletionRecord> CompletionRecords { get; set; } = new List<CourseCompletionRecord>();
@@ -65,6 +68,7 @@ namespace AlgoaBayBMT.Shared.Models
 
         public CourseVersion? CourseVersion { get; set; }
         public ICollection<TrainingLesson> Lessons { get; set; } = new List<TrainingLesson>();
+        public ICollection<TrainingQuestionBankQuestion> QuestionBankQuestions { get; set; } = new List<TrainingQuestionBankQuestion>();
     }
 
     public class TrainingLesson
@@ -86,6 +90,7 @@ namespace AlgoaBayBMT.Shared.Models
         public Assessment? Assessment { get; set; }
         public ICollection<UserLessonProgress> UserLessonProgressRecords { get; set; } = new List<UserLessonProgress>();
         public ICollection<UserCourseProgress> CurrentCourseProgressRecords { get; set; } = new List<UserCourseProgress>();
+        public ICollection<TrainingKnowledgeCheckQuestion> KnowledgeCheckQuestions { get; set; } = new List<TrainingKnowledgeCheckQuestion>();
     }
 
     public class LessonBlock
@@ -94,8 +99,10 @@ namespace AlgoaBayBMT.Shared.Models
         public Guid LessonId { get; set; }
         public LessonBlockType BlockType { get; set; }
         public string? Title { get; set; }
+        public string? Subtitle { get; set; }
         public int OrderIndex { get; set; }
         public string? MarkdownBody { get; set; }
+        public string? ThumbnailUrl { get; set; }
         public string? FileUrl { get; set; }
         public string? ExternalUrl { get; set; }
         public string? MimeType { get; set; }
@@ -103,6 +110,7 @@ namespace AlgoaBayBMT.Shared.Models
         public string? MetadataJson { get; set; }
         public Guid? MediaAssetId { get; set; }
         public bool IsRequired { get; set; } = true;
+        public bool IsActive { get; set; } = true;
 
         public TrainingLesson? Lesson { get; set; }
         public MediaAsset? MediaAsset { get; set; }
@@ -121,6 +129,80 @@ namespace AlgoaBayBMT.Shared.Models
         public string? HashSha256 { get; set; }
 
         public ICollection<LessonBlock> LessonBlocks { get; set; } = new List<LessonBlock>();
+    }
+
+    public class TrainingKnowledgeCheckQuestion
+    {
+        public Guid TrainingKnowledgeCheckQuestionId { get; set; }
+        public Guid TrainingLessonId { get; set; }
+        public TrainingQuestionType QuestionType { get; set; }
+        public string Prompt { get; set; } = string.Empty;
+        public string? Explanation { get; set; }
+        public int OrderIndex { get; set; }
+        public decimal Points { get; set; } = 1m;
+        public bool IsActive { get; set; } = true;
+
+        public TrainingLesson? Lesson { get; set; }
+        public ICollection<TrainingKnowledgeCheckOption> Options { get; set; } = new List<TrainingKnowledgeCheckOption>();
+    }
+
+    public class TrainingKnowledgeCheckOption
+    {
+        public Guid TrainingKnowledgeCheckOptionId { get; set; }
+        public Guid TrainingKnowledgeCheckQuestionId { get; set; }
+        public string OptionText { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public int OrderIndex { get; set; }
+
+        public TrainingKnowledgeCheckQuestion? Question { get; set; }
+    }
+
+    public class TrainingCourseAssessment
+    {
+        public Guid TrainingCourseAssessmentId { get; set; }
+        public Guid TrainingCourseId { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? Instructions { get; set; }
+        public decimal PassMarkPercent { get; set; } = 80m;
+        public int RandomQuestionCount { get; set; } = 25;
+        public int MaxAttempts { get; set; } = 3;
+        public int? TimeLimitMinutes { get; set; }
+        public bool IsActive { get; set; } = true;
+
+        public Course? Course { get; set; }
+        public ICollection<TrainingQuestionBankQuestion> QuestionBankQuestions { get; set; } = new List<TrainingQuestionBankQuestion>();
+        public ICollection<UserAssessmentAttempt> Attempts { get; set; } = new List<UserAssessmentAttempt>();
+    }
+
+    public class TrainingQuestionBankQuestion
+    {
+        public Guid TrainingQuestionBankQuestionId { get; set; }
+        public Guid TrainingCourseAssessmentId { get; set; }
+        public Guid? TrainingModuleId { get; set; }
+        public TrainingQuestionType QuestionType { get; set; }
+        public string Prompt { get; set; } = string.Empty;
+        public string? ScenarioText { get; set; }
+        public string? Explanation { get; set; }
+        public int? DifficultyLevel { get; set; }
+        public decimal Points { get; set; } = 1m;
+        public bool IsActive { get; set; } = true;
+
+        public TrainingCourseAssessment? Assessment { get; set; }
+        public TrainingModule? Module { get; set; }
+        public ICollection<TrainingQuestionBankOption> Options { get; set; } = new List<TrainingQuestionBankOption>();
+        public ICollection<UserAssessmentResponse> Responses { get; set; } = new List<UserAssessmentResponse>();
+    }
+
+    public class TrainingQuestionBankOption
+    {
+        public Guid TrainingQuestionBankOptionId { get; set; }
+        public Guid TrainingQuestionBankQuestionId { get; set; }
+        public string OptionText { get; set; } = string.Empty;
+        public bool IsCorrect { get; set; }
+        public int OrderIndex { get; set; }
+
+        public TrainingQuestionBankQuestion? Question { get; set; }
+        public ICollection<UserAssessmentResponse> Responses { get; set; } = new List<UserAssessmentResponse>();
     }
 
     public class Assessment

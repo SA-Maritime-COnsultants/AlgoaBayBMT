@@ -12,6 +12,8 @@
     --pf-success: #16a34a;
     --pf-danger: #dc2626;
     --pf-warning: #f59e0b;
+    --training-header-subtle-bg: linear-gradient(135deg, rgba(15, 35, 56, 0.88), rgba(28, 59, 92, 0.72));
+    --training-header-subtle-text: #f8fbff;
     --pf-radius: 12px;
     --pf-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 
@@ -189,7 +191,15 @@ h1, h2, h3, h4, h5, h6 {
 .pf-col-12,
 .pf-col-6,
 .pf-col-4,
-.pf-col-3 {
+.pf-col-3,
+.pf-col-title-wide,
+.pf-col-minutes-compact,
+.pf-col-format-compact,
+.pf-col-title-flex,
+.pf-col-lg-3,
+.pf-col-lg-6,
+.pf-col-xl-4,
+.pf-col-xl-8 {
     min-width: 0;
 }
 
@@ -197,6 +207,14 @@ h1, h2, h3, h4, h5, h6 {
 .pf-col-6 { grid-column: span 6; }
 .pf-col-4 { grid-column: span 4; }
 .pf-col-3 { grid-column: span 3; }
+.pf-col-title-wide { grid-column: span 11; }
+.pf-col-minutes-compact { grid-column: span 1; }
+.pf-col-format-compact { grid-column: span 2; }
+.pf-col-title-flex { grid-column: span 10; }
+.pf-col-lg-3 { grid-column: span 3; }
+.pf-col-lg-6 { grid-column: span 6; }
+.pf-col-xl-4 { grid-column: span 4; }
+.pf-col-xl-8 { grid-column: span 8; }
 
 .pf-field-label {
     display: block;
@@ -257,6 +275,832 @@ h1, h2, h3, h4, h5, h6 {
 
 .e-card .e-card-content {
     padding: 1.25rem !important;
+}
+
+.pf-training-tab-shell {
+    margin-top: 1rem;
+}
+
+.pf-role-badge-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.pf-role-badge {
+    background: rgba(18, 181, 203, 0.12) !important;
+    color: var(--pf-primary) !important;
+    border: 1px solid rgba(18, 181, 203, 0.25);
+    padding: 0.4rem 0.65rem;
+}
+
+.pf-training-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pf-training-dashboard-grid--compact {
+    margin-top: 0.5rem;
+}
+
+.pf-training-metric-card .e-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.pf-training-metric-label {
+    color: var(--pf-text-soft);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.pf-training-metric-value {
+    color: var(--pf-primary);
+    font-size: 1.65rem;
+    font-weight: 800;
+}
+
+.pf-training-builder-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.pf-training-builder-layout--triple {
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1.2fr) minmax(320px, 0.9fr);
+}
+
+.pf-training-tree-panel,
+.pf-training-preview-panel {
+    position: sticky;
+    top: 1rem;
+}
+
+.pf-training-preview-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.pf-training-preview-hero {
+    padding: 1rem;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(11, 31, 51, 0.96), rgba(18, 48, 77, 0.94));
+    color: #fff;
+}
+
+.pf-training-preview-hero h3 {
+    color: #fff;
+    margin: 0 0 0.35rem;
+}
+
+.pf-training-preview-hero p {
+    margin: 0;
+    color: rgba(255,255,255,0.82);
+}
+
+.pf-training-preview-block {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: #fff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.pf-training-preview-block h4 {
+    margin: 0 0 0.45rem;
+}
+
+.pf-training-preview-subtitle,
+.pf-training-preview-file {
+    color: var(--pf-text-soft);
+    font-size: 0.9rem;
+    margin-bottom: 0.55rem;
+}
+
+.pf-training-preview-body {
+    color: var(--pf-text);
+    line-height: 1.7;
+}
+
+.pf-training-admin-shell .e-card .e-card-header,
+.pf-training-dialog--subtle .e-dlg-header-content,
+.pf-training-dialog--subtle .e-dlg-header {
+    background: var(--training-header-subtle-bg) !important;
+    color: var(--training-header-subtle-text) !important;
+}
+
+.pf-training-admin-shell .e-card .e-card-header .e-card-header-title,
+.pf-training-admin-shell .e-card .e-card-header .e-card-sub-title,
+.pf-training-dialog--subtle .e-dlg-header-content,
+.pf-training-dialog--subtle .e-dlg-closeicon-btn,
+.pf-training-dialog--subtle .e-dlg-header {
+    color: var(--training-header-subtle-text) !important;
+}
+
+.pf-training-heading {
+    color: rgba(11, 31, 51, 0.88);
+}
+
+.pf-training-upload-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    padding: 1rem;
+    border: 1px dashed rgba(18, 181, 203, 0.35);
+    border-radius: 12px;
+    background: rgba(18, 181, 203, 0.05);
+}
+
+.pf-training-upload-hint,
+.pf-training-upload-status,
+.pf-training-preview-label {
+    font-size: 0.85rem;
+    color: var(--pf-text-soft);
+}
+
+.pf-training-thumbnail-shell {
+    min-height: 170px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: rgba(244, 247, 251, 0.8);
+}
+
+.pf-training-thumbnail-preview {
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+}
+
+.pf-inline-check--stacked {
+    display: flex;
+    margin-top: 0.9rem;
+}
+
+.pf-empty-state--compact {
+    padding: 1rem 0.5rem;
+}
+
+.pf-training-danger-card {
+    margin-bottom: 1rem;
+    border: 1px solid rgba(220, 38, 38, 0.14);
+}
+
+.pf-training-preview-dual {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.pf-training-preview-face,
+.pf-training-quiz-editor-card,
+.pf-training-quiz-preview-item {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: rgba(244, 247, 251, 0.92);
+}
+
+.pf-training-preview-face--accent {
+    background: rgba(18, 181, 203, 0.08);
+}
+
+.pf-training-upload-actions {
+    justify-content: flex-end;
+    margin-top: 0.65rem;
+}
+
+.pf-training-course-dialog-grid {
+    gap: 1.15rem;
+}
+
+.pf-training-course-asset-region {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+    gap: 1rem;
+    align-items: start;
+}
+
+.pf-training-course-meta-panel,
+.pf-training-course-toggle-stack,
+.pf-training-slide-authoring-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pf-training-course-meta-panel {
+    height: 100%;
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: rgba(244, 247, 251, 0.82);
+}
+
+.pf-training-builder-layout--stable {
+    grid-template-columns: minmax(280px, 320px) minmax(520px, 1.45fr) minmax(360px, 0.95fr);
+    align-items: start;
+}
+
+.pf-training-editor-panel--stable {
+    min-width: 0;
+}
+
+.pf-training-preview-panel--stable {
+    align-self: start;
+    max-height: calc(100vh - 140px);
+    overflow: auto;
+}
+
+.pf-training-tree-node {
+    cursor: pointer;
+}
+
+.pf-training-slide-authoring-layout,
+.pf-training-preview-split-view {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(260px, 0.75fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.pf-training-slide-authoring-pane--avatar,
+.pf-training-preview-split-pane--avatar {
+    padding: 1rem;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: rgba(244, 247, 251, 0.82);
+}
+
+.pf-training-preview-face--editor,
+.pf-training-preview-split-pane {
+    min-height: 100%;
+}
+
+.pf-training-avatar-shell {
+    min-height: 240px;
+}
+
+.pf-question-bank-options-list {
+    margin-top: 1rem;
+}
+
+.pf-question-bank-option-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.75rem 0.85rem;
+    border-radius: 10px;
+    background: rgba(18, 181, 203, 0.06);
+    border: 1px solid rgba(18, 181, 203, 0.14);
+}
+
+.pf-training-course-grid,
+.pf-training-slide-stack,
+.pf-training-result-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pf-training-lesson-card,
+.pf-training-check-card,
+.pf-training-slide-card,
+.pf-training-scenario-card,
+.pf-training-exam-summary {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,249,252,0.98));
+    border: 1px solid rgba(217, 226, 236, 0.85);
+    border-radius: var(--pf-radius);
+    box-shadow: var(--pf-shadow);
+}
+
+.pf-training-card-copy,
+.pf-training-slide-richtext {
+    color: var(--pf-text);
+    line-height: 1.7;
+}
+
+.pf-training-card-actions {
+    margin-top: 1rem;
+    justify-content: flex-end;
+}
+
+.pf-training-flashcard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.pf-training-flashcard-category {
+    margin-bottom: 0.45rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pf-text-soft);
+}
+
+.pf-flashcard-shell {
+    perspective: 1200px;
+    min-height: 220px;
+    cursor: pointer;
+}
+
+.pf-flashcard-inner {
+    position: relative;
+    width: 100%;
+    min-height: 220px;
+    transform-style: preserve-3d;
+    transition: transform 0.65s ease;
+}
+
+.pf-flashcard-shell.is-flipped .pf-flashcard-inner {
+    transform: rotateY(180deg);
+}
+
+.pf-flashcard-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border-radius: var(--pf-radius);
+    border: 1px solid rgba(217, 226, 236, 0.85);
+    padding: 1.25rem;
+    background: linear-gradient(135deg, var(--pf-primary), var(--pf-primary-2));
+    color: #fff;
+    box-shadow: var(--pf-shadow);
+}
+
+.pf-flashcard-face--back {
+    background: linear-gradient(135deg, #0f7d8f, var(--pf-accent));
+    transform: rotateY(180deg);
+}
+
+.pf-flashcard-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    opacity: 0.85;
+    margin-bottom: 0.85rem;
+}
+
+.pf-flashcard-text {
+    font-size: 1.05rem;
+    line-height: 1.6;
+    font-weight: 600;
+}
+
+.pf-training-slide-header,
+.pf-training-check-header,
+.pf-training-scenario-header {
+    padding: 1rem 1.15rem 0;
+}
+
+.pf-training-slide-header h3,
+.pf-training-check-header h4,
+.pf-training-scenario-header h3,
+.pf-training-scenario-step h4 {
+    margin: 0;
+    color: var(--pf-primary);
+}
+
+.pf-training-slide-body,
+.pf-training-scenario-step {
+    padding: 1rem 1.15rem 1.15rem;
+}
+
+.pf-training-slide-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+}
+
+.pf-training-slide-image {
+    width: 100%;
+    max-height: 320px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 1px solid rgba(217, 226, 236, 0.7);
+}
+
+.pf-training-slide-list {
+    margin: 0;
+    padding-left: 1.2rem;
+    color: var(--pf-text);
+    line-height: 1.7;
+}
+
+.pf-training-check-type {
+    display: inline-flex;
+    margin-bottom: 0.55rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--pf-accent-dark);
+}
+
+.pf-training-check-context {
+    margin: 0 1.15rem 1rem;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid var(--pf-accent);
+    background: rgba(18, 181, 203, 0.08);
+    color: var(--pf-text);
+    border-radius: 0 10px 10px 0;
+}
+
+.pf-training-check-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0 1.15rem 1.15rem;
+}
+
+.pf-training-check-option {
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    border: 1px solid rgba(217, 226, 236, 0.85);
+    background: #fff;
+    transition: border-color var(--transition-speed) ease, background-color var(--transition-speed) ease;
+}
+
+.pf-training-check-option.is-selected {
+    border-color: rgba(18, 181, 203, 0.7);
+    background: rgba(18, 181, 203, 0.09);
+}
+
+.pf-training-check-option input {
+    margin-top: 0.22rem;
+}
+
+.pf-training-check-option--button {
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pf-training-check-actions {
+    padding: 0 1.15rem 1.15rem;
+    justify-content: flex-end;
+}
+
+.pf-training-check-result {
+    margin: 0 1.15rem 1.15rem;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+}
+
+.pf-training-check-result.is-correct {
+    background: rgba(22, 163, 74, 0.12);
+    color: #0f5132;
+}
+
+.pf-training-check-result.is-incorrect {
+    background: rgba(220, 38, 38, 0.1);
+    color: #7f1d1d;
+}
+
+.pf-training-scenario-video {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-radius: 12px;
+    background: #000;
+}
+
+.pf-training-video-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.pf-training-learner-shell .page-title,
+.pf-training-learner-shell .pf-manage-overview-title,
+.pf-training-learner-shell .e-card .e-card-header-title {
+    color: rgba(11, 31, 51, 0.9);
+}
+
+.pf-training-learner-shell .e-card .e-card-header {
+    background: linear-gradient(135deg, rgba(11, 31, 51, 0.88), rgba(18, 48, 77, 0.72)) !important;
+}
+
+.pf-training-learner-card,
+.pf-training-learner-summary {
+    margin-bottom: 1rem;
+}
+
+.pf-training-player-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.pf-training-player-sidebar {
+    position: sticky;
+    top: 1rem;
+}
+
+.pf-training-player-progress {
+    margin: 1rem 0;
+}
+
+.pf-training-linear-progress {
+    position: relative;
+    width: 100%;
+    min-height: 44px;
+    border-radius: 999px;
+    background: rgba(18, 48, 77, 0.12);
+    overflow: hidden;
+    border: 1px solid rgba(18, 48, 77, 0.1);
+}
+
+.pf-training-linear-progress-fill {
+    position: absolute;
+    inset: 0 auto 0 0;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(18, 181, 203, 0.92), rgba(14, 151, 170, 0.88));
+}
+
+.pf-training-linear-progress-text {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    font-weight: 700;
+    color: var(--pf-primary);
+}
+
+.pf-training-player-nav-list,
+.pf-training-player-lesson-list,
+.pf-training-player-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.pf-training-player-module {
+    padding: 0.9rem;
+    border-radius: 12px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: rgba(244, 247, 251, 0.85);
+}
+
+.pf-training-player-module-title {
+    font-weight: 700;
+    color: var(--pf-primary);
+}
+
+.pf-training-player-module-meta,
+.pf-training-player-lesson-meta {
+    font-size: 0.82rem;
+    color: var(--pf-text-soft);
+}
+
+.pf-training-player-lesson-button,
+.pf-training-player-block-chip {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.8rem 0.95rem;
+    border-radius: 10px;
+    border: 1px solid rgba(217, 226, 236, 0.9);
+    background: #fff;
+    color: var(--pf-text);
+    cursor: pointer;
+}
+
+.pf-training-player-lesson-button.is-current,
+.pf-training-player-block-chip.is-current {
+    border-color: rgba(18, 181, 203, 0.8);
+    background: rgba(18, 181, 203, 0.08);
+}
+
+.pf-training-player-lesson-button.is-locked,
+.pf-training-player-block-chip.is-locked {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.pf-training-player-block-chip.is-complete {
+    border-color: rgba(22, 163, 74, 0.45);
+    background: rgba(22, 163, 74, 0.08);
+}
+
+.pf-training-player-block-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.pf-training-player-stage .e-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pf-training-player-actions {
+    margin-bottom: 1rem;
+}
+
+.pf-training-certificate-shell {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 2rem;
+    border: 1px solid rgba(18, 48, 77, 0.16);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #ffffff, #f8fbfd);
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.pf-training-certificate-title {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--pf-primary);
+    margin-bottom: 1.5rem;
+}
+
+.pf-training-certificate-body {
+    text-align: center;
+    color: var(--pf-text);
+}
+
+.pf-training-certificate-body h2,
+.pf-training-certificate-body h3 {
+    margin-bottom: 0.5rem;
+}
+
+.pf-training-certificate-grid {
+    margin: 1.75rem 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    text-align: left;
+}
+
+.pf-training-certificate-label {
+    display: block;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pf-text-soft);
+    margin-bottom: 0.35rem;
+}
+
+.pf-training-certificate-footer {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-end;
+    text-align: left;
+}
+
+.pf-training-certificate-note {
+    max-width: 360px;
+    font-size: 0.88rem;
+    color: var(--pf-text-soft);
+}
+
+@media (max-width: 768px) {
+    .pf-training-flashcard-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 1200px) {
+    .pf-training-builder-layout--triple {
+        grid-template-columns: minmax(260px, 300px) minmax(0, 1fr);
+    }
+
+    .pf-training-preview-panel {
+        grid-column: 1 / -1;
+        position: static;
+    }
+
+    .pf-col-title-wide,
+    .pf-col-minutes-compact,
+    .pf-col-format-compact,
+    .pf-col-title-flex,
+    .pf-col-lg-3,
+    .pf-col-lg-6,
+    .pf-col-xl-4,
+    .pf-col-xl-8 {
+        grid-column: span 12;
+    }
+
+    .pf-training-builder-layout--stable,
+    .pf-training-course-asset-region,
+    .pf-training-slide-authoring-layout,
+    .pf-training-preview-split-view {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-player-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-player-sidebar {
+        position: static;
+    }
+}
+
+@media (max-width: 992px) {
+    .pf-training-dashboard-grid,
+    .pf-training-builder-layout,
+    .pf-training-builder-layout--triple {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-tree-panel {
+        position: static;
+    }
+
+    .pf-training-certificate-grid,
+    .pf-training-certificate-footer {
+        grid-template-columns: 1fr;
+        flex-direction: column;
+        text-align: left;
+    }
+}
+
+.pf-authoring-shell {
+    padding-bottom: 2rem;
+}
+
+.pf-authoring-layout {
+    grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+}
+
+.pf-authoring-item-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.pf-authoring-item-card .e-card-content {
+    padding: 1rem !important;
+}
+
+.pf-authoring-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.pf-authoring-item-title {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--pf-primary);
+}
+
+.pf-authoring-item-preview {
+    color: var(--pf-text-soft);
+    line-height: 1.6;
+    font-size: 0.92rem;
+}
+
+.pf-authoring-label-inline {
+    margin-bottom: 0;
+    min-width: 120px;
+}
+
+.pf-authoring-shell .e-richtexteditor {
+    border-radius: 12px;
+    border-color: var(--pf-border);
+}
+
+.pf-authoring-shell .e-richtexteditor .e-rte-content {
+    min-height: 180px;
+}
+
+@media (max-width: 992px) {
+    .pf-authoring-layout {
+        grid-template-columns: 1fr;
+    }
 }
 
 .e-btn.e-primary,

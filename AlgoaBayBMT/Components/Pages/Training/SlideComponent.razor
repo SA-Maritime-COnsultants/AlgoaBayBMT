@@ -1,0 +1,44 @@
+@using AlgoaBayBMT.Models.Training
+
+<div class="pf-training-slide-card">
+    <div class="pf-training-slide-header">
+        <h3>@Title</h3>
+    </div>
+    <div class="pf-training-slide-body">
+        @if (!string.IsNullOrWhiteSpace(Image))
+        {
+            <div class="pf-training-slide-media">
+                <img src="@Image" alt="@Title" class="pf-training-slide-image" />
+            </div>
+        }
+        <div class="pf-training-slide-copy">
+            @if (!string.IsNullOrWhiteSpace(BodyHtml))
+            {
+                <div class="pf-training-slide-richtext">@((MarkupString)BodyHtml)</div>
+            }
+            @if (Bullets?.Count > 0)
+            {
+                <ul class="pf-training-slide-list">
+                    @foreach (var bullet in Bullets)
+                    {
+                        <li>@bullet</li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public IReadOnlyList<string> Bullets { get; set; } = [];
+
+    [Parameter]
+    public string? Image { get; set; }
+
+    [Parameter]
+    public string? BodyHtml { get; set; }
+}
