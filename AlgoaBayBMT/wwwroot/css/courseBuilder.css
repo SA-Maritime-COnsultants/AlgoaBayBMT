@@ -35,15 +35,73 @@
 .cb-course-summary-badges { display: flex; gap: 6px; flex-wrap: wrap; }
 
 /* ?? Three-column grid ???????????????????????????????????????? */
-.cb-three-col-layout {
-    display: grid;
-    grid-template-columns: 24% 52% 24%;
-    gap: 12px;
-    align-items: start;
-    min-height: 0;
-    margin-top: 12px;
+.cb-dashboard-layout {
+    height: calc(100vh - 220px);
+    margin-top: 5px;
 }
-.cb-col { display: flex; flex-direction: column; min-height: 0; }
+
+.cb-dashboard-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 2fr) minmax(0, 10fr);
+    gap: 12px;
+    height: 100%;
+    min-height: 0;
+    align-items: stretch;
+}
+
+.cb-left-column {
+    display: grid;
+    grid-template-rows: minmax(0, 1.1fr) minmax(240px, 0.9fr);
+    gap: 12px;
+    min-height: 0;
+}
+
+.cb-dashboard-panel {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.cb-dashboard-panel--editor {
+    min-width: 0;
+}
+
+.cb-dashboard-panel--structure,
+.cb-dashboard-panel--preview,
+.cb-dashboard-panel--editor {
+    width: 100%;
+}
+
+.cb-dashboard-header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.cb-dashboard-header-content--title-only {
+    justify-content: flex-start;
+}
+
+.cb-dashboard-panel-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.75rem;
+    box-sizing: border-box;
+}
+
+.cb-dashboard-panel-body--tree,
+.cb-dashboard-panel-body--preview {
+    overflow-y: auto;
+}
+
+.cb-dashboard-panel-body--editor {
+    padding: 0;
+    overflow: hidden;
+}
 
 /* ?? Panel shell ?????????????????????????????????????????????? */
 .cb-panel {
@@ -101,10 +159,120 @@
 .cb-panel-body--tree       { padding: 10px; }
 .cb-panel-body--preview    { padding: 12px; }
 
+.cb-dashboard-panel-body--editor .training-panel-header,
+.cb-dashboard-panel-body--preview .training-panel-header,
+.cb-dashboard-panel-body--tree .training-panel-header {
+    background-color: var(--tp-panel-header-bg);
+    color: var(--tp-panel-header-text);
+}
+
+.cb-editor-workspace {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    background: #fff;
+}
+
+.cb-editor-section {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    background: #fff;
+}
+
+.cb-editor-section--details,
+.cb-editor-section--module {
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cb-editor-section--details {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.cb-section-header {
+    flex-shrink: 0;
+}
+
+.cb-section-body {
+    min-height: 0;
+    padding: 0.75rem;
+    box-sizing: border-box;
+}
+
+.cb-section-body--details,
+.cb-section-body--module {
+    overflow: auto;
+}
+
+.cb-section-body--lesson-editor,
+.cb-section-body--module {
+    padding-top: 1rem;
+}
+
+.cb-section-body--blocks {
+    overflow-y: auto;
+    height: 100%;
+}
+
+.cb-blocks-header-shell {
+    justify-content: space-between;
+}
+
+.cb-editor-top-body,
+.cb-editor-bottom-body,
+.cb-dashboard-panel-body--preview,
+.cb-dashboard-panel-body--tree {
+    background: linear-gradient(180deg, rgba(65, 105, 225, 0.02) 0%, rgba(255, 255, 255, 0) 64px), #fff;
+}
+
+.cb-panel-context,
+.cb-add-block-row,
+.cb-preview-rail-hero,
+.cb-module-editor-shell {
+    position: relative;
+}
+
+.cb-panel-context::before,
+.cb-add-block-row::before,
+.cb-preview-rail-hero::before,
+.cb-module-editor-shell::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(65, 105, 225, 0.85), rgba(18, 181, 203, 0.55));
+}
+
+.cb-panel-context,
+.cb-preview-rail-hero {
+    padding-left: 0.75rem;
+}
+
+.cb-add-block-row {
+    padding-left: 1rem;
+}
+
+.cb-module-editor-shell {
+    padding-left: 0.2rem;
+}
+
 .cb-panel-context {
     padding: 0 0 0.85rem;
     margin-bottom: 0.85rem;
     border-bottom: 1px solid #e9ecef;
+}
+
+.tp-journey-module-toggle.is-selected {
+    border-color: #4169E1;
+    background: #eef2ff;
+    color: #4169E1;
 }
 
 .cb-panel-context-title {
@@ -112,6 +280,48 @@
     font-weight: 700;
     color: #212529;
     margin-bottom: 0.2rem;
+}
+
+.cb-preview-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.cb-dashboard-panel--preview .cb-dashboard-panel-body {
+    padding-top: 0.6rem;
+}
+
+.cb-preview-rail-hero {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.cb-preview-summary-card,
+.cb-preview-video-card {
+    background: #f8f9fa;
+    border: 1px solid #e3e7ef;
+    border-radius: 8px;
+    padding: 0.55rem;
+}
+
+.cb-preview-summary {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.25rem;
+}
+
+.cb-preview-block-type-tag,
+.pf-training-preview-label,
+.cb-add-block-label {
+    color: #4169E1;
+}
+
+.cb-panel-context-title,
+.cb-preview-block-title,
+.cb-preview-summary {
+    color: #163a7a;
 }
 
 .cb-panel-context-meta {
@@ -233,6 +443,21 @@
     opacity: 0.8;
 }
 .cb-tree-add-lesson:hover { opacity: 1; text-decoration: underline; }
+
+.cb-tree-add-lesson-btn {
+    width: calc(100% - 1.1rem);
+    justify-content: flex-start;
+    margin: 0.2rem 0 0 1.1rem;
+    padding: 0.2rem 0.25rem;
+    color: #4169E1 !important;
+}
+
+.cb-panel-header-btn.e-btn,
+.cb-add-block-row .e-btn,
+.cb-editor-section .e-btn,
+.cb-tree-add-lesson-btn.e-btn {
+    border-radius: 6px;
+}
 .cb-tree-assessment-row {
     display: flex;
     align-items: center;
@@ -515,9 +740,31 @@
 .pf-training-upload-actions { margin-top: 8px; }
 
 /* ?? Responsive ??????????????????????????????????????????????? */
-@media (max-width: 1200px) {
-    .cb-three-col-layout { grid-template-columns: 1fr; }
-    .cb-panel            { height: auto; min-height: 300px; }
+@media (max-width: 991.98px) {
+    .cb-dashboard-layout {
+        height: auto;
+    }
+
+    .cb-dashboard-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+    }
+
+    .cb-left-column {
+        grid-template-rows: auto auto;
+    }
+
+    .cb-dashboard-panel {
+        min-height: 320px;
+    }
+
+    .cb-editor-workspace {
+        grid-template-rows: auto auto;
+    }
+
+    .cb-editor-section--details {
+        position: static;
+    }
 }
 
 

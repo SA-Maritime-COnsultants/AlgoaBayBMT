@@ -58,304 +58,292 @@
             </div>
         </div>
 
-        <div class="cb-three-col-layout">
-
-            <!-- LEFT: Modules & Lessons -->
-            <div class="cb-col cb-col--structure">
-                <div class="cb-panel training-panel">
-                    <div class="cb-panel-header training-panel-header">
-                        <span>MODULES &amp; LESSONS</span>
-                        <button type="button" class="cb-panel-header-btn" @onclick="StartNewModule">+ Module</button>
-                    </div>
-                    <div class="cb-panel-body training-panel-body cb-panel-body--tree">
-                        <div class="cb-panel-context">
-                            <div class="cb-panel-context-title">@Builder.Title</div>
-                            <div class="cb-panel-context-meta">@Builder.Code · Version @Builder.CurrentVersionNumber</div>
+        <div class="cb-dashboard-layout">
+            <div class="cb-dashboard-grid">
+                <div class="cb-left-column">
+                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--structure">
+                        <div class="training-panel-header cb-dashboard-header-content">
+                            <span>Modules &amp; Lessons</span>
+                            <SfButton CssClass="e-primary e-small" OnClick="StartNewModule">+ Module</SfButton>
                         </div>
-                        @if (Builder.Modules.Count == 0)
-                        {
-                            <div class="pf-empty-state">No modules yet. Click &ldquo;+ Module&rdquo; to begin.</div>
-                        }
-                        else
-                        {
-                            <div class="pf-training-tree">
-                                @foreach (var module in Builder.Modules.OrderBy(x => x.OrderIndex))
-                                {
-                                    var modId = module.ModuleId;
-                                    var isModSel = _selectedModuleId == modId && _selectedLessonId is null;
-                                    var isExpanded = modId.HasValue && ExpandedModules.Contains(modId.Value);
-                                    <div class="pf-training-tree-module" @key="@($"mod-{modId?.ToString() ?? module.OrderIndex.ToString()}")">
-                                        <button type="button"
-                                                class="pf-training-tree-node @(isModSel ? "is-selected" : "")"
-                                                @onclick="() => ToggleModule(module)">
-                                            <span class="pf-training-tree-expand" aria-hidden="true">
-                                                @if (isExpanded)
-                                                {
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg>
-                                                }
-                                                else
-                                                {
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18" /></svg>
-                                                }
-                                            </span>
-                                            <span class="pf-training-tree-label">@module.OrderIndex. @module.Title</span>
-                                            <span class="e-badge pf-role-badge cb-tree-count">@module.Lessons.Count</span>
-                                        </button>
-                                        @if (isExpanded)
-                                        {
-                                            <div class="pf-training-tree-children">
-                                                @foreach (var lesson in module.Lessons.OrderBy(x => x.OrderIndex))
-                                                {
-                                                    var lessonId = lesson.LessonId;
-                                                    <button type="button"
-                                                            class="pf-training-tree-node pf-training-tree-node--child @(_selectedLessonId == lessonId ? "is-selected" : "")"
-                                                            @onclick="() => SelectLesson(lessonId!.Value)"
-                                                            @key="@($"les-{lessonId?.ToString() ?? $"{module.OrderIndex}-{lesson.OrderIndex}"}")">
-                                                        <span class="pf-training-tree-label">@lesson.OrderIndex. @lesson.Title</span>
-                                                        <span class="cb-tree-block-count">@lesson.Blocks.Count blk</span>
-                                                    </button>
-                                                }
-                                                @if (module.HasModuleAssessment)
-                                                {
-                                                    <div class="cb-tree-assessment-row">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
-                                                        <span>@(module.AssessmentName ?? "Module Assessment")</span>
-                                                    </div>
-                                                }
-                                                @if (modId.HasValue)
-                                                {
-                                                    <button type="button" class="cb-tree-add-lesson" @onclick="() => StartNewLesson(modId.Value)">+ Add Lesson</button>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
+                        <div class="training-panel-body cb-dashboard-panel-body cb-dashboard-panel-body--tree">
+                            <div class="cb-context-card">
+                                <div class="cb-context-card-label">Current module</div>
+                                <div class="cb-context-card-title">@ActiveModuleHeading</div>
+                                <div class="cb-context-card-meta">@ActiveModuleMeta</div>
                             </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <!-- CENTRE: Editor -->
-            <div class="cb-col cb-col--editor">
-                <div class="cb-panel training-panel">
-                    <div class="cb-panel-header training-panel-header">
-                        @if (SelectedLesson is not null)
-                        {
-                            <span>Lesson Editor</span>
-                            @if (!string.IsNullOrWhiteSpace(SelectedLesson.Title))
-                            { <span class="cb-panel-header-sub">— @SelectedLesson.Title</span> }
-                        }
-                        else if (SelectedModule is not null)
-                        {
-                            <span>Module Editor</span>
-                            @if (!string.IsNullOrWhiteSpace(SelectedModule.Title))
-                            { <span class="cb-panel-header-sub">— @SelectedModule.Title</span> }
-                        }
-                        else
-                        { <span>Course Builder</span> }
-                    </div>
-                    <div class="cb-panel-body training-panel-body">
-
-                        @if (SelectedLesson is not null)
-                        {
-                            <TrainingLessonEditor
-                                @key="@($"le-{_selectedLessonId?.ToString() ?? "new"}")"
-                                Model="SelectedLesson"
-                                SaveRequested="SaveLessonAsync"
-                                DeleteRequested="DeleteLessonAsync"
-                                MoveRequested="MoveLessonAsync" />
-
-                            <div class="cb-blocks-section">
-                                 <div class="cb-blocks-header training-panel-header">
-                                    <span>Content Blocks</span>
-                                    <span class="e-badge pf-role-badge">@SelectedLesson.Blocks.Count</span>
-                                </div>
-
-                                @if (SelectedLesson.Blocks.Count == 0)
-                                {
-                                    <div class="pf-empty-state">No content blocks yet. Choose a type below to add the first block.</div>
-                                }
-                                else
-                                {
-                                    <div class="cb-blocks-list" @key="@($"blocks-{_selectedLessonId?.ToString() ?? "new"}")">
-                                        @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
-                                        {
-                                            var blockKey = block.LessonBlockId?.ToString() ?? $"nb-{block.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(block)}";
-                                            <TrainingLessonBlockEditor
-                                                @key="blockKey"
-                                                Model="block"
-                                                 IsSelected="@IsBlockSelected(block)"
-                                                AssessmentOptions="Builder.Assessments"
-                                                CurrentUserId="CurrentUserId"
-                                                 SelectedRequested="() => SelectBlockAsync(block)"
-                                                SaveRequested="SaveLessonBlockAsync"
-                                                DeleteRequested="() => DeleteLessonBlockAsync(block)"
-                                                MoveRequested="direction => MoveLessonBlockAsync(block, direction)" />
-                                        }
-                                    </div>
-                                }
-
-                                <div class="cb-add-block-row">
-                                    <label class="pf-field-label cb-add-block-label">Add Content Block</label>
-                                    <SfDropDownList TValue="LessonBlockType" TItem="BlockTypeOption"
-                                                    DataSource="@BlockTypeOptions"
-                                                    @bind-Value="_newBlockType"
-                                                    Placeholder="Select content type"
-                                                    CssClass="cb-add-block-ddl">
-                                        <DropDownListFieldSettings Text="Label" Value="Value" />
-                                    </SfDropDownList>
-                                    <SfButton CssClass="e-primary" OnClick="AddBlockFromDropdown">+ Add Block</SfButton>
-                                </div>
-                            </div>
-                        }
-                        else if (SelectedModule is not null)
-                        {
-                            <TrainingModuleEditor
-                                @key="@($"me-{_selectedModuleId?.ToString() ?? "new"}")"
-                                Model="SelectedModule"
-                                AssessmentOptions="Builder.Assessments"
-                                SaveRequested="SaveModuleAsync"
-                                DeleteRequested="DeleteModuleAsync"
-                                MoveRequested="MoveModuleAsync"
-                                CreateLessonRequested="CreateLessonFromModuleEditor" />
-                        }
-                        else
-                        {
-                            <div class="pf-empty-state">Select a module or lesson from the left panel to begin editing.</div>
-                        }
-
-                    </div>
-                </div>
-            </div>
-
-            <!-- RIGHT: Live Student Preview -->
-            <div class="cb-col cb-col--preview">
-                <div class="cb-panel training-panel">
-                    <div class="cb-panel-header training-panel-header">LIVE STUDENT PREVIEW</div>
-                    <div class="cb-panel-body training-panel-body cb-panel-body--preview">
-                        @if (SelectedLesson is null)
-                        {
-                            <div class="pf-empty-state">Select a lesson to preview the learner experience.</div>
-                        }
-                        else
-                        {
-                            <div class="pf-training-preview-shell">
-                                <div class="pf-training-preview-hero">
-                                    <h3>@SelectedLesson.Title</h3>
-                                    @if (!string.IsNullOrWhiteSpace(SelectedLesson.Summary))
-                                    { <p>@SelectedLesson.Summary</p> }
-                                    <div class="cb-preview-meta">@SelectedLesson.Blocks.Count block(s) &middot; @(SelectedLesson.EstimatedMinutes ?? 0) min est.</div>
-                                </div>
-                                @if (SelectedLesson.Blocks.Count == 0)
-                                {
-                                    <div class="pf-empty-state">No content blocks have been added yet.</div>
-                                }
-                                else
-                                {
-                                    @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
+                            @if (Builder.Modules.Count == 0)
+                            {
+                                <div class="pf-empty-state">No modules yet. Click &ldquo;+ Module&rdquo; to begin.</div>
+                            }
+                            else
+                            {
+                                <div class="pf-training-tree">
+                                    @foreach (var module in Builder.Modules.OrderBy(x => x.OrderIndex))
                                     {
-                                        var bKey = block.LessonBlockId?.ToString() ?? $"prev-{block.OrderIndex}";
-                                        <div class="cb-preview-block cb-preview-block-@GetBlockTypeClass(block.BlockType)" @key="bKey">
-                                            <div class="cb-preview-block-type-tag">@GetBlockDisplayName(block.BlockType)</div>
-                                            @if (!string.IsNullOrWhiteSpace(block.Title))
-                                            { <h4 class="cb-preview-block-title">@block.Title</h4> }
-                                            @switch (block.BlockType)
+                                        var modId = module.ModuleId;
+                                        var isModSel = _selectedModuleId == modId && _selectedLessonId is null;
+                                        var isExpanded = modId.HasValue && ExpandedModules.Contains(modId.Value);
+                                        <div class="pf-training-tree-module" @key="@($"mod-{modId?.ToString() ?? module.OrderIndex.ToString()}")">
+                                            <button type="button"
+                                                    class="tp-journey-module-toggle @(isModSel ? "is-selected" : string.Empty) @(isExpanded ? "is-open" : string.Empty)"
+                                                    @onclick="() => ToggleModule(module)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                                                <span class="pf-training-tree-label">@module.OrderIndex. @module.Title</span>
+                                                <span class="e-badge pf-role-badge cb-tree-count">@module.Lessons.Count</span>
+                                                <svg class="tp-mod-chevron" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                                            </button>
+                                            @if (isExpanded)
                                             {
-                                                case LessonBlockType.TextNarrative:
-                                                    @RenderHtml(block.ContentHtml)
-                                                    break;
-                                                case LessonBlockType.Card:
-                                                    <div class="cb-preview-card">
-                                                        @if (!string.IsNullOrWhiteSpace(block.ThumbnailUrl)) { <img src="@block.ThumbnailUrl" alt="Card image" class="pf-training-thumbnail-preview" /> }
-                                                        @RenderHtml(block.ContentHtml)
-                                                    </div>
-                                                    break;
-                                                case LessonBlockType.Flashcard:
-                                                     @if (block.QuizQuestions.Count > 0)
-                                                     {
-                                                         @foreach (var card in block.QuizQuestions.Take(3))
-                                                         {
-                                                             <div class="pf-training-preview-dual">
-                                                                 <div class="pf-training-preview-face">
-                                                                     <div class="pf-training-preview-label">Front</div>
-                                                                     <div class="pf-training-preview-body">@card.Prompt</div>
-                                                                 </div>
-                                                                 <div class="pf-training-preview-face pf-training-preview-face--accent">
-                                                                     <div class="pf-training-preview-label">Back</div>
-                                                                     <div class="pf-training-preview-body">@card.ScenarioText</div>
-                                                                 </div>
-                                                             </div>
-                                                         }
-                                                         @if (block.QuizQuestions.Count > 3)
-                                                         {
-                                                             <div class="pf-training-preview-label">+ @(block.QuizQuestions.Count - 3) more flash card(s)</div>
-                                                         }
-                                                     }
-                                                     else
-                                                     {
-                                                         <div class="pf-training-preview-dual">
-                                                             <div class="pf-training-preview-face"><div class="pf-training-preview-label">Front</div>@RenderHtml(block.ContentHtml)</div>
-                                                             <div class="pf-training-preview-face pf-training-preview-face--accent"><div class="pf-training-preview-label">Back</div>@RenderHtml(block.SecondaryContentHtml)</div>
-                                                         </div>
-                                                     }
-                                                    break;
-                                                case LessonBlockType.Video:
-                                                     @if (!string.IsNullOrWhiteSpace(block.FileUrl))
-                                                     {
-                                                         <video class="pf-training-scenario-video" controls src="@block.FileUrl"></video>
-                                                     }
-                                                     else
-                                                     {
-                                                         <div class="cb-preview-video-placeholder">
-                                                             @if (!string.IsNullOrWhiteSpace(block.ExternalUrl)) { <div class="cb-preview-video-label">@block.ExternalUrl</div> }
-                                                             else { <div class="cb-preview-video-label">No video source set</div> }
-                                                             <div class="pf-info-note">Learner must watch to completion</div>
-                                                         </div>
-                                                     }
-                                                    @if (!string.IsNullOrWhiteSpace(block.IntroTextHtml)) { @RenderHtml(block.IntroTextHtml) }
-                                                    break;
-                                                case LessonBlockType.Quiz:
-                                                    <div class="cb-preview-quiz">
-                                                        <div class="pf-training-preview-label">Quiz &middot; @block.QuizQuestions.Count question(s)</div>
-                                                        @if (block.QuizQuestions.Count > 0)
-                                                        {
-                                                            var q = block.QuizQuestions[0];
-                                                            <div class="pf-training-preview-body">Q1: @q.Prompt</div>
-                                                            <ul class="pf-training-slide-list">
-                                                                @foreach (var opt in q.Options.Where(o => !string.IsNullOrWhiteSpace(o.OptionText)).Take(4)) { <li>@opt.OptionText</li> }
-                                                            </ul>
-                                                            @if (block.QuizQuestions.Count > 1) { <div class="pf-training-preview-label">+ @(block.QuizQuestions.Count - 1) more</div> }
-                                                        }
-                                                    </div>
-                                                    break;
-                                                case LessonBlockType.Assessment:
-                                                    <div class="cb-preview-assessment">
-                                                        <div class="pf-training-preview-label">Linked Assessment</div>
-                                                        <div>@(string.IsNullOrWhiteSpace(block.LinkedAssessmentName) ? "No assessment selected" : block.LinkedAssessmentName)</div>
-                                                        <div class="pf-info-note">Questions drawn randomly from assessment pool</div>
-                                                    </div>
-                                                    break;
-                                                case LessonBlockType.Download:
-                                                    <div class="cb-preview-download">
-                                                        @RenderHtml(block.ContentHtml)
-                                                        @if (!string.IsNullOrWhiteSpace(block.FileUrl)) { <div class="pf-training-preview-label">File attached &mdash; learner can download</div> }
-                                                    </div>
-                                                    break;
-                                                default:
-                                                    @RenderHtml(block.ContentHtml)
-                                                    break;
+                                                <div class="tp-journey-lessons">
+                                                    @foreach (var lesson in module.Lessons.OrderBy(x => x.OrderIndex))
+                                                    {
+                                                        var lessonId = lesson.LessonId;
+                                                        <button type="button"
+                                                                class="tp-journey-lesson @(_selectedLessonId == lessonId ? "is-current" : string.Empty)"
+                                                                @onclick="() => SelectLesson(lessonId!.Value)"
+                                                                @key="@($"les-{lessonId?.ToString() ?? $"{module.OrderIndex}-{lesson.OrderIndex}"}")">
+                                                            <span class="tp-lesson-status-icon">
+                                                                @if (_selectedLessonId == lessonId)
+                                                                {
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="#4169E1" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6"/></svg>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="#6c757d" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                                                                }
+                                                            </span>
+                                                            <span class="pf-training-tree-label">@lesson.OrderIndex. @lesson.Title</span>
+                                                        </button>
+                                                    }
+                                                    @if (module.HasModuleAssessment)
+                                                    {
+                                                        <div class="cb-tree-assessment-row">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
+                                                            <span>@(module.AssessmentName ?? "Module Assessment")</span>
+                                                        </div>
+                                                    }
+                                                    @if (modId.HasValue)
+                                                    {
+                                                        <SfButton CssClass="e-flat e-small cb-tree-add-lesson-btn" OnClick="() => StartNewLesson(modId.Value)">+ Add Lesson</SfButton>
+                                                    }
+                                                </div>
                                             }
                                         </div>
                                     }
+                                </div>
+                            }
+                        </div>
+                    </section>
 
-                                }
-                            </div>
-                        }
-                    </div>
+                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--preview">
+                        <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
+                            <span>Student Preview</span>
+                        </div>
+                        <div class="training-panel-body cb-dashboard-panel-body cb-dashboard-panel-body--preview">
+                            @if (SelectedLesson is null)
+                            {
+                                <div class="pf-empty-state">Select a lesson to preview the learner experience.</div>
+                            }
+                            else
+                            {
+                                <div class="pf-training-preview-shell cb-preview-rail" @key="GetPreviewContextKey()">
+                                    <div class="pf-training-preview-hero cb-preview-rail-hero">
+                                        <h3>@SelectedLesson.Title</h3>
+                                        @if (!string.IsNullOrWhiteSpace(SelectedLesson.Summary))
+                                        {
+                                            <p>@SelectedLesson.Summary</p>
+                                        }
+                                        <div class="cb-preview-meta">@SelectedLesson.Blocks.Count block(s) · @(SelectedLesson.EstimatedMinutes ?? 0) min</div>
+                                    </div>
+                                    @if (SelectedLesson.Blocks.Count == 0)
+                                    {
+                                        <div class="pf-empty-state">No content blocks have been added yet.</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
+                                        {
+                                            var bKey = block.LessonBlockId?.ToString() ?? $"prev-{block.OrderIndex}";
+                                            <div class="cb-preview-block cb-preview-block-@GetBlockTypeClass(block.BlockType)" @key="bKey">
+                                                <div class="cb-preview-block-type-tag">@GetBlockDisplayName(block.BlockType)</div>
+                                                @if (!string.IsNullOrWhiteSpace(block.Title))
+                                                {
+                                                    <h4 class="cb-preview-block-title">@block.Title</h4>
+                                                }
+                                                @switch (block.BlockType)
+                                                {
+                                                    case LessonBlockType.Card:
+                                                        <div class="cb-preview-card">
+                                                            @if (!string.IsNullOrWhiteSpace(block.ThumbnailUrl))
+                                                            {
+                                                                <img src="@block.ThumbnailUrl" alt="Card image" class="pf-training-thumbnail-preview" />
+                                                            }
+                                                            <div class="cb-preview-summary">Rich content card block</div>
+                                                        </div>
+                                                        break;
+                                                    case LessonBlockType.Video:
+                                                        <div class="cb-preview-video-card">
+                                                            @if (!string.IsNullOrWhiteSpace(block.FileUrl))
+                                                            {
+                                                                <video class="pf-training-scenario-video" controls preload="metadata" src="@block.FileUrl"></video>
+                                                            }
+                                                            else
+                                                            {
+                                                                <div class="cb-preview-video-placeholder">
+                                                                    <div class="cb-preview-video-label">@(!string.IsNullOrWhiteSpace(block.ExternalUrl) ? "External video linked" : "No video source set")</div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                        break;
+                                                    case LessonBlockType.Flashcard:
+                                                        <div class="cb-preview-summary-card">
+                                                            <div class="cb-preview-summary">@block.QuizQuestions.Count flash card(s)</div>
+                                                            @if (block.QuizQuestions.Count > 0)
+                                                            {
+                                                                <div class="pf-training-preview-label">First card</div>
+                                                                <div class="pf-training-preview-body">@block.QuizQuestions[0].Prompt</div>
+                                                            }
+                                                        </div>
+                                                        break;
+                                                    case LessonBlockType.Quiz:
+                                                        <div class="cb-preview-summary-card">
+                                                            <div class="cb-preview-summary">Quiz summary</div>
+                                                            <div class="pf-training-preview-label">@block.QuizQuestions.Count question(s)</div>
+                                                        </div>
+                                                        break;
+                                                    case LessonBlockType.Assessment:
+                                                        <div class="cb-preview-summary-card">
+                                                            <div class="cb-preview-summary">Assessment</div>
+                                                            <div class="pf-training-preview-body">@(string.IsNullOrWhiteSpace(block.LinkedAssessmentName) ? "No assessment selected" : block.LinkedAssessmentName)</div>
+                                                        </div>
+                                                        break;
+                                                    case LessonBlockType.Download:
+                                                        <div class="cb-preview-summary-card">
+                                                            <div class="cb-preview-summary">Downloadable resource</div>
+                                                            <div class="pf-training-preview-label">@(string.IsNullOrWhiteSpace(block.FileUrl) ? "No file uploaded" : "File attached")</div>
+                                                        </div>
+                                                        break;
+                                                    default:
+                                                        <div class="cb-preview-summary-card">
+                                                            <div class="cb-preview-summary">Narrative block</div>
+                                                        </div>
+                                                        break;
+                                                }
+                                            </div>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </section>
                 </div>
-            </div>
 
+                <section class="training-panel cb-dashboard-panel cb-dashboard-panel--editor">
+                    <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
+                            @if (SelectedLesson is not null)
+                            {
+                                <span>Lesson Details</span>
+                                @if (!string.IsNullOrWhiteSpace(SelectedLesson.Title))
+                                {
+                                    <span class="cb-panel-header-sub">— @SelectedLesson.Title</span>
+                                }
+                            }
+                            else if (SelectedModule is not null)
+                            {
+                                <span>Module Editor</span>
+                                @if (!string.IsNullOrWhiteSpace(SelectedModule.Title))
+                                {
+                                    <span class="cb-panel-header-sub">— @SelectedModule.Title</span>
+                                }
+                            }
+                            else
+                            {
+                                <span>Course Builder</span>
+                            }
+                    </div>
+                    <div class="cb-dashboard-panel-body cb-dashboard-panel-body--editor">
+                            @if (IsLessonContext)
+                            {
+                                <div class="cb-editor-workspace" @key="GetEditorContextKey()">
+                                    <section class="cb-editor-section cb-editor-section--details">
+                                        <div class="cb-section-body cb-section-body--details cb-section-body--lesson-editor">
+                                            <TrainingLessonEditor
+                                                @key="@($"le-{_selectedLessonId?.ToString() ?? "new"}")"
+                                                Model="SelectedLesson"
+                                                SaveRequested="SaveLessonAsync"
+                                                DeleteRequested="DeleteLessonAsync"
+                                                MoveRequested="MoveLessonAsync" />
+                                        </div>
+                                    </section>
+
+                                    <section class="cb-editor-section cb-editor-section--blocks">
+                                        <div class="training-panel-header cb-section-header cb-blocks-header-shell">
+                                            <span>Content Blocks</span>
+                                            <span class="e-badge pf-role-badge">@SelectedLesson.Blocks.Count</span>
+                                        </div>
+                                        <div class="cb-section-body cb-section-body--blocks">
+                                            @if (SelectedLesson.Blocks.Count == 0)
+                                            {
+                                                <div class="pf-empty-state">No content blocks yet. Choose a type below to add the first block.</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="cb-blocks-list" @key="@($"blocks-{_selectedLessonId?.ToString() ?? "new"}")">
+                                                    @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
+                                                    {
+                                                        var blockKey = block.LessonBlockId?.ToString() ?? $"nb-{block.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(block)}";
+                                                        <TrainingLessonBlockEditor
+                                                            @key="blockKey"
+                                                            Model="block"
+                                                            IsSelected="@IsBlockSelected(block)"
+                                                            AssessmentOptions="Builder.Assessments"
+                                                            CurrentUserId="CurrentUserId"
+                                                            SelectedRequested="() => SelectBlockAsync(block)"
+                                                            SaveRequested="SaveLessonBlockAsync"
+                                                            DeleteRequested="() => DeleteLessonBlockAsync(block)"
+                                                            MoveRequested="direction => MoveLessonBlockAsync(block, direction)" />
+                                                    }
+                                                </div>
+                                            }
+
+                                            <div class="cb-add-block-row">
+                                                <label class="pf-field-label cb-add-block-label">Add Content Block</label>
+                                                <SfDropDownList TValue="LessonBlockType" TItem="BlockTypeOption"
+                                                                DataSource="@BlockTypeOptions"
+                                                                @bind-Value="_newBlockType"
+                                                                Placeholder="Select content type"
+                                                                CssClass="cb-add-block-ddl">
+                                                    <DropDownListFieldSettings Text="Label" Value="Value" />
+                                                </SfDropDownList>
+                                                <SfButton CssClass="e-primary" OnClick="AddBlockFromDropdown">+ Add Block</SfButton>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+                            }
+                            else if (IsModuleContext)
+                            {
+                                <section class="cb-editor-section cb-editor-section--module" @key="GetEditorContextKey()">
+                                    <div class="cb-section-body cb-section-body--module">
+                                        <TrainingModuleEditor
+                                            @key="@($"me-{_selectedModuleId?.ToString() ?? "new"}")"
+                                            Model="SelectedModule"
+                                            AssessmentOptions="Builder.Assessments"
+                                            SaveRequested="SaveModuleAsync"
+                                            DeleteRequested="DeleteModuleAsync"
+                                            MoveRequested="MoveModuleAsync"
+                                            CreateLessonRequested="CreateLessonFromModuleEditor" />
+                                    </div>
+                                </section>
+                            }
+                            else
+                            {
+                                <div class="pf-empty-state">Select a module or lesson from the left panel to begin editing.</div>
+                            }
+                    </div>
+                </section>
+            </div>
         </div>
     }
 </div>
@@ -372,7 +360,6 @@
     private string? ErrorMessage;
     private string? CurrentUserId;
     private HashSet<Guid> ExpandedModules { get; } = new();
-
     // Stable IDs â€” no dangling object references
     private Guid? _selectedModuleId;
     private Guid? _selectedLessonId;
@@ -390,6 +377,20 @@
     private TrainingLessonEditModel? SelectedLesson =>
         _newLesson is not null ? _newLesson :
         _selectedLessonId.HasValue ? Builder?.Modules.SelectMany(m => m.Lessons).FirstOrDefault(l => l.LessonId == _selectedLessonId) : null;
+
+    private bool IsLessonContext => SelectedLesson is not null;
+    private bool IsModuleContext => SelectedLesson is null && SelectedModule is not null;
+
+    private string ActiveModuleHeading => SelectedModule?.Title?.Trim() switch
+    {
+        { Length: > 0 } title => title,
+        _ when SelectedLesson is not null => GetSelectedLessonModule()?.Title ?? Builder?.Title ?? "Course builder",
+        _ => Builder?.Title ?? "Course builder"
+    };
+
+    private string ActiveModuleMeta => GetSelectedLessonModule() is { } lessonModule
+        ? $"{lessonModule.Lessons.Count} lesson(s) in this module"
+        : $"{Builder?.Modules.Count ?? 0} module(s) in this course";
 
     // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     protected override async Task OnInitializedAsync()
@@ -437,6 +438,8 @@
             if (_selectedModuleId is null && _selectedLessonId is null)
                 _selectedModuleId = Builder.Modules.FirstOrDefault()?.ModuleId;
         }
+
+        ApplySelectedBlockState();
     }
 
     // â”€â”€ Tree interactions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -662,6 +665,16 @@
             ? _selectedBlockId == block.LessonBlockId
             : block.IsExpanded;
 
+    private string GetEditorContextKey()
+        => IsLessonContext
+            ? $"lesson-{_selectedLessonId?.ToString() ?? "new"}"
+            : IsModuleContext
+                ? $"module-{_selectedModuleId?.ToString() ?? "new"}"
+                : "none";
+
+    private string GetPreviewContextKey()
+        => $"preview-{_selectedLessonId?.ToString() ?? "none"}";
+
     private void ApplySelectedBlockState()
     {
         var lesson = SelectedLesson;
@@ -675,6 +688,11 @@
             block.IsExpanded = block.LessonBlockId.HasValue && _selectedBlockId == block.LessonBlockId;
         }
     }
+
+    private TrainingModuleEditModel? GetSelectedLessonModule()
+        => _selectedLessonId.HasValue
+            ? Builder?.Modules.FirstOrDefault(m => m.Lessons.Any(l => l.LessonId == _selectedLessonId))
+            : SelectedModule;
 
     private async Task CreateNewVersionAsync()
     {
