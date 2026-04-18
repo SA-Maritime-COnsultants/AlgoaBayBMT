@@ -1691,9 +1691,6 @@ namespace AlgoaBayBMT.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<int>("CompletionRule")
-                        .HasColumnType("int");
-
                     b.Property<int?>("EstimatedMinutes")
                         .HasColumnType("int");
 
@@ -1708,12 +1705,7 @@ namespace AlgoaBayBMT.Migrations
                         .HasDefaultValue(false);
 
                     b.Property<bool>("IsRequired")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
-
-                    b.Property<int>("LessonType")
-                        .HasColumnType("int");
+                        .HasColumnType("bit");
 
                     b.Property<Guid>("ModuleId")
                         .HasColumnType("uniqueidentifier");
@@ -1744,6 +1736,18 @@ namespace AlgoaBayBMT.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("AssessmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AssessmentMaxAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(3);
+
+                    b.Property<decimal?>("AssessmentPassMarkPercent")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)");
+
                     b.Property<Guid>("CourseVersionId")
                         .HasColumnType("uniqueidentifier");
 
@@ -1753,6 +1757,11 @@ namespace AlgoaBayBMT.Migrations
 
                     b.Property<int?>("EstimatedMinutes")
                         .HasColumnType("int");
+
+                    b.Property<bool>("HasModuleAssessment")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
@@ -1768,6 +1777,8 @@ namespace AlgoaBayBMT.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("ModuleId");
+
+                    b.HasIndex("AssessmentId");
 
                     b.HasIndex("CourseVersionId", "OrderIndex")
                         .IsUnique();
@@ -2851,6 +2862,11 @@ namespace AlgoaBayBMT.Migrations
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingModule", b =>
                 {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.TrainingCourseAssessment", "ModuleAssessment")
+                        .WithMany()
+                        .HasForeignKey("AssessmentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("AlgoaBayBMT.Shared.Models.CourseVersion", "CourseVersion")
                         .WithMany("Modules")
                         .HasForeignKey("CourseVersionId")
@@ -2858,6 +2874,8 @@ namespace AlgoaBayBMT.Migrations
                         .IsRequired();
 
                     b.Navigation("CourseVersion");
+
+                    b.Navigation("ModuleAssessment");
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Shared.Models.TrainingQuestionBankOption", b =>

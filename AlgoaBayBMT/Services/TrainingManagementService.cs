@@ -418,11 +418,8 @@ namespace AlgoaBayBMT.Services
                         ModuleId = moduleMap[sourceLesson.ModuleId],
                         Title = sourceLesson.Title,
                         Summary = sourceLesson.Summary,
-                        LessonType = sourceLesson.LessonType,
-                        CompletionRule = sourceLesson.CompletionRule,
                         OrderIndex = sourceLesson.OrderIndex,
                         EstimatedMinutes = sourceLesson.EstimatedMinutes,
-                        IsRequired = sourceLesson.IsRequired,
                         IsPreview = sourceLesson.IsPreview,
                         IsActive = sourceLesson.IsActive
                     });
@@ -568,6 +565,11 @@ namespace AlgoaBayBMT.Services
                     OrderIndex = module.OrderIndex,
                     EstimatedMinutes = module.EstimatedMinutes,
                     IsActive = module.IsActive,
+                    HasModuleAssessment = module.HasModuleAssessment,
+                    AssessmentId = module.AssessmentId,
+                    AssessmentName = module.AssessmentId.HasValue ? assessmentLookup.GetValueOrDefault(module.AssessmentId.Value) : null,
+                    AssessmentPassMarkPercent = module.AssessmentPassMarkPercent,
+                    AssessmentMaxAttempts = module.AssessmentMaxAttempts,
                     Lessons = lessons
                         .Where(x => x.ModuleId == module.ModuleId)
                         .OrderBy(x => x.OrderIndex)
@@ -577,11 +579,8 @@ namespace AlgoaBayBMT.Services
                             ModuleId = lesson.ModuleId,
                             Title = lesson.Title,
                             Summary = lesson.Summary,
-                            LessonType = lesson.LessonType,
-                            CompletionRule = lesson.CompletionRule,
                             OrderIndex = lesson.OrderIndex,
                             EstimatedMinutes = lesson.EstimatedMinutes,
-                            IsRequired = lesson.IsRequired,
                             IsPreview = lesson.IsPreview,
                             IsActive = lesson.IsActive,
                             Blocks = blocks
@@ -601,8 +600,6 @@ namespace AlgoaBayBMT.Services
                                          ContentHtml = block.MarkdownBody,
                                          SecondaryContentHtml = metadata.SecondaryContentHtml,
                                          IntroTextHtml = metadata.IntroTextHtml,
-                                          AvatarVideoUrl = metadata.AvatarVideoUrl,
-                                          AvatarMediaAssetId = metadata.AvatarMediaAssetId,
                                          ThumbnailUrl = block.ThumbnailUrl,
                                          FileUrl = block.FileUrl,
                                          ExternalUrl = block.ExternalUrl,
@@ -666,6 +663,10 @@ namespace AlgoaBayBMT.Services
             module.Description = model.Description?.Trim();
             module.EstimatedMinutes = model.EstimatedMinutes;
             module.IsActive = model.IsActive;
+            module.HasModuleAssessment = model.HasModuleAssessment;
+            module.AssessmentId = model.HasModuleAssessment ? model.AssessmentId : null;
+            module.AssessmentPassMarkPercent = model.HasModuleAssessment ? model.AssessmentPassMarkPercent : null;
+            module.AssessmentMaxAttempts = model.AssessmentMaxAttempts > 0 ? model.AssessmentMaxAttempts : 3;
 
             await dbContext.SaveChangesAsync(cancellationToken);
             await ReindexModulesAsync(dbContext, module.CourseVersionId, cancellationToken);
@@ -751,10 +752,7 @@ namespace AlgoaBayBMT.Services
 
             lesson.Title = model.Title.Trim();
             lesson.Summary = model.Summary?.Trim();
-            lesson.LessonType = model.LessonType;
-            lesson.CompletionRule = model.CompletionRule;
             lesson.EstimatedMinutes = model.EstimatedMinutes;
-            lesson.IsRequired = model.IsRequired;
             lesson.IsPreview = model.IsPreview;
             lesson.IsActive = model.IsActive;
 
@@ -1300,8 +1298,6 @@ namespace AlgoaBayBMT.Services
             {
                 SecondaryContentHtml = string.IsNullOrWhiteSpace(model.SecondaryContentHtml) ? null : model.SecondaryContentHtml.Trim(),
                 IntroTextHtml = string.IsNullOrWhiteSpace(model.IntroTextHtml) ? null : model.IntroTextHtml.Trim(),
-                AvatarVideoUrl = string.IsNullOrWhiteSpace(model.AvatarVideoUrl) ? null : model.AvatarVideoUrl.Trim(),
-                AvatarMediaAssetId = model.AvatarMediaAssetId,
                 LinkedAssessmentId = model.LinkedAssessmentId,
                 LinkedAssessmentName = string.IsNullOrWhiteSpace(model.LinkedAssessmentName) ? null : model.LinkedAssessmentName.Trim(),
                 QuizQuestions = NormalizeQuizQuestions(model.QuizQuestions)
@@ -1309,8 +1305,6 @@ namespace AlgoaBayBMT.Services
 
             if (string.IsNullOrWhiteSpace(metadata.SecondaryContentHtml)
                 && string.IsNullOrWhiteSpace(metadata.IntroTextHtml)
-                && string.IsNullOrWhiteSpace(metadata.AvatarVideoUrl)
-                && !metadata.AvatarMediaAssetId.HasValue
                 && !metadata.LinkedAssessmentId.HasValue
                 && metadata.QuizQuestions.Count == 0)
             {

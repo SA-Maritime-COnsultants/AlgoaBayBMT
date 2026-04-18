@@ -417,10 +417,17 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.Description).HasMaxLength(1000);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.Property(x => x.HasModuleAssessment).HasDefaultValue(false);
+                entity.Property(x => x.AssessmentPassMarkPercent).HasPrecision(5, 2);
+                entity.Property(x => x.AssessmentMaxAttempts).HasDefaultValue(3);
                 entity.HasOne(x => x.CourseVersion)
                     .WithMany(x => x.Modules)
                     .HasForeignKey(x => x.CourseVersionId)
                     .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.ModuleAssessment)
+                    .WithMany()
+                    .HasForeignKey(x => x.AssessmentId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             builder.Entity<TrainingLesson>(entity =>
@@ -430,7 +437,6 @@ namespace AlgoaBayBMT.Data
                 entity.HasIndex(x => new { x.ModuleId, x.OrderIndex }).IsUnique();
                 entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.Summary).HasMaxLength(1000);
-                entity.Property(x => x.IsRequired).HasDefaultValue(true);
                 entity.Property(x => x.IsPreview).HasDefaultValue(false);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
                 entity.HasOne(x => x.Module)

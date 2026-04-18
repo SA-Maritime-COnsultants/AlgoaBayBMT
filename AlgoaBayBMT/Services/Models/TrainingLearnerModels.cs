@@ -130,8 +130,10 @@ public sealed class TrainingPlayerBlockModel
     public string? ThumbnailUrl { get; set; }
     public string? FileUrl { get; set; }
     public string? ExternalUrl { get; set; }
+    public string? AvatarVideoUrl { get; set; }
     public string? MimeType { get; set; }
     public int? DurationSeconds { get; set; }
+    public int? SavedVideoSeconds { get; set; }
     public bool IsRequired { get; set; }
     public bool IsCompleted { get; set; }
     public bool IsCurrent { get; set; }

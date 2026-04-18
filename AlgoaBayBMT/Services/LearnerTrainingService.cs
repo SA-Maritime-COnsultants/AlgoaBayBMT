@@ -113,8 +113,7 @@ public sealed class LearnerTrainingService(
                 ModuleId = x.ModuleId,
                 Title = x.Title,
                 Summary = x.Summary,
-                OrderIndex = x.OrderIndex,
-                IsRequired = x.IsRequired
+                OrderIndex = x.OrderIndex
             })
             .ToListAsync(cancellationToken);
 
@@ -252,7 +251,7 @@ public sealed class LearnerTrainingService(
                 ProgressPercent = progress?.PercentComplete ?? 0m
             };
 
-            if (lesson.IsRequired && !isCompleted)
+            if (!isCompleted)
             {
                 lockedLessonReached = true;
             }
@@ -268,6 +267,14 @@ public sealed class LearnerTrainingService(
         var evidence = DeserializeEvidence(selectedLessonProgress?.CompletionEvidenceJson);
         var lessonBlocks = blocks.Where(x => x.LessonId == selectedLesson.LessonId).OrderBy(x => x.OrderIndex).ToList();
         var blockModels = BuildBlockModels(lessonBlocks, metadataLookup, evidence, assessmentQuestions, assessmentOptions, latestAssessmentScores);
+        // Restore saved video position for video blocks
+        if (selectedLessonProgress?.VideoSecondsWatched.HasValue == true)
+        {
+            foreach (var bm in blockModels.Where(b => b.BlockType == LessonBlockType.Video))
+            {
+                bm.SavedVideoSeconds = selectedLessonProgress.VideoSecondsWatched;
+            }
+        }
         ApplyBlockAvailability(blockModels);
 
         var currentBlock = SelectBlock(blockModels, blockId);
@@ -558,6 +565,31 @@ public sealed class LearnerTrainingService(
         };
     }
 
+    public async Task<OperationResult> SaveVideoProgressAsync(string userId, Guid lessonId, Guid blockId, int secondsWatched, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var lessonProgress = await dbContext.UserLessonProgress.FirstOrDefaultAsync(x => x.UserId == userId && x.LessonId == lessonId, cancellationToken);
+        if (lessonProgress is null)
+        {
+            lessonProgress = new UserLessonProgress
+            {
+                UserLessonProgressId = Guid.NewGuid(),
+                UserId = userId,
+                LessonId = lessonId,
+                StartedOnUtc = DateTime.UtcNow,
+                LastAccessedOnUtc = DateTime.UtcNow,
+                Status = ProgressStatus.Started
+            };
+            dbContext.UserLessonProgress.Add(lessonProgress);
+        }
+
+        lessonProgress.VideoSecondsWatched = secondsWatched;
+        lessonProgress.LastAccessedOnUtc = DateTime.UtcNow;
+        lessonProgress.StartedOnUtc ??= DateTime.UtcNow;
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return OperationResult.Success("Progress saved.");
+    }
+
     private async Task MarkBlockCompletedInternalAsync(ApplicationDbContext dbContext, string userId, Guid courseId, Guid lessonId, Guid blockId, decimal? scorePercent, CancellationToken cancellationToken)
     {
         var course = await dbContext.Courses.FirstAsync(x => x.CourseId == courseId, cancellationToken);
@@ -734,9 +766,8 @@ public sealed class LearnerTrainingService(
                 ExternalUrl = block.ExternalUrl,
                 MimeType = block.MimeType,
                 DurationSeconds = block.DurationSeconds,
-                IsRequired = block.IsRequired,
                 IsCompleted = evidence.CompletedBlockIds.Contains(block.BlockId),
-                CompletionLabel = evidence.CompletedBlockIds.Contains(block.BlockId) ? "Completed" : block.IsRequired ? "Required" : "Optional",
+                CompletionLabel = evidence.CompletedBlockIds.Contains(block.BlockId) ? "Completed" : "Required",
                 LinkedAssessmentId = metadata.LinkedAssessmentId,
                 LinkedAssessmentName = metadata.LinkedAssessmentName,
                 LatestScorePercent = metadata.LinkedAssessmentId.HasValue
@@ -819,7 +850,7 @@ public sealed class LearnerTrainingService(
 
     private static decimal CalculateCourseProgress(List<LessonProjection> lessons, Dictionary<Guid, TrainingPlayerLessonSummaryModel> summaries)
     {
-        var requiredLessons = lessons.Where(x => x.IsRequired).ToList();
+        var requiredLessons = lessons.ToList();
         if (requiredLessons.Count == 0)
         {
             return 100m;
@@ -1090,32 +1121,25 @@ public sealed class LearnerTrainingService(
         }
     }
 
-    private static LessonBlockType NormalizeBlockType(LessonBlockType blockType) => blockType switch
-    {
-        LessonBlockType.Markdown or LessonBlockType.LessonPage or LessonBlockType.CourseOverview => LessonBlockType.Slide,
-        LessonBlockType.VideoUrl or LessonBlockType.UploadedVideo => LessonBlockType.Video,
-        _ => blockType
-    };
+    private static LessonBlockType NormalizeBlockType(LessonBlockType blockType) => blockType;
 
-    private static string GetDisplayType(LessonBlockType blockType) => NormalizeBlockType(blockType) switch
+    private static string GetDisplayType(LessonBlockType blockType) => blockType switch
     {
-        LessonBlockType.Slide => "Slide",
+        LessonBlockType.TextNarrative => "Narrative",
         LessonBlockType.Card => "Card",
-        LessonBlockType.Flashcard => "Flash Card",
+        LessonBlockType.Flashcard => "Flash Cards",
         LessonBlockType.Video => "Video",
         LessonBlockType.Quiz => "Quiz",
         LessonBlockType.Assessment => "Assessment",
-        LessonBlockType.Callout => "Important Note",
-        LessonBlockType.Download => "Attachment",
-        _ => NormalizeBlockType(blockType).ToString()
+        LessonBlockType.Download => "Download",
+        _ => blockType.ToString()
     };
 
-    private static string GetBlockActionText(LessonBlockType blockType) => NormalizeBlockType(blockType) switch
+    private static string GetBlockActionText(LessonBlockType blockType) => blockType switch
     {
         LessonBlockType.Video => "Confirm Video Watched",
         LessonBlockType.Flashcard => "Confirm Cards Reviewed",
-        LessonBlockType.Callout => "Acknowledge Note",
-        LessonBlockType.Download => "Confirm Attachment Reviewed",
+        LessonBlockType.Download => "Confirm Download Reviewed",
         _ => "Mark Block Complete"
     };
 
@@ -1184,7 +1208,6 @@ public sealed class LearnerTrainingService(
         public string Title { get; set; } = string.Empty;
         public string? Summary { get; set; }
         public int OrderIndex { get; set; }
-        public bool IsRequired { get; set; }
     }
 
     private sealed class BlockProjection

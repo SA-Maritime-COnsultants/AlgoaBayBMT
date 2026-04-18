@@ -302,70 +302,13 @@ namespace AlgoaBayBMT.Shared.Models
         Archived = 2
     }
 
-    public enum LessonType
-    {
-        [Display(Name = "Content Only")]
-        ContentOnly = 0,
-
-        [Display(Name = "Assessment Only")]
-        AssessmentOnly = 1,
-
-        [Display(Name = "Mixed")]
-        Mixed = 2
-    }
-
-    public enum LessonCompletionRule
-    {
-        [Display(Name = "Manual Button")]
-        ManualButton = 0,
-
-        [Display(Name = "Video Ended")]
-        VideoEnded = 1,
-
-        [Display(Name = "Scroll To Bottom")]
-        ScrollToBottom = 2,
-
-        [Display(Name = "Assessment Passed")]
-        AssessmentPassed = 3
-    }
-
     public enum LessonBlockType
     {
-        [Display(Name = "Markdown")]
-        Markdown = 0,
-
-        [Display(Name = "Video URL")]
-        VideoUrl = 1,
-
-        [Display(Name = "Uploaded Video")]
-        UploadedVideo = 2,
-
-        [Display(Name = "PDF Document")]
-        PdfDocument = 3,
-
-        [Display(Name = "Slide Deck")]
-        SlideDeck = 4,
-
-        [Display(Name = "Image")]
-        Image = 5,
+        [Display(Name = "Text / Narrative")]
+        TextNarrative = 0,
 
         [Display(Name = "Download")]
         Download = 6,
-
-        [Display(Name = "Embed")]
-        Embed = 7,
-
-        [Display(Name = "Callout")]
-        Callout = 8,
-
-        [Display(Name = "Course Overview")]
-        CourseOverview = 9,
-
-        [Display(Name = "Slide")]
-        Slide = 10,
-
-        [Display(Name = "Lesson Page")]
-        LessonPage = 11,
 
         [Display(Name = "Video")]
         Video = 12,
@@ -376,17 +319,20 @@ namespace AlgoaBayBMT.Shared.Models
         [Display(Name = "Card")]
         Card = 14,
 
-        [Display(Name = "Knowledge Check Intro")]
-        KnowledgeCheckIntro = 15,
-
-        [Display(Name = "Scenario Prompt")]
-        ScenarioPrompt = 16,
-
         [Display(Name = "Quiz")]
         Quiz = 17,
 
         [Display(Name = "Assessment")]
         Assessment = 18
+    }
+
+    public enum LessonCompletionRule
+    {
+        [Display(Name = "Manual Button")]
+        ManualButton = 0,
+
+        [Display(Name = "Automatic")]
+        Automatic = 1
     }
 
     public enum TrainingAudienceType
@@ -458,47 +404,7 @@ namespace AlgoaBayBMT.Shared.Models
         ManualAssignment = 4
     }
 
-    public enum TrainingContentBlockType
-    {
-        [Display(Name = "Course Overview")]
-        CourseOverview = 0,
 
-        [Display(Name = "Slide")]
-        Slide = 1,
-
-        [Display(Name = "Lesson Page")]
-        LessonPage = 2,
-
-        [Display(Name = "Video")]
-        Video = 3,
-
-        [Display(Name = "Flashcard")]
-        Flashcard = 4,
-
-        [Display(Name = "PDF Document")]
-        PdfDocument = 5,
-
-        [Display(Name = "Download")]
-        Download = 6,
-
-        [Display(Name = "Image")]
-        Image = 7,
-
-        [Display(Name = "Card")]
-        Card = 8,
-
-        [Display(Name = "Knowledge Check Intro")]
-        KnowledgeCheckIntro = 9,
-
-        [Display(Name = "Scenario Prompt")]
-        ScenarioPrompt = 10,
-
-        [Display(Name = "Callout")]
-        Callout = 11,
-
-        [Display(Name = "Embed")]
-        Embed = 12
-    }
 
     public enum TrainingQuestionType
     {

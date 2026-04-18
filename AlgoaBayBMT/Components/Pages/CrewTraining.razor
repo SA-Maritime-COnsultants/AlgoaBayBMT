@@ -29,6 +29,7 @@
         <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
     }
 
+    <div @key="@(_dashboardKey)">
     @if (Dashboard is null)
     {
         <SfCard CssClass="pf-card-shell pf-training-learner-card">
@@ -232,6 +233,7 @@
             </CardContent>
         </SfCard>
     }
+    </div>
 </div>
 
 @code {
@@ -239,6 +241,7 @@
     private MyTrainingDashboardModel? Dashboard;
     private string? CurrentUserId;
     private string? ErrorMessage;
+    private string _dashboardKey = "loading";
 
     protected override async Task OnInitializedAsync()
     {
@@ -253,6 +256,7 @@
         }
 
         Dashboard = await LearnerTrainingService.GetDashboardAsync(CurrentUserId);
+        _dashboardKey = $"loaded-{CurrentUserId}";
     }
 
     private static string GetStatusText(TrainingAccessStatus status) => status switch

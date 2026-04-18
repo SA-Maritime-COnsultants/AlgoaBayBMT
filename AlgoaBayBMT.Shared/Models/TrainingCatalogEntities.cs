@@ -65,8 +65,13 @@ namespace AlgoaBayBMT.Shared.Models
         public int OrderIndex { get; set; }
         public int? EstimatedMinutes { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool HasModuleAssessment { get; set; }
+        public Guid? AssessmentId { get; set; }
+        public decimal? AssessmentPassMarkPercent { get; set; }
+        public int AssessmentMaxAttempts { get; set; } = 3;
 
         public CourseVersion? CourseVersion { get; set; }
+        public TrainingCourseAssessment? ModuleAssessment { get; set; }
         public ICollection<TrainingLesson> Lessons { get; set; } = new List<TrainingLesson>();
         public ICollection<TrainingQuestionBankQuestion> QuestionBankQuestions { get; set; } = new List<TrainingQuestionBankQuestion>();
     }
@@ -77,12 +82,10 @@ namespace AlgoaBayBMT.Shared.Models
         public Guid ModuleId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Summary { get; set; }
-        public LessonType LessonType { get; set; } = LessonType.ContentOnly;
-        public LessonCompletionRule CompletionRule { get; set; } = LessonCompletionRule.ManualButton;
         public int OrderIndex { get; set; }
         public int? EstimatedMinutes { get; set; }
-        public bool IsRequired { get; set; } = true;
         public bool IsPreview { get; set; }
+        public bool IsRequired { get; set; } = true;
         public bool IsActive { get; set; } = true;
 
         public TrainingModule? Module { get; set; }

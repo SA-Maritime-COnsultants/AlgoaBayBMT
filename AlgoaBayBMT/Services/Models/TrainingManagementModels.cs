@@ -139,6 +139,13 @@ namespace AlgoaBayBMT.Services.Models
         public int OrderIndex { get; set; }
         public int? EstimatedMinutes { get; set; }
         public bool IsActive { get; set; } = true;
+        public bool HasModuleAssessment { get; set; }
+        public Guid? AssessmentId { get; set; }
+        public string? AssessmentName { get; set; }
+        [Range(1, 100)]
+        public decimal? AssessmentPassMarkPercent { get; set; }
+        [Range(1, 10)]
+        public int AssessmentMaxAttempts { get; set; } = 3;
         public List<TrainingLessonEditModel> Lessons { get; set; } = new();
     }
 
@@ -161,11 +168,8 @@ namespace AlgoaBayBMT.Services.Models
         [StringLength(1000)]
         public string? Summary { get; set; }
 
-        public LessonType LessonType { get; set; } = LessonType.ContentOnly;
-        public LessonCompletionRule CompletionRule { get; set; } = LessonCompletionRule.ManualButton;
         public int OrderIndex { get; set; }
         public int? EstimatedMinutes { get; set; }
-        public bool IsRequired { get; set; } = true;
         public bool IsPreview { get; set; }
         public bool IsActive { get; set; } = true;
         public List<TrainingLessonBlockEditModel> Blocks { get; set; } = new();
@@ -175,7 +179,7 @@ namespace AlgoaBayBMT.Services.Models
     {
         public Guid? LessonBlockId { get; set; }
         public Guid LessonId { get; set; }
-        public LessonBlockType BlockType { get; set; } = LessonBlockType.Slide;
+        public LessonBlockType BlockType { get; set; } = LessonBlockType.TextNarrative;
 
         [StringLength(200)]
         public string? Title { get; set; }
@@ -196,11 +200,6 @@ namespace AlgoaBayBMT.Services.Models
 
         public string? IntroTextHtml { get; set; }
 
-        [StringLength(1000)]
-        public string? AvatarVideoUrl { get; set; }
-
-        public Guid? AvatarMediaAssetId { get; set; }
-
         [StringLength(500)]
         public string? ThumbnailUrl { get; set; }
 
@@ -220,6 +219,7 @@ namespace AlgoaBayBMT.Services.Models
         public string? LinkedAssessmentName { get; set; }
         public bool IsRequired { get; set; } = true;
         public bool IsActive { get; set; } = true;
+        public bool IsExpanded { get; set; }
         public List<TrainingLessonQuizQuestionEditModel> QuizQuestions { get; set; } = new();
     }
 
@@ -255,8 +255,6 @@ namespace AlgoaBayBMT.Services.Models
     {
         public string? SecondaryContentHtml { get; set; }
         public string? IntroTextHtml { get; set; }
-        public string? AvatarVideoUrl { get; set; }
-        public Guid? AvatarMediaAssetId { get; set; }
         public Guid? LinkedAssessmentId { get; set; }
         public string? LinkedAssessmentName { get; set; }
         public List<TrainingLessonQuizQuestionEditModel> QuizQuestions { get; set; } = new();

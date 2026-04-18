@@ -1,0 +1,56 @@
+@using AlgoaBayBMT.Services.Models
+
+<div class="training-panel tp-progress-panel">
+    <div class="training-panel-header">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Lesson Progress
+    </div>
+    <div class="training-panel-body">
+        @if (CurrentLesson is not null)
+        {
+            <div style="font-size:0.75rem;font-weight:600;color:#6c757d;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.5rem;">
+                @CurrentLesson.Title
+            </div>
+
+            <div class="tp-lesson-progress-bar">
+                <div class="tp-lesson-progress-fill" style="width:@($"{CurrentLesson.ProgressPercent:0.##}%")"></div>
+            </div>
+            <div class="tp-course-progress-pct">Lesson @($"{CurrentLesson.ProgressPercent:0.##}")%</div>
+
+            <div class="tp-progress-block-list" style="margin-top:0.75rem;">
+                @foreach (var block in CurrentLesson.Blocks)
+                {
+                    <div class="tp-progress-block-item @(block.IsCurrent ? "is-current" : string.Empty)" @key="block.BlockId">
+                        @if (block.IsCompleted)
+                        {
+                            <svg class="tp-block-status tp-block-status--complete" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        }
+                        else if (block.IsCurrent)
+                        {
+                            <svg class="tp-block-status tp-block-status--inprogress" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        }
+                        else
+                        {
+                            <svg class="tp-block-status tp-block-status--notstarted" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                        }
+                        <span style="font-size:0.78rem;">@block.DisplayType@(string.IsNullOrWhiteSpace(block.Title) ? string.Empty : $": {block.Title}")</span>
+                        @if (!block.IsRequired)
+                        {
+                            <span style="font-size:0.65rem;color:#adb5bd;margin-left:auto;">optional</span>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="tp-lesson-progress-bar" style="margin-top:1rem;">
+                <div class="tp-lesson-progress-fill" style="width:@($"{CourseProgressPercent:0.##}%");background:#198754;"></div>
+            </div>
+            <div class="tp-course-progress-pct">Course @($"{CourseProgressPercent:0.##}")%</div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public TrainingPlayerLessonModel? CurrentLesson { get; set; }
+    [Parameter] public decimal CourseProgressPercent { get; set; }
+}

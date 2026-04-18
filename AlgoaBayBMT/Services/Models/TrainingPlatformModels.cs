@@ -101,7 +101,7 @@ public sealed class TrainingContentBlockEditModel
 {
     public Guid? LessonBlockId { get; set; }
     public Guid LessonId { get; set; }
-    public LessonBlockType BlockType { get; set; } = LessonBlockType.CourseOverview;
+    public LessonBlockType BlockType { get; set; } = LessonBlockType.TextNarrative;
     public string? Title { get; set; }
     public string? Subtitle { get; set; }
     public string? BodyMarkdown { get; set; }

@@ -1,0 +1,90 @@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+
+@inject ILearnerTrainingService LearnerTrainingService
+
+@if (!string.IsNullOrWhiteSpace(Block.IntroTextHtml))
+{
+    <div style="margin-bottom:1rem;">@((MarkupString)Block.IntroTextHtml)</div>
+}
+
+<div class="pf-training-preview-file" style="margin-bottom:1rem;">
+    <strong>Assessment:</strong> @Block.LinkedAssessmentName
+</div>
+
+<div class="pf-authoring-item-list">
+    @foreach (var question in Block.AssessmentQuestions)
+    {
+        <div class="tp-quiz-question" @key="question.QuestionId">
+            @if (!string.IsNullOrWhiteSpace(question.ScenarioText))
+            {
+                <div class="tp-callout" style="margin-bottom:0.5rem;font-size:0.85rem;">@question.ScenarioText</div>
+            }
+            <div class="tp-quiz-prompt">@question.Prompt</div>
+            <div class="tp-quiz-options">
+                @foreach (var option in question.Options)
+                {
+                    <label class="tp-quiz-option @(_selections.TryGetValue(question.QuestionId, out var sel) && sel == option.OptionId ? "is-selected" : string.Empty)"
+                           @key="option.OptionId">
+                        <input type="radio"
+                               name="@($"assessment-{Block.BlockId}-{question.QuestionId}")"
+                               disabled="@_submitted"
+                               checked="@(_selections.TryGetValue(question.QuestionId, out var s2) && s2 == option.OptionId)"
+                               @onchange="() => Select(question.QuestionId, option.OptionId)" />
+                        @option.OptionText
+                    </label>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (!_submitted && Block.AssessmentQuestions.Count > 0)
+{
+    <button class="e-btn e-primary" type="button"
+            disabled="@(_selections.Count < Block.AssessmentQuestions.Count)"
+            @onclick="SubmitAsync">
+        Submit Assessment
+    </button>
+}
+
+@if (!string.IsNullOrWhiteSpace(_resultMessage))
+{
+    <div class="tp-quiz-result @(_passed ? "tp-quiz-result--pass" : "tp-quiz-result--fail")" style="margin-top:0.75rem;">
+        @_resultMessage
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+    [Parameter, EditorRequired] public string UserId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Guid CourseId { get; set; }
+    [Parameter, EditorRequired] public Guid LessonId { get; set; }
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    private readonly Dictionary<Guid, Guid> _selections = new();
+    private bool _submitted;
+    private bool _passed;
+    private string? _resultMessage;
+
+    private void Select(Guid questionId, Guid optionId) => _selections[questionId] = optionId;
+
+    private async Task SubmitAsync()
+    {
+        _submitted = true;
+        var answers = _selections.ToDictionary(x => x.Key, x => (Guid?)x.Value);
+        var result = await LearnerTrainingService.SubmitAssessmentBlockAsync(UserId, CourseId, LessonId, Block.BlockId, answers);
+        _passed = result.Data?.Passed == true;
+        _resultMessage = result.Data?.Message ?? result.Message;
+
+        if (_passed)
+        {
+            Block.IsCompleted = true;
+            await OnCompleted.InvokeAsync();
+        }
+        else
+        {
+            _submitted = false;
+        }
+    }
+}

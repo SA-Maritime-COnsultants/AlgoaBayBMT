@@ -1,0 +1,71 @@
+@using AlgoaBayBMT.Services.Models
+
+<div style="text-align:center;margin-bottom:0.5rem;">
+    <span class="tp-flashcard-label">Card @(_currentIndex + 1) of @_cards.Count</span>
+</div>
+
+<div class="tp-flashcard-scene" @key="_currentIndex">
+    <div class="tp-flashcard-inner @(_flipped ? "is-flipped" : string.Empty)" @onclick="Flip" style="cursor:pointer;" title="Click to flip">
+        <div class="tp-flashcard-face">
+            <div class="tp-flashcard-label">Term / Question</div>
+            <div>@((MarkupString)(_cards[_currentIndex].Front ?? string.Empty))</div>
+        </div>
+        <div class="tp-flashcard-face tp-flashcard-face--back">
+            <div class="tp-flashcard-label">Answer / Definition</div>
+            <div>@((MarkupString)(_cards[_currentIndex].Back ?? string.Empty))</div>
+        </div>
+    </div>
+</div>
+
+<div style="display:flex;justify-content:center;gap:1rem;margin-top:1rem;">
+    <button class="e-btn" type="button" disabled="@(_currentIndex == 0)" @onclick="Previous">‹ Prev Card</button>
+    <button class="e-btn" type="button" disabled="@(_currentIndex == _cards.Count - 1)" @onclick="Next">Next Card ›</button>
+</div>
+
+@if (AllReviewed)
+{
+    <div class="tp-video-complete-badge" style="margin-top:0.75rem;justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        All cards reviewed — ready to continue
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+
+    private record FlashCard(string? Front, string? Back);
+
+    private List<FlashCard> _cards = new();
+    private int _currentIndex;
+    private bool _flipped;
+    private int _maxReached;
+
+    public bool AllReviewed => _maxReached >= _cards.Count - 1;
+
+    protected override void OnParametersSet()
+    {
+        // Each quiz question pair acts as a flash card: Prompt = front, first option = back
+        _cards = Block.QuizQuestions.Count > 0
+            ? Block.QuizQuestions
+                .Select(q => new FlashCard(q.Prompt, q.Options.FirstOrDefault()?.OptionText))
+                .ToList()
+            : new List<FlashCard> { new(Block.ContentHtml, Block.SecondaryContentHtml) };
+    }
+
+    private void Flip() { _flipped = !_flipped; }
+
+    private void Previous()
+    {
+        if (_currentIndex > 0) { _currentIndex--; _flipped = false; }
+    }
+
+    private void Next()
+    {
+        if (_currentIndex < _cards.Count - 1)
+        {
+            _currentIndex++;
+            _flipped = false;
+            if (_currentIndex > _maxReached) _maxReached = _currentIndex;
+        }
+    }
+}
