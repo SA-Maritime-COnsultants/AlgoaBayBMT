@@ -11,7 +11,8 @@ namespace AlgoaBayBMT.Services;
 
 public sealed class LearnerTrainingService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
-    UserManager<ApplicationUser> userManager) : ILearnerTrainingService
+    UserManager<ApplicationUser> userManager,
+    IWebHostEnvironment environment) : ILearnerTrainingService
 {
     private static readonly string[] FullAccessRoles = [RoleNames.Admin, RoleNames.Dffe, RoleNames.Samsa];
 
@@ -266,13 +267,23 @@ public sealed class LearnerTrainingService(
         var selectedLessonProgress = lessonProgressLookup.GetValueOrDefault(selectedLesson.LessonId);
         var evidence = DeserializeEvidence(selectedLessonProgress?.CompletionEvidenceJson);
         var lessonBlocks = blocks.Where(x => x.LessonId == selectedLesson.LessonId).OrderBy(x => x.OrderIndex).ToList();
-        var blockModels = BuildBlockModels(lessonBlocks, metadataLookup, evidence, assessmentQuestions, assessmentOptions, latestAssessmentScores);
-        // Restore saved video position for video blocks
-        if (selectedLessonProgress?.VideoSecondsWatched.HasValue == true)
+        var blockModels = BuildBlockModels(lessonBlocks, metadataLookup, evidence, assessmentQuestions, assessmentOptions, latestAssessmentScores, environment);
+        foreach (var bm in blockModels.Where(b => b.BlockType == LessonBlockType.Video))
         {
-            foreach (var bm in blockModels.Where(b => b.BlockType == LessonBlockType.Video))
+            if (evidence.VideoSecondsByBlock.TryGetValue(bm.BlockId, out var savedSeconds))
             {
-                bm.SavedVideoSeconds = selectedLessonProgress.VideoSecondsWatched;
+                bm.SavedVideoSeconds = savedSeconds;
+            }
+        }
+
+        // Backward-compatible fallback for older records that only stored a single lesson-level video position.
+        if (selectedLessonProgress?.VideoSecondsWatched.HasValue == true
+            && !blockModels.Any(b => b.BlockType == LessonBlockType.Video && b.SavedVideoSeconds.HasValue))
+        {
+            var lessonVideoBlocks = blockModels.Where(b => b.BlockType == LessonBlockType.Video).ToList();
+            if (lessonVideoBlocks.Count == 1)
+            {
+                lessonVideoBlocks[0].SavedVideoSeconds = selectedLessonProgress.VideoSecondsWatched;
             }
         }
         ApplyBlockAvailability(blockModels);
@@ -364,6 +375,42 @@ public sealed class LearnerTrainingService(
         await MarkBlockCompletedInternalAsync(dbContext, userId, courseId, lessonId, blockId, null, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         return OperationResult.Success("Block completed.");
+    }
+
+    public async Task<OperationResult> CompleteVideoBlockAsync(string userId, Guid courseId, Guid lessonId, Guid blockId, int secondsWatched, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var block = await dbContext.LessonBlocks.FirstOrDefaultAsync(x => x.LessonBlockId == blockId && x.LessonId == lessonId, cancellationToken);
+        if (block is null)
+        {
+            return OperationResult.Failure("Training block not found.");
+        }
+
+        var lessonProgress = await dbContext.UserLessonProgress.FirstOrDefaultAsync(x => x.UserId == userId && x.LessonId == lessonId, cancellationToken);
+        if (lessonProgress is null)
+        {
+            lessonProgress = new UserLessonProgress
+            {
+                UserLessonProgressId = Guid.NewGuid(),
+                UserId = userId,
+                LessonId = lessonId,
+                StartedOnUtc = DateTime.UtcNow,
+                LastAccessedOnUtc = DateTime.UtcNow,
+                Status = ProgressStatus.Started
+            };
+            dbContext.UserLessonProgress.Add(lessonProgress);
+        }
+
+        var evidence = DeserializeEvidence(lessonProgress.CompletionEvidenceJson);
+        evidence.VideoSecondsByBlock[blockId] = Math.Max(0, secondsWatched);
+        lessonProgress.VideoSecondsWatched = Math.Max(0, secondsWatched);
+        lessonProgress.CompletionEvidenceJson = JsonSerializer.Serialize(evidence);
+        lessonProgress.LastAccessedOnUtc = DateTime.UtcNow;
+        lessonProgress.StartedOnUtc ??= DateTime.UtcNow;
+
+        await MarkBlockCompletedInternalAsync(dbContext, userId, courseId, lessonId, blockId, null, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return OperationResult.Success("Video block completed.");
     }
 
     public async Task<OperationResult<TrainingQuizSubmissionResultModel>> SubmitQuizBlockAsync(string userId, Guid courseId, Guid lessonId, Guid blockId, Dictionary<int, List<int>> answers, CancellationToken cancellationToken = default)
@@ -569,6 +616,7 @@ public sealed class LearnerTrainingService(
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
         var lessonProgress = await dbContext.UserLessonProgress.FirstOrDefaultAsync(x => x.UserId == userId && x.LessonId == lessonId, cancellationToken);
+        var isNewLessonProgress = lessonProgress is null;
         if (lessonProgress is null)
         {
             lessonProgress = new UserLessonProgress
@@ -583,7 +631,17 @@ public sealed class LearnerTrainingService(
             dbContext.UserLessonProgress.Add(lessonProgress);
         }
 
-        lessonProgress.VideoSecondsWatched = secondsWatched;
+        if (!isNewLessonProgress)
+        {
+            await dbContext.Entry(lessonProgress).ReloadAsync(cancellationToken);
+        }
+
+        var normalizedSeconds = Math.Max(0, secondsWatched);
+        var evidence = DeserializeEvidence(lessonProgress.CompletionEvidenceJson);
+        evidence.VideoSecondsByBlock[blockId] = normalizedSeconds;
+
+        lessonProgress.VideoSecondsWatched = normalizedSeconds;
+        lessonProgress.CompletionEvidenceJson = JsonSerializer.Serialize(evidence);
         lessonProgress.LastAccessedOnUtc = DateTime.UtcNow;
         lessonProgress.StartedOnUtc ??= DateTime.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
@@ -746,7 +804,8 @@ public sealed class LearnerTrainingService(
         LessonProgressEvidenceModel evidence,
         List<AssessmentQuestionProjection> assessmentQuestions,
         List<AssessmentOptionProjection> assessmentOptions,
-        Dictionary<Guid, decimal?> latestAssessmentScores)
+        Dictionary<Guid, decimal?> latestAssessmentScores,
+        IWebHostEnvironment environment)
     {
         return lessonBlocks.Select(block =>
         {
@@ -762,7 +821,7 @@ public sealed class LearnerTrainingService(
                 SecondaryContentHtml = metadata.SecondaryContentHtml,
                 IntroTextHtml = metadata.IntroTextHtml,
                 ThumbnailUrl = block.ThumbnailUrl,
-                FileUrl = block.FileUrl,
+                FileUrl = NormalizeVideoUrl(block.FileUrl, environment),
                 ExternalUrl = block.ExternalUrl,
                 MimeType = block.MimeType,
                 DurationSeconds = block.DurationSeconds,
@@ -1123,6 +1182,16 @@ public sealed class LearnerTrainingService(
 
     private static LessonBlockType NormalizeBlockType(LessonBlockType blockType) => blockType;
 
+    private static string? NormalizeVideoUrl(string? url, IWebHostEnvironment environment)
+    {
+        if (TrainingAssetStorageService.TryMapToStreamEndpoint(url, environment, out var streamUrl))
+        {
+            return streamUrl;
+        }
+
+        return url;
+    }
+
     private static string GetDisplayType(LessonBlockType blockType) => blockType switch
     {
         LessonBlockType.TextNarrative => "Narrative",
@@ -1165,6 +1234,7 @@ public sealed class LearnerTrainingService(
     {
         public HashSet<Guid> CompletedBlockIds { get; set; } = new();
         public Dictionary<Guid, decimal> BlockScores { get; set; } = new();
+        public Dictionary<Guid, int> VideoSecondsByBlock { get; set; } = new();
     }
 
     private sealed class CourseProjection

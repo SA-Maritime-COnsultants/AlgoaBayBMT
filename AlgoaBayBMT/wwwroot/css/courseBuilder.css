@@ -36,25 +36,24 @@
 
 /* ?? Three-column grid ???????????????????????????????????????? */
 .cb-dashboard-layout {
-    height: calc(100vh - 220px);
     margin-top: 5px;
 }
 
-.cb-dashboard-grid {
-    display: grid;
-    grid-template-columns: minmax(280px, 2fr) minmax(0, 10fr);
-    gap: 12px;
-    height: 100%;
-    min-height: 0;
-    align-items: stretch;
+/* Bootstrap grid overrides — replaces old CSS Grid rules */
+.cb-dashboard-row {
+    align-items: flex-start;
 }
 
-.cb-left-column {
-    display: grid;
-    grid-template-rows: minmax(0, 1.1fr) minmax(240px, 0.9fr);
-    gap: 12px;
-    min-height: 0;
+/* Left column: left-aligned narrow panel wrapper */
+.cb-left-col-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
+
+/* Legacy CSS grid rules — kept for reference but no longer used */
+.cb-dashboard-grid { display: block; }
+.cb-left-column    { display: block; }
 
 .cb-dashboard-panel {
     min-height: 0;
@@ -139,6 +138,10 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.cb-panel-header-sub--dash {
+    opacity: 0.9;
+    font-size: 0.82rem;
 }
 .cb-panel-header-btn {
     background: rgba(255,255,255,0.18);
@@ -516,7 +519,7 @@
     letter-spacing: 0.03em;
     margin-bottom: 0 !important;
 }
-.cb-add-block-row .cb-add-block-ddl { flex: 1 1 auto; }
+.cb-add-block-row .cb-add-block-ddl { flex: 0 1 260px; min-width: 160px; max-width: 260px; }
 .cb-add-block-row .e-btn             { flex-shrink: 0; white-space: nowrap; }
 
 /* ?? Accordion block item ????????????????????????????????????? */
@@ -703,6 +706,61 @@
     }
 }
 
+/* ?? Context card — current module heading in left panel ????????????????? */
+.cb-context-card {
+    background: linear-gradient(135deg, #eef2ff 0%, #f0f4ff 100%);
+    border: 1px solid #c5cff7;
+    border-left: 4px solid #4169E1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 12px;
+}
+.cb-context-card-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #4169E1;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 3px;
+}
+.cb-context-card-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #163a7a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+.cb-context-card-meta {
+    font-size: 0.72rem;
+    color: #6c757d;
+}
+
+/* ?? Directional buttons — Up / Down / Next Lesson ?????????????????????? */
+.cb-btn-up.e-btn,
+.cb-btn-up.e-btn:not(.e-active) {
+    background-color: #0a8a6e !important;
+    border-color: #0a8a6e !important;
+    color: #fff !important;
+}
+.cb-btn-up.e-btn:hover { background-color: #087a60 !important; border-color: #087a60 !important; }
+
+.cb-btn-down.e-btn,
+.cb-btn-down.e-btn:not(.e-active) {
+    background-color: #1a6fc4 !important;
+    border-color: #1a6fc4 !important;
+    color: #fff !important;
+}
+.cb-btn-down.e-btn:hover { background-color: #155ea8 !important; border-color: #155ea8 !important; }
+
+/* ?? Assessment dropdown — constrain width ?????????????????????????????????? */
+.cb-module-editor-body .e-dropdownlist,
+.cb-module-editor-body .e-ddl {
+    max-width: 340px;
+    width: auto;
+}
+
 /* ?? Info note & divider ?????????????????????????????????????? */
 .pf-info-note {
     display: inline-block;
@@ -739,23 +797,10 @@
 .pf-training-upload-status  { font-size: 0.78rem; background: #d1f5e0; color: #0a4a25; border-radius: 4px; padding: 4px 10px; }
 .pf-training-upload-actions { margin-top: 8px; }
 
-/* ?? Responsive ??????????????????????????????????????????????? */
-@media (max-width: 991.98px) {
-    .cb-dashboard-layout {
-        height: auto;
-    }
-
-    .cb-dashboard-grid {
-        grid-template-columns: 1fr;
-        height: auto;
-    }
-
-    .cb-left-column {
-        grid-template-rows: auto auto;
-    }
-
+/* ?? Responsive — Bootstrap handles column stacking via col-12 col-xl-* */
+@media (max-width: 1199.98px) {
     .cb-dashboard-panel {
-        min-height: 320px;
+        min-height: 280px;
     }
 
     .cb-editor-workspace {

@@ -53,44 +53,140 @@ function ensureVimeoApi() {
 
 function _attachHtml5(elementId, dotnetRef, onEnded, onTimeUpdate, onPlay, onPause, onMeta) {
     const el = document.getElementById(elementId);
-    if (!el) return false;
+    if (!el) {
+        console.error('trainingPlayer: element not found:', elementId);
+        return false;
+    }
 
     destroyPlayer(elementId);
 
-    let lastReported = -6;
+    let saveInterval = null;
+    let lastReportedSecond = -1;
+    let completionRaised = false;
+    const notifyTimeUpdate = () => {
+        const currentSecond = Math.floor(el.currentTime || 0);
+        if (currentSecond === lastReportedSecond) {
+            return;
+        }
+
+        lastReportedSecond = currentSecond;
+        dotnetRef.invokeMethodAsync(onTimeUpdate, currentSecond).catch(() => {});
+    };
+    const raiseCompletedIfNeeded = () => {
+        if (completionRaised) {
+            return;
+        }
+
+        if (el.ended || (el.duration > 0 && el.currentTime >= el.duration - 1)) {
+            completionRaised = true;
+            dotnetRef.invokeMethodAsync(onEnded).catch(() => {});
+        }
+    };
+
     const handlers = {
-        timeupdate: () => {
-            const now = Math.floor(el.currentTime);
-            if (now - lastReported >= 5) {
-                lastReported = now;
-                dotnetRef.invokeMethodAsync(onTimeUpdate, el.currentTime).catch(() => {});
+        play: () => {
+            if (onPlay) {
+                dotnetRef.invokeMethodAsync(onPlay).catch(() => {});
+            }
+
+            if (saveInterval) {
+                clearInterval(saveInterval);
+            }
+
+            saveInterval = setInterval(() => {
+                if (!el.paused && !el.ended) {
+                    notifyTimeUpdate();
+                }
+            }, 10000);
+
+            const player = _players[elementId];
+            if (player) {
+                player.interval = saveInterval;
             }
         },
-        ended: () => dotnetRef.invokeMethodAsync(onEnded).catch(() => {}),
-        play:  onPlay  ? () => dotnetRef.invokeMethodAsync(onPlay).catch(() => {}) : null,
-        pause: onPause ? () => dotnetRef.invokeMethodAsync(onPause).catch(() => {}) : null,
+        pause: () => {
+            if (saveInterval) {
+                clearInterval(saveInterval);
+                saveInterval = null;
+            }
+
+            const player = _players[elementId];
+            if (player) {
+                player.interval = null;
+            }
+
+            notifyTimeUpdate();
+
+            if (onPause) {
+                dotnetRef.invokeMethodAsync(onPause).catch(() => {});
+            }
+
+            raiseCompletedIfNeeded();
+        },
+        timeupdate: () => {
+            notifyTimeUpdate();
+            raiseCompletedIfNeeded();
+        },
+        ended: () => {
+            if (saveInterval) {
+                clearInterval(saveInterval);
+                saveInterval = null;
+            }
+
+            const player = _players[elementId];
+            if (player) {
+                player.interval = null;
+            }
+
+            notifyTimeUpdate();
+            raiseCompletedIfNeeded();
+        },
         loadedmetadata: onMeta ? () => dotnetRef.invokeMethodAsync(onMeta, el.duration || 0).catch(() => {}) : null,
+        error: (event) => console.error('trainingPlayer: html5 video error', event),
     };
 
     for (const [evt, fn] of Object.entries(handlers)) {
         if (fn) el.addEventListener(evt, fn);
     }
 
-    _players[elementId] = { type: 'html5', el, handlers };
+    _players[elementId] = { type: 'html5', el, handlers, interval: saveInterval };
+    console.log('trainingPlayer: initialized html5 for', elementId, 'src:', el.src || el.currentSrc || '(none)');
 
-    // autoplay – muted fallback for browser autoplay policy
-    el.muted = false;
-    const p = el.play();
-    if (p !== undefined) {
-        p.catch(() => { el.muted = true; el.play().catch(() => {}); });
+    const playPromise = el.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((error) => {
+            console.warn('trainingPlayer: autoplay was blocked or failed', error);
+        });
     }
 
     return true;
 }
 
-export function initVideoPlayer(elementId, dotnetRef) {
-    return _attachHtml5(elementId, dotnetRef,
-        'OnVideoEnded', 'OnVideoTimeUpdate', 'OnVideoPlay', 'OnVideoPause', 'OnVideoMetadata');
+export function prepareVideoPlayer(elementId) {
+    const el = document.getElementById(elementId);
+    if (!el) {
+        console.error('trainingPlayer: element not found:', elementId);
+        return false;
+    }
+
+    const playPromise = el.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((error) => {
+            console.warn('trainingPlayer: autoplay was blocked or failed', error);
+        });
+    }
+
+    return true;
+}
+
+export function getCurrentTime(elementId) {
+    const el = document.getElementById(elementId);
+    return el ? el.currentTime || 0 : 0;
+}
+
+export function getDuration(elementId) {
+    const el = document.getElementById(elementId);
+    return el ? el.duration || 0 : 0;
 }
 
 export function initAvatarPlayer(elementId, dotnetRef) {
@@ -161,7 +257,25 @@ export async function initVimeoPlayer(containerId, videoUrl, dotnetRef, isAvatar
 export function seekVideo(elementId, seconds) {
     const e = _players[elementId];
     if (!e) return;
-    if (e.type === 'html5')    e.el.currentTime = seconds;
+    if (e.type === 'html5') {
+        if (!seconds || seconds <= 0) {
+            return;
+        }
+
+        const doSeek = () => {
+            try {
+                e.el.currentTime = seconds;
+            } catch (error) {
+                console.error('trainingPlayer: seek error', error);
+            }
+        };
+
+        if (e.el.readyState >= 1) {
+            doSeek();
+        } else {
+            e.el.addEventListener('loadedmetadata', doSeek, { once: true });
+        }
+    }
     else if (e.type === 'youtube' && e.player?.seekTo) e.player.seekTo(seconds, true);
     else if (e.type === 'vimeo')  e.player?.setCurrentTime(seconds);
 }
@@ -175,6 +289,9 @@ export function destroyPlayer(elementId) {
     const e = _players[elementId];
     if (!e) return;
     if (e.type === 'html5' && e.el) {
+        if (e.interval) {
+            clearInterval(e.interval);
+        }
         for (const [evt, fn] of Object.entries(e.handlers)) {
             if (fn) e.el.removeEventListener(evt, fn);
         }

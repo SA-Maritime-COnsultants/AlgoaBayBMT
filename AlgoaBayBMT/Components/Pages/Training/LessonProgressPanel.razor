@@ -34,10 +34,6 @@
                             <svg class="tp-block-status tp-block-status--notstarted" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
                         }
                         <span style="font-size:0.78rem;">@block.DisplayType@(string.IsNullOrWhiteSpace(block.Title) ? string.Empty : $": {block.Title}")</span>
-                        @if (!block.IsRequired)
-                        {
-                            <span style="font-size:0.65rem;color:#adb5bd;margin-left:auto;">optional</span>
-                        }
                     </div>
                 }
             </div>

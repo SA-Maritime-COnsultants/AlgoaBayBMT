@@ -19,6 +19,10 @@
 
 <PageTitle>Course Builder</PageTitle>
 
+<HeadContent>
+    <link rel="stylesheet" href="css/courseBuilder.css" />
+</HeadContent>
+
 <SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
     <ToastPosition X="Right" Y="Top"></ToastPosition>
 </SfToast>
@@ -59,9 +63,13 @@
         </div>
 
         <div class="cb-dashboard-layout">
-            <div class="cb-dashboard-grid">
-                <div class="cb-left-column">
-                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--structure">
+            <div class="row g-2 align-items-start cb-dashboard-row">
+
+                <!-- ══ LEFT COLUMN col-2 — Modules & Lessons + Preview ══ -->
+                <div class="col-12 col-xl-2 cb-left-col-wrap">
+
+                    <!-- Modules & Lessons panel -->
+                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--structure mb-2">
                         <div class="training-panel-header cb-dashboard-header-content">
                             <span>Modules &amp; Lessons</span>
                             <SfButton CssClass="e-primary e-small" OnClick="StartNewModule">+ Module</SfButton>
@@ -136,6 +144,7 @@
                         </div>
                     </section>
 
+                    <!-- Student Preview panel -->
                     <section class="training-panel cb-dashboard-panel cb-dashboard-panel--preview">
                         <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
                             <span>Student Preview</span>
@@ -186,7 +195,7 @@
                                                         <div class="cb-preview-video-card">
                                                             @if (!string.IsNullOrWhiteSpace(block.FileUrl))
                                                             {
-                                                                <video class="pf-training-scenario-video" controls preload="metadata" src="@block.FileUrl"></video>
+                                                                <video class="pf-training-scenario-video" controls autoplay muted playsinline preload="metadata" src="@block.FileUrl"></video>
                                                             }
                                                             else
                                                             {
@@ -237,16 +246,19 @@
                             }
                         </div>
                     </section>
-                </div>
 
-                <section class="training-panel cb-dashboard-panel cb-dashboard-panel--editor">
-                    <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
+                </div><!-- /col left -->
+
+                <!-- ══ RIGHT COLUMN col-10 — Editor workspace ══ -->
+                <div class="col-12 col-xl-10">
+                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--editor">
+                        <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
                             @if (SelectedLesson is not null)
                             {
                                 <span>Lesson Details</span>
                                 @if (!string.IsNullOrWhiteSpace(SelectedLesson.Title))
                                 {
-                                    <span class="cb-panel-header-sub">— @SelectedLesson.Title</span>
+                                    <span class="cb-panel-header-sub cb-panel-header-sub--dash">&mdash; @SelectedLesson.Title</span>
                                 }
                             }
                             else if (SelectedModule is not null)
@@ -254,15 +266,15 @@
                                 <span>Module Editor</span>
                                 @if (!string.IsNullOrWhiteSpace(SelectedModule.Title))
                                 {
-                                    <span class="cb-panel-header-sub">— @SelectedModule.Title</span>
+                                    <span class="cb-panel-header-sub cb-panel-header-sub--dash">&mdash; @SelectedModule.Title</span>
                                 }
                             }
                             else
                             {
                                 <span>Course Builder</span>
                             }
-                    </div>
-                    <div class="cb-dashboard-panel-body cb-dashboard-panel-body--editor">
+                        </div>
+                        <div class="cb-dashboard-panel-body cb-dashboard-panel-body--editor">
                             @if (IsLessonContext)
                             {
                                 <div class="cb-editor-workspace" @key="GetEditorContextKey()">
@@ -341,10 +353,12 @@
                             {
                                 <div class="pf-empty-state">Select a module or lesson from the left panel to begin editing.</div>
                             }
-                    </div>
-                </section>
-            </div>
-        </div>
+                        </div>
+                    </section>
+                </div><!-- /col right -->
+
+            </div><!-- /row -->
+        </div><!-- /cb-dashboard-layout -->
     }
 </div>
 

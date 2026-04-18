@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.StaticFiles;
 using Syncfusion.Blazor;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -111,15 +112,47 @@ app.UseHttpsRedirection();
 
 var runtimeUploadsRoot = Path.Combine(app.Environment.WebRootPath, "uploads");
 Directory.CreateDirectory(runtimeUploadsRoot);
+var uploadContentTypeProvider = new FileExtensionContentTypeProvider();
+uploadContentTypeProvider.Mappings[".mp4"] = "video/mp4";
+uploadContentTypeProvider.Mappings[".webm"] = "video/webm";
+uploadContentTypeProvider.Mappings[".mov"] = "video/quicktime";
+uploadContentTypeProvider.Mappings[".m4v"] = "video/mp4";
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(runtimeUploadsRoot),
-    RequestPath = "/uploads"
+    RequestPath = "/uploads",
+    ContentTypeProvider = uploadContentTypeProvider,
+    ServeUnknownFileTypes = false,
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.Append("Accept-Ranges", "bytes");
+        context.Context.Response.Headers.Append("Cache-Control", "public,max-age=3600");
+    }
 });
 
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
+
+app.MapGet("/training-media/stream", (string path, IWebHostEnvironment env) =>
+{
+    var normalizedPath = path.Trim().TrimStart('~').TrimStart('/').Replace("\\", "/");
+    if (string.IsNullOrWhiteSpace(normalizedPath) || !normalizedPath.StartsWith("uploads/training", StringComparison.OrdinalIgnoreCase))
+    {
+        return Results.BadRequest();
+    }
+
+    var absolutePath = Path.Combine(env.WebRootPath, normalizedPath.Replace('/', Path.DirectorySeparatorChar));
+    if (!File.Exists(absolutePath))
+    {
+        return Results.NotFound();
+    }
+
+    return Results.File(
+        absolutePath,
+        TrainingAssetStorageService.GetContentTypeForPath(normalizedPath),
+        enableRangeProcessing: true);
+});
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

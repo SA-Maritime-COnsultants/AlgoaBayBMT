@@ -5,7 +5,8 @@
 </div>
 
 <div class="tp-flashcard-scene" @key="_currentIndex">
-    <div class="tp-flashcard-inner @(_flipped ? "is-flipped" : string.Empty)" @onclick="Flip" style="cursor:pointer;" title="Click to flip">
+    <div class="tp-flashcard-inner @(_flipped ? "is-flipped" : string.Empty)"
+         @onclick="Flip" style="cursor:pointer;" title="Click to flip">
         <div class="tp-flashcard-face">
             <div class="tp-flashcard-label">Term / Question</div>
             <div>@((MarkupString)(_cards[_currentIndex].Front ?? string.Empty))</div>
@@ -17,7 +18,12 @@
     </div>
 </div>
 
-<div style="display:flex;justify-content:center;gap:1rem;margin-top:1rem;">
+<p class="tp-flashcard-flip-hint">
+    @if (!_flipped) { <span>Click the card to reveal the answer</span> }
+    else            { <span>Click again to flip back</span> }
+</p>
+
+<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.75rem;">
     <button class="e-btn" type="button" disabled="@(_currentIndex == 0)" @onclick="Previous">‹ Prev Card</button>
     <button class="e-btn" type="button" disabled="@(_currentIndex == _cards.Count - 1)" @onclick="Next">Next Card ›</button>
 </div>
@@ -27,6 +33,13 @@
     <div class="tp-video-complete-badge" style="margin-top:0.75rem;justify-content:center;">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
         All cards reviewed — ready to continue
+    </div>
+}
+else
+{
+    <div class="tp-flashcard-lock-msg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Review all @_cards.Count card(s) to continue
     </div>
 }
 
@@ -40,19 +53,34 @@
     private bool _flipped;
     private int _maxReached;
 
-    public bool AllReviewed => _maxReached >= _cards.Count - 1;
+    public bool AllReviewed => _maxReached >= _cards.Count - 1 && _flipped;
 
     protected override void OnParametersSet()
     {
-        // Each quiz question pair acts as a flash card: Prompt = front, first option = back
+        // Quiz questions store flashcard pairs: Prompt = front, first option OptionText = back.
+        // For content-only flashcard blocks (no quiz questions), fall back to ContentHtml / SecondaryContentHtml.
+        // Flashcard editor stores: Prompt = front (term/question), ScenarioText = back (answer/definition).
+        // Options are NOT used for flashcards — they are a quiz-only concept.
         _cards = Block.QuizQuestions.Count > 0
             ? Block.QuizQuestions
-                .Select(q => new FlashCard(q.Prompt, q.Options.FirstOrDefault()?.OptionText))
+                .Select(q => new FlashCard(q.Prompt, q.ScenarioText))
                 .ToList()
             : new List<FlashCard> { new(Block.ContentHtml, Block.SecondaryContentHtml) };
+
+        _currentIndex = 0;
+        _flipped = false;
+        _maxReached = 0;
     }
 
-    private void Flip() { _flipped = !_flipped; }
+    private void Flip()
+    {
+        _flipped = !_flipped;
+        // Mark this card as reviewed when it has been flipped at least once
+        if (_flipped && _currentIndex > _maxReached) _maxReached = _currentIndex;
+        // Also mark on first flip of each card; update maxReached when flipping the last card
+        if (_flipped && _currentIndex == _cards.Count - 1 && _maxReached < _currentIndex)
+            _maxReached = _currentIndex;
+    }
 
     private void Previous()
     {

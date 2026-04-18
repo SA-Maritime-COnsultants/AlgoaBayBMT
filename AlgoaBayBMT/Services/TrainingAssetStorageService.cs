@@ -4,6 +4,7 @@ using AlgoaBayBMT.Services.Models;
 using AlgoaBayBMT.Shared.Models;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.EntityFrameworkCore;
+using System.IO;
 using System.Security.Cryptography;
 
 namespace AlgoaBayBMT.Services
@@ -65,6 +66,34 @@ namespace AlgoaBayBMT.Services
 
             return Task.CompletedTask;
         }
+
+        public static bool TryMapToStreamEndpoint(string? url, IWebHostEnvironment environment, out string streamUrl)
+        {
+            streamUrl = string.Empty;
+            var relativePath = NormalizeRelativePath(url);
+            if (string.IsNullOrWhiteSpace(relativePath) || !relativePath.StartsWith(TrainingUploadsRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            var extension = Path.GetExtension(relativePath);
+            if (!VideoExtensions.Contains(extension.ToLowerInvariant()))
+            {
+                return false;
+            }
+
+            var absolutePath = Path.Combine(environment.WebRootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(absolutePath))
+            {
+                return false;
+            }
+
+            streamUrl = $"/training-media/stream?path={Uri.EscapeDataString(relativePath)}";
+            return true;
+        }
+
+        public static string GetContentTypeForPath(string path)
+            => GetContentType(Path.GetExtension(path));
 
         private async Task<OperationResult<TrainingMediaUploadModel>> SaveAssetAsync(
             IBrowserFile file,

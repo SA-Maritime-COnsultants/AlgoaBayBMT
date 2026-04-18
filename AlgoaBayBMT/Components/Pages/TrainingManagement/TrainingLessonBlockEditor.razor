@@ -150,7 +150,7 @@
                         {
                             <div class="pf-col-12">
                                 <label class="pf-field-label">Video Preview (admin — no autoplay)</label>
-                                <video class="pf-training-scenario-video" controls src="@Model.FileUrl" @key="GetVideoPreviewKey()"></video>
+                                <video class="pf-training-scenario-video" controls autoplay muted playsinline preload="metadata" src="@Model.FileUrl" @key="GetVideoPreviewKey()"></video>
                             </div>
                         }
                         <div class="pf-col-12">

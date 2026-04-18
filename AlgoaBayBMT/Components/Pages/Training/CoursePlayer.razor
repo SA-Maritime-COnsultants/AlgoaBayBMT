@@ -23,13 +23,16 @@
 <div class="training-player-page">
 
     @* ── Top bar ──────────────────────────────────────────────── *@
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.75rem;background:#fff;border-bottom:1px solid #dee2e6;flex-shrink:0;gap:1rem;">
-        <div style="display:flex;align-items:center;gap:0.75rem;min-width:0;">
-            <a href="/my-training" class="e-btn" style="flex-shrink:0;">← My Training</a>
+    <div class="tp-topbar">
+        <div class="tp-topbar-left">
+            <a href="/my-training" class="tp-back-btn">&#8592; My Training</a>
             @if (Player is not null)
             {
-                <span style="font-weight:600;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">@Player.Title</span>
-                <span class="e-badge" style="flex-shrink:0;">@Player.Code</span>
+                <div class="tp-learner-tag">
+                    <span class="tp-learner-label">My Training</span>
+                    <span class="tp-learner-name">@Player.Title</span>
+                </div>
+                <span class="e-badge tp-topbar-meta" style="flex-shrink:0;">@Player.Code</span>
             }
         </div>
         @if (!string.IsNullOrWhiteSpace(Player?.CertificateUrl))
@@ -108,10 +111,10 @@
                             case LessonBlockType.Video:
                                 <VideoBlockPlayer @key="_blockRenderKey"
                                                   Block="Player.CurrentBlock"
-                                                  UserId="CurrentUserId!"
+                                                  UserId="@CurrentUserId"
                                                   CourseId="Player.CourseId"
                                                   LessonId="Player.CurrentLesson!.LessonId"
-                                                  OnCompleted="OnBlockAutoCompleted" />
+                                                  OnCompleted="OnVideoBlockAutoCompleted" />
                                 break;
 
                             case LessonBlockType.TextNarrative:
@@ -129,7 +132,7 @@
                             case LessonBlockType.Quiz:
                                 <QuizBlockPlayer @key="_blockRenderKey"
                                                  Block="Player.CurrentBlock"
-                                                 UserId="CurrentUserId!"
+                                                 UserId="@CurrentUserId"
                                                  CourseId="Player.CourseId"
                                                  LessonId="Player.CurrentLesson!.LessonId"
                                                  OnCompleted="OnBlockAutoCompleted" />
@@ -138,7 +141,7 @@
                             case LessonBlockType.Assessment:
                                 <AssessmentBlockPlayer @key="_blockRenderKey"
                                                        Block="Player.CurrentBlock"
-                                                       UserId="CurrentUserId!"
+                                                       UserId="@CurrentUserId"
                                                        CourseId="Player.CourseId"
                                                        LessonId="Player.CurrentLesson!.LessonId"
                                                        OnCompleted="OnBlockAutoCompleted" />
@@ -169,10 +172,20 @@
                         ‹ Previous
                     </button>
 
-                    @* Manual complete for card/flashcard/download *@
+                    @* Manual complete for card/flashcard/download — show lock until ready *@
                     @if (NeedsManualNext())
                     {
-                        <button type="button" class="e-btn e-primary" @onclick="ManualCompleteAndAdvanceAsync">
+                        var fcReady = Player.CurrentBlock?.BlockType != LessonBlockType.Flashcard
+                                      || (_flashCardRef?.AllReviewed == true);
+                        <button type="button"
+                                class="e-btn e-primary @(!fcReady ? "tp-next-locked" : string.Empty)"
+                                disabled="@(!fcReady)"
+                                title="@(!fcReady ? "Review all cards to continue" : null)"
+                                @onclick="ManualCompleteAndAdvanceAsync">
+                            @if (!fcReady)
+                            {
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            }
                             Next →
                         </button>
                     }
@@ -218,7 +231,7 @@
     private bool CanAdvance =>
         Player is not null
         && Player.CurrentBlock is not null
-        && (!Player.CurrentBlock.IsRequired || Player.CurrentBlock.IsCompleted);
+        && Player.CurrentBlock.IsCompleted;
 
     private bool NeedsManualNext()
     {
@@ -289,14 +302,6 @@
 
     private async Task ManualCompleteAndAdvanceAsync()
     {
-        // For flashcards, verify all reviewed
-        if (Player?.CurrentBlock?.BlockType == LessonBlockType.Flashcard
-            && _flashCardRef is not null && !_flashCardRef.AllReviewed)
-        {
-            await ShowToastAsync("Flash Cards", "Please review all cards before continuing.", "e-toast-warning");
-            return;
-        }
-
         if (Player?.CurrentLesson is null || Player.CurrentBlock is null) return;
         await LearnerTrainingService.CompleteBlockAsync(CurrentUserId!, Player.CourseId, Player.CurrentLesson.LessonId, Player.CurrentBlock.BlockId);
         await LoadPlayerAsync();
@@ -309,6 +314,28 @@
         // Reload player state to refresh progress and NEXT unlock
         await LoadPlayerAsync();
         if (!_disposed) await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnVideoBlockAutoCompleted()
+    {
+        if (_disposed || Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null) return;
+
+        var currentBlocks = Player.CurrentLesson.Blocks;
+        var currentIndex = currentBlocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
+        var nextBlockId = currentIndex >= 0 && currentIndex < currentBlocks.Count - 1
+            ? currentBlocks[currentIndex + 1].BlockId
+            : (Guid?)null;
+
+        await LoadPlayerAsync();
+        if (_disposed) return;
+
+        if (nextBlockId.HasValue)
+        {
+            NavigateToBlock(nextBlockId.Value);
+            return;
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ShowToastAsync(string title, string content, string cssClass)

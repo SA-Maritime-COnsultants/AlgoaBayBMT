@@ -251,10 +251,11 @@
 /* ── Flash card ───────────────────────────────────────────── */
 .tp-flashcard-scene {
     perspective: 900px;
+    -webkit-perspective: 900px;
     width: 100%;
-    max-width: 520px;
+    max-width: 540px;
     margin: 0 auto;
-    height: 220px;
+    height: 240px;
 }
 
 .tp-flashcard-inner {
@@ -262,16 +263,23 @@
     height: 100%;
     position: relative;
     transform-style: preserve-3d;
+    -webkit-transform-style: preserve-3d;
     transition: transform 0.55s ease;
+    -webkit-transition: -webkit-transform 0.55s ease;
 }
 
-.tp-flashcard-inner.is-flipped { transform: rotateY(180deg); }
+.tp-flashcard-inner.is-flipped {
+    transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
+}
 
 .tp-flashcard-face {
     position: absolute;
+    top: 0; left: 0;
     width: 100%;
     height: 100%;
     backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     border: 2px solid #dee2e6;
     border-radius: 8px;
     padding: 1.5rem;
@@ -281,12 +289,25 @@
     align-items: center;
     text-align: center;
     background: #fff;
+    box-sizing: border-box;
+    overflow: auto;
 }
 
 .tp-flashcard-face--back {
     transform: rotateY(180deg);
+    -webkit-transform: rotateY(180deg);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
     background: #f0f4ff;
     border-color: var(--tp-panel-header-bg);
+}
+
+.tp-flashcard-flip-hint {
+    font-size: 0.7rem;
+    color: #adb5bd;
+    margin-top: 0.75rem;
+    text-align: center;
+    letter-spacing: 0.03em;
 }
 
 .tp-flashcard-label {
@@ -311,9 +332,103 @@
 }
 
 .tp-next-locked {
-    opacity: 0.45;
-    cursor: not-allowed;
+    opacity: 0.5;
+    cursor: not-allowed !important;
     pointer-events: none;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: #fff !important;
+}
+
+/* ── Player top-bar back button ───────────────────────────────────────── */
+.tp-back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.85rem;
+    background: #163a7a;
+    color: #fff;
+    border: 1px solid #163a7a;
+    border-radius: 5px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.15s, border-color 0.15s;
+}
+.tp-back-btn:hover, .tp-back-btn:focus-visible {
+    background: #1e4fa0;
+    border-color: #1e4fa0;
+    color: #fff;
+    text-decoration: none;
+    outline: 2px solid rgba(65,105,225,0.4);
+    outline-offset: 2px;
+}
+
+/* ── Player top-bar header ────────────────────────────────────────────── */
+.tp-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    background: #fff;
+    border-bottom: 1px solid #dee2e6;
+    flex-shrink: 0;
+    gap: 1rem;
+}
+.tp-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+.tp-topbar-title {
+    font-weight: 700;
+    font-size: 0.92rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #163a7a;
+}
+.tp-topbar-meta {
+    font-size: 0.72rem;
+    color: #6c757d;
+    white-space: nowrap;
+}
+.tp-learner-tag {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.tp-learner-label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #4169E1;
+    line-height: 1.1;
+}
+.tp-learner-name {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #163a7a;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Flashcard all-reviewed lock hint ────────────────────────────────── */
+.tp-flashcard-lock-msg {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: #fd7e14;
+    font-weight: 600;
+    margin-top: 0.5rem;
+    justify-content: center;
 }
 
 /* ── Progress panel ───────────────────────────────────────── */

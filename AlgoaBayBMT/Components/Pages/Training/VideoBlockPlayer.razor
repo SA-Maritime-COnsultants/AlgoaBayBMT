@@ -10,8 +10,18 @@
 <div class="tp-video-container" @key="_containerKey">
     @if (!string.IsNullOrWhiteSpace(Block.FileUrl))
     {
-        <video id="@_videoId" preload="metadata" playsinline>
-            <source src="@Block.FileUrl" />
+        <video id="@_videoId"
+               src="@Block.FileUrl"
+               preload="metadata"
+               autoplay
+               muted
+               controls
+               playsinline
+               @ontimeupdate="HandleTimeUpdateAsync"
+               @onpause="HandlePauseAsync"
+               @onended="HandleEndedAsync"
+               @onloadedmetadata="HandleLoadedMetadataAsync"
+               style="width:100%;max-height:480px;background:#000;display:block;">
             Your browser does not support HTML5 video.
         </video>
     }
@@ -46,56 +56,85 @@
     [Parameter] public EventCallback OnCompleted { get; set; }
 
     private IJSObjectReference? _module;
-    private DotNetObjectReference<VideoBlockPlayer>? _dotNetRef;
     private string _videoId = string.Empty;
     private string _containerKey = string.Empty;
     private bool _videoCompleted;
     private DateTime _lastSave = DateTime.MinValue;
+    private double _lastKnownTime;
+    private double _videoDuration;
     private bool _disposed;
+    private Guid _initializedForBlock;
+    private bool _completionHandled;
+    private const string TrainingPlayerModulePath = "/js/trainingPlayer.js?v=20260418f";
 
     protected override void OnParametersSet()
     {
         _videoId = $"video-{Block.BlockId:N}";
         _containerKey = $"vbp-{Block.BlockId}";
         _videoCompleted = Block.IsCompleted;
+        _lastKnownTime = Block.SavedVideoSeconds ?? 0;
+        _videoDuration = Block.DurationSeconds ?? 0;
+        _completionHandled = Block.IsCompleted;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (!firstRender || _disposed) return;
+        if (_disposed) return;
         if (string.IsNullOrWhiteSpace(Block.FileUrl)) return;
+        // Re-initialize whenever the block changes, not just on firstRender,
+        // because Blazor may reuse the component instance for a new block.
+        if (_initializedForBlock == Block.BlockId) return;
+        _initializedForBlock = Block.BlockId;
 
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/trainingPlayer.js");
-        _dotNetRef ??= DotNetObjectReference.Create(this);
-
-        await _module.InvokeVoidAsync("initVideoPlayer", _videoId, _dotNetRef);
-
-        // Restore saved position
-        if (Block.SavedVideoSeconds is > 0)
+        try
         {
-            await _module.InvokeVoidAsync("seekVideo", _videoId, Block.SavedVideoSeconds.Value);
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", TrainingPlayerModulePath);
+            await _module.InvokeVoidAsync("prepareVideoPlayer", _videoId);
         }
+        catch (JSException ex)
+        {
+            Console.Error.WriteLine($"VideoBlockPlayer: JS init failed for {_videoId}: {ex.Message}");
+        }
+        // Seeking is deferred to OnVideoMetadata (fires after loadedmetadata), so no seek here.
     }
 
-    [JSInvokable]
-    public async Task OnVideoTimeUpdate(double currentTime)
+    private async Task HandleTimeUpdateAsync()
     {
         if (_disposed) return;
+
+        var currentTime = await GetCurrentTimeAsync();
+        _lastKnownTime = currentTime;
+
+        if (!_completionHandled && _videoDuration > 0 && currentTime >= _videoDuration - 1)
+        {
+            await CompleteVideoAsync();
+            return;
+        }
+
         var now = DateTime.UtcNow;
         if ((now - _lastSave).TotalSeconds < 10) return;
         _lastSave = now;
         try { await LearnerTrainingService.SaveVideoProgressAsync(UserId, LessonId, Block.BlockId, (int)currentTime); } catch (ObjectDisposedException) { }
     }
 
-    [JSInvokable]
-    public async Task OnVideoEnded()
+    private async Task HandleEndedAsync()
+        => await CompleteVideoAsync();
+
+    private async Task CompleteVideoAsync()
     {
-        if (_disposed) return;
+        if (_disposed || _completionHandled) return;
+        _completionHandled = true;
         _videoCompleted = true;
         try
         {
-            await LearnerTrainingService.SaveVideoProgressAsync(UserId, LessonId, Block.BlockId, Block.DurationSeconds ?? 0);
-            await LearnerTrainingService.CompleteBlockAsync(UserId, CourseId, LessonId, Block.BlockId);
+            var completedSeconds = (int)Math.Max(_lastKnownTime, _videoDuration > 0 ? _videoDuration : Block.DurationSeconds ?? 0);
+            var result = await LearnerTrainingService.CompleteVideoBlockAsync(UserId, CourseId, LessonId, Block.BlockId, completedSeconds);
+            if (!result.Succeeded)
+            {
+                _completionHandled = false;
+                return;
+            }
+
             Block.IsCompleted = true;
             await InvokeAsync(StateHasChanged);
             await OnCompleted.InvokeAsync();
@@ -103,9 +142,64 @@
         catch (ObjectDisposedException) { }
     }
 
-    [JSInvokable] public Task OnVideoPlay() => Task.CompletedTask;
-    [JSInvokable] public Task OnVideoPause() => Task.CompletedTask;
-    [JSInvokable] public Task OnVideoMetadata(double duration) => Task.CompletedTask;
+    private async Task HandlePauseAsync()
+    {
+        // Save position on every pause so navigation away captures the last watched point
+        if (_disposed || _completionHandled) return;
+        _lastKnownTime = await GetCurrentTimeAsync();
+        if (!_completionHandled && _videoDuration > 0 && _lastKnownTime >= _videoDuration - 2)
+        {
+            await CompleteVideoAsync();
+            return;
+        }
+
+        try { await LearnerTrainingService.SaveVideoProgressAsync(UserId, LessonId, Block.BlockId, (int)_lastKnownTime); } catch (ObjectDisposedException) { }
+    }
+
+    private async Task HandleLoadedMetadataAsync()
+    {
+        // Seek to saved position AFTER loadedmetadata — this is the correct timing
+        if (_disposed || _module is null) return;
+        _videoDuration = await GetDurationAsync();
+        if (Block.SavedVideoSeconds is > 0 && !_videoCompleted)
+        {
+            try { await _module.InvokeVoidAsync("seekVideo", _videoId, Block.SavedVideoSeconds.Value); } catch { }
+        }
+    }
+
+    private async Task<double> GetCurrentTimeAsync()
+    {
+        if (_module is null)
+        {
+            return _lastKnownTime;
+        }
+
+        try
+        {
+            return await _module.InvokeAsync<double>("getCurrentTime", _videoId);
+        }
+        catch
+        {
+            return _lastKnownTime;
+        }
+    }
+
+    private async Task<double> GetDurationAsync()
+    {
+        if (_module is null)
+        {
+            return _videoDuration;
+        }
+
+        try
+        {
+            return await _module.InvokeAsync<double>("getDuration", _videoId);
+        }
+        catch
+        {
+            return _videoDuration;
+        }
+    }
 
     public async ValueTask DisposeAsync()
     {
@@ -115,6 +209,5 @@
             try { await _module.InvokeVoidAsync("destroyPlayer", _videoId); } catch { }
             try { await _module.DisposeAsync(); } catch { }
         }
-        _dotNetRef?.Dispose();
     }
 }

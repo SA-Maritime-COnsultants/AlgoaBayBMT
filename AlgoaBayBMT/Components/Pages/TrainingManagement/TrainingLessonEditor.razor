@@ -42,8 +42,8 @@
 
             <div class="pf-dialog-actions pf-dialog-actions--split" style="margin-top:16px;">
                 <div class="pf-grid-actions pf-grid-actions--compact">
-                    <SfButton type="button" OnClick="MoveUpAsync">&#8593; Up</SfButton>
-                    <SfButton type="button" OnClick="MoveDownAsync">&#8595; Down</SfButton>
+                    <SfButton type="button" CssClass="cb-btn-up" OnClick="MoveUpAsync">&#8593; Up</SfButton>
+                    <SfButton type="button" CssClass="cb-btn-down" OnClick="MoveDownAsync">&#8595; Down</SfButton>
                     @if (Model.LessonId.HasValue)
                     {
                         <SfButton type="button" CssClass="e-danger" OnClick="DeleteAsync">Delete</SfButton>
