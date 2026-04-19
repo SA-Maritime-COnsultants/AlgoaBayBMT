@@ -78,7 +78,11 @@
     [Parameter]
     public Guid CertificateId { get; set; }
 
+    [SupplyParameterFromQuery(Name = "download")]
+    public bool Download { get; set; }
+
     private TrainingCertificateViewModel? Certificate;
+    private bool _downloadTriggered;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -92,6 +96,15 @@
         }
 
         Certificate = await LearnerTrainingService.GetCertificateAsync(userId, CertificateId);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_downloadTriggered && Download && Certificate is not null)
+        {
+            _downloadTriggered = true;
+            await PrintAsync();
+        }
     }
 
     private async Task PrintAsync() => await JSRuntime.InvokeVoidAsync("print");

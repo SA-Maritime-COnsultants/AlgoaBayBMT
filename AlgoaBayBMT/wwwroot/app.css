@@ -2157,3 +2157,55 @@ h1:focus {
         align-items: stretch;
     }
 }
+
+.pf-training-learner-shell .e-card .e-card-header,
+.pf-training-admin-shell .e-card .e-card-header {
+    background: #007bba !important;
+    color: #fff !important;
+}
+
+.pf-training-learner-shell .e-card .e-card-header-title,
+.pf-training-learner-shell .e-card .e-card-sub-title,
+.pf-training-admin-shell .e-card .e-card-header .e-card-header-title,
+.pf-training-admin-shell .e-card .e-card-header .e-card-sub-title {
+    color: #fff !important;
+}
+
+.pf-training-learner-shell .pf-training-dashboard-grid,
+.pf-training-admin-shell .pf-training-dashboard-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.pf-training-learner-shell .pf-card-shell,
+.pf-training-admin-shell .pf-card-shell,
+.pf-training-learner-shell .e-card,
+.pf-training-admin-shell .e-card {
+    min-width: 0;
+}
+
+.pf-training-responsive-grid {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pf-training-responsive-grid .e-grid {
+    min-width: 760px;
+}
+
+.pf-training-panel-link {
+    color: #007bba;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.pf-training-panel-link:hover {
+    color: #005f90;
+    text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+    .pf-training-responsive-grid .e-grid {
+        min-width: 620px;
+    }
+}

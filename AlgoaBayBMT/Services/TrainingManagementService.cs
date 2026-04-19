@@ -18,6 +18,25 @@ namespace AlgoaBayBMT.Services
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
+            var assignedLearnerIds = await dbContext.UserTrainingAssignments.AsNoTracking()
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+            var startedLearnerIds = await dbContext.UserCourseProgress.AsNoTracking()
+                .Where(x => x.StartedOnUtc.HasValue || x.Status != ProgressStatus.NotStarted)
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+            var completedLearnerIds = await dbContext.CourseCompletionRecords.AsNoTracking()
+                .Select(x => x.UserId)
+                .Distinct()
+                .ToListAsync(cancellationToken);
+            var enrolledLearnerCount = assignedLearnerIds
+                .Concat(startedLearnerIds)
+                .Concat(completedLearnerIds)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Count();
+
             var dashboard = new TrainingDashboardModel
             {
                 TotalCourses = await dbContext.Courses.AsNoTracking().CountAsync(cancellationToken),
@@ -28,7 +47,10 @@ namespace AlgoaBayBMT.Services
                 TotalLessons = await dbContext.Lessons.AsNoTracking().CountAsync(cancellationToken),
                 TotalContentBlocks = await dbContext.LessonBlocks.AsNoTracking().CountAsync(cancellationToken),
                 TotalQuestionBankQuestions = await dbContext.TrainingQuestionBankQuestions.AsNoTracking().CountAsync(cancellationToken),
-                ActiveLearners = await dbContext.UserCourseProgress.AsNoTracking().Select(x => x.UserId).Distinct().CountAsync(cancellationToken)
+                ActiveLearners = await dbContext.UserCourseProgress.AsNoTracking().Select(x => x.UserId).Distinct().CountAsync(cancellationToken),
+                EnrolledLearners = enrolledLearnerCount,
+                StartedLearners = startedLearnerIds.Concat(completedLearnerIds).Distinct(StringComparer.OrdinalIgnoreCase).Count(),
+                CompletedLearners = completedLearnerIds.Count
             };
 
             dashboard.RecentCourses = (await GetCoursesAsync(cancellationToken))
@@ -171,6 +193,22 @@ namespace AlgoaBayBMT.Services
                 .Select(x => new { CourseVersionId = x.Key, Count = x.Count() })
                 .ToDictionaryAsync(x => x.CourseVersionId, x => x.Count, cancellationToken);
 
+            var courseAssignments = await dbContext.UserTrainingAssignments
+                .AsNoTracking()
+                .Where(x => courseIds.Contains(x.CourseId))
+                .Select(x => new { x.CourseId, x.UserId })
+                .ToListAsync(cancellationToken);
+            var courseProgressRecords = await dbContext.UserCourseProgress
+                .AsNoTracking()
+                .Where(x => courseIds.Contains(x.CourseId))
+                .Select(x => new { x.CourseId, x.UserId, x.StartedOnUtc, x.Status })
+                .ToListAsync(cancellationToken);
+            var courseCompletions = await dbContext.CourseCompletionRecords
+                .AsNoTracking()
+                .Where(x => courseIds.Contains(x.CourseId))
+                .Select(x => new { x.CourseId, x.UserId })
+                .ToListAsync(cancellationToken);
+
             foreach (var course in courses)
             {
                 course.AudienceType = audienceLookup.GetValueOrDefault(course.CourseId, TrainingAudienceType.All);
@@ -184,9 +222,146 @@ namespace AlgoaBayBMT.Services
                     course.ModuleCount = moduleCounts.GetValueOrDefault(course.CurrentVersionId.Value);
                     course.LessonCount = lessonCounts.GetValueOrDefault(course.CurrentVersionId.Value);
                 }
+
+                course.EnrolledLearnerCount = courseAssignments.Where(x => x.CourseId == course.CourseId).Select(x => x.UserId)
+                    .Concat(courseProgressRecords.Where(x => x.CourseId == course.CourseId).Select(x => x.UserId))
+                    .Concat(courseCompletions.Where(x => x.CourseId == course.CourseId).Select(x => x.UserId))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count();
+                course.StartedLearnerCount = courseProgressRecords.Where(x => x.CourseId == course.CourseId && (x.StartedOnUtc.HasValue || x.Status != ProgressStatus.NotStarted)).Select(x => x.UserId)
+                    .Concat(courseCompletions.Where(x => x.CourseId == course.CourseId).Select(x => x.UserId))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count();
+                course.CompletedLearnerCount = courseCompletions.Where(x => x.CourseId == course.CourseId).Select(x => x.UserId)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Count();
             }
 
             return courses;
+        }
+
+        public async Task<TrainingCourseStudentStatusPageModel?> GetCourseStudentStatusPageAsync(Guid courseId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var course = await dbContext.Courses.AsNoTracking()
+                .Where(x => x.CourseId == courseId)
+                .Select(x => new TrainingCourseStudentStatusPageModel
+                {
+                    CourseId = x.CourseId,
+                    CourseCode = x.Code,
+                    CourseTitle = x.Title,
+                    Summary = x.Summary,
+                    PassMarkPercent = x.PassMarkPercent,
+                    ValidityMonths = x.ValidityMonths
+                })
+                .FirstOrDefaultAsync(cancellationToken);
+            if (course is null)
+            {
+                return null;
+            }
+
+            var assignments = await dbContext.UserTrainingAssignments.AsNoTracking()
+                .Where(x => x.CourseId == courseId)
+                .Select(x => new { x.UserId, x.DueDateUtc })
+                .ToListAsync(cancellationToken);
+            var progressRecords = await dbContext.UserCourseProgress.AsNoTracking()
+                .Where(x => x.CourseId == courseId)
+                .Select(x => new { x.UserId, x.Status, x.StartedOnUtc, x.CompletedOnUtc, x.ExpiryDateUtc })
+                .ToListAsync(cancellationToken);
+            var completionRecords = await dbContext.CourseCompletionRecords.AsNoTracking()
+                .Where(x => x.CourseId == courseId)
+                .Select(x => new { x.CourseCompletionRecordId, x.UserId, x.CompletedOnUtc, x.ExpiryDateUtc, x.FinalScorePercent, x.CertificateNumber })
+                .ToListAsync(cancellationToken);
+
+            var latestCompletions = completionRecords
+                .GroupBy(x => x.UserId, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.OrderByDescending(x => x.CompletedOnUtc).First(),
+                    StringComparer.OrdinalIgnoreCase);
+
+            var completionIds = latestCompletions.Values.Select(x => x.CourseCompletionRecordId).ToList();
+            var certificates = completionIds.Count == 0
+                ? new Dictionary<Guid, (Guid CertificateId, string CertificateNumber)>()
+                : await dbContext.TrainingCertificates.AsNoTracking()
+                    .Where(x => completionIds.Contains(x.CourseCompletionRecordId))
+                    .Select(x => new { x.CourseCompletionRecordId, x.TrainingCertificateId, x.CertificateNumber })
+                    .ToDictionaryAsync(
+                        x => x.CourseCompletionRecordId,
+                        x => (CertificateId: x.TrainingCertificateId, CertificateNumber: x.CertificateNumber),
+                        cancellationToken);
+
+            var userIds = assignments.Select(x => x.UserId)
+                .Concat(progressRecords.Select(x => x.UserId))
+                .Concat(latestCompletions.Keys)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var users = userIds.Count == 0
+                ? new List<ApplicationUser>()
+                : await dbContext.Users.AsNoTracking()
+                    .Where(x => userIds.Contains(x.Id))
+                    .ToListAsync(cancellationToken);
+
+            var assignmentLookup = assignments
+                .GroupBy(x => x.UserId, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(x => x.DueDateUtc).FirstOrDefault(), StringComparer.OrdinalIgnoreCase);
+            var progressLookup = progressRecords
+                .GroupBy(x => x.UserId, StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(group => group.Key, group => group.OrderByDescending(x => x.CompletedOnUtc ?? x.StartedOnUtc).FirstOrDefault(), StringComparer.OrdinalIgnoreCase);
+            var now = DateTime.UtcNow;
+
+            course.Students = users
+                .Select(user =>
+                {
+                    assignmentLookup.TryGetValue(user.Id, out var assignment);
+                    progressLookup.TryGetValue(user.Id, out var progress);
+                    latestCompletions.TryGetValue(user.Id, out var completion);
+
+                    var status = completion is not null
+                        ? completion.ExpiryDateUtc < now ? TrainingCourseStudentStatus.Expired : TrainingCourseStudentStatus.Completed
+                        : progress is not null && (progress.Status == ProgressStatus.Completed || progress.CompletedOnUtc.HasValue)
+                            ? TrainingCourseStudentStatus.Completed
+                            : progress is not null && (progress.StartedOnUtc.HasValue || progress.Status != ProgressStatus.NotStarted)
+                                ? TrainingCourseStudentStatus.InProgress
+                                : TrainingCourseStudentStatus.NotStarted;
+
+                    string? certificateViewUrl = null;
+                    string? certificateDownloadUrl = null;
+                    string? certificateNumber = completion?.CertificateNumber;
+                    if (completion is not null && certificates.TryGetValue(completion.CourseCompletionRecordId, out var certificate))
+                    {
+                        certificateViewUrl = $"/my-training/certificates/{certificate.CertificateId}";
+                        certificateDownloadUrl = $"/my-training/certificates/{certificate.CertificateId}?download=true";
+                        certificateNumber = certificate.CertificateNumber;
+                    }
+
+                    return new TrainingCourseStudentStatusModel
+                    {
+                        UserId = user.Id,
+                        StudentName = string.IsNullOrWhiteSpace(user.FullName) ? user.Email ?? user.UserName ?? "Learner" : user.FullName,
+                        Email = user.Email,
+                        UserName = user.UserName,
+                        Status = status,
+                        StartedOnUtc = progress?.StartedOnUtc,
+                        CompletedOnUtc = completion?.CompletedOnUtc ?? progress?.CompletedOnUtc,
+                        ExpiryDateUtc = completion?.ExpiryDateUtc ?? progress?.ExpiryDateUtc,
+                        DueDateUtc = assignment?.DueDateUtc,
+                        ResultPercent = completion?.FinalScorePercent,
+                        CertificateNumber = certificateNumber,
+                        CertificateViewUrl = certificateViewUrl,
+                        CertificateDownloadUrl = certificateDownloadUrl
+                    };
+                })
+                .OrderBy(x => x.StudentName)
+                .ToList();
+
+            course.EnrolledLearnerCount = course.Students.Count;
+            course.StartedLearnerCount = course.Students.Count(x => x.Status is TrainingCourseStudentStatus.InProgress or TrainingCourseStudentStatus.Completed or TrainingCourseStudentStatus.Expired);
+            course.CompletedLearnerCount = course.Students.Count(x => x.Status is TrainingCourseStudentStatus.Completed or TrainingCourseStudentStatus.Expired);
+
+            return course;
         }
 
         public async Task<TrainingCourseEditModel?> GetCourseAsync(Guid courseId, CancellationToken cancellationToken = default)

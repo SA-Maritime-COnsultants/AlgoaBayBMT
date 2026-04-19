@@ -14,6 +14,9 @@ namespace AlgoaBayBMT.Services.Models
         public int TotalContentBlocks { get; set; }
         public int TotalQuestionBankQuestions { get; set; }
         public int ActiveLearners { get; set; }
+        public int EnrolledLearners { get; set; }
+        public int StartedLearners { get; set; }
+        public int CompletedLearners { get; set; }
         public List<TrainingCourseListItemModel> RecentCourses { get; set; } = new();
     }
 
@@ -38,7 +41,50 @@ namespace AlgoaBayBMT.Services.Models
         public CourseVersionStatus? CurrentVersionStatus { get; set; }
         public int ModuleCount { get; set; }
         public int LessonCount { get; set; }
+        public int EnrolledLearnerCount { get; set; }
+        public int StartedLearnerCount { get; set; }
+        public int CompletedLearnerCount { get; set; }
         public DateTime CreatedOnUtc { get; set; }
+    }
+
+    public enum TrainingCourseStudentStatus
+    {
+        NotStarted = 0,
+        InProgress = 1,
+        Completed = 2,
+        Expired = 3,
+        Failed = 4
+    }
+
+    public sealed class TrainingCourseStudentStatusPageModel
+    {
+        public Guid CourseId { get; set; }
+        public string CourseCode { get; set; } = string.Empty;
+        public string CourseTitle { get; set; } = string.Empty;
+        public string? Summary { get; set; }
+        public decimal PassMarkPercent { get; set; }
+        public int ValidityMonths { get; set; }
+        public int EnrolledLearnerCount { get; set; }
+        public int StartedLearnerCount { get; set; }
+        public int CompletedLearnerCount { get; set; }
+        public List<TrainingCourseStudentStatusModel> Students { get; set; } = new();
+    }
+
+    public sealed class TrainingCourseStudentStatusModel
+    {
+        public string UserId { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public string? Email { get; set; }
+        public string? UserName { get; set; }
+        public TrainingCourseStudentStatus Status { get; set; }
+        public DateTime? StartedOnUtc { get; set; }
+        public DateTime? CompletedOnUtc { get; set; }
+        public DateTime? ExpiryDateUtc { get; set; }
+        public DateTime? DueDateUtc { get; set; }
+        public decimal? ResultPercent { get; set; }
+        public string? CertificateNumber { get; set; }
+        public string? CertificateViewUrl { get; set; }
+        public string? CertificateDownloadUrl { get; set; }
     }
 
     public sealed class TrainingCourseEditModel

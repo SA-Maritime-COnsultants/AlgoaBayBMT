@@ -29,7 +29,6 @@
         <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
     }
 
-    <div @key="@(_dashboardKey)">
     @if (Dashboard is null)
     {
         <SfCard CssClass="pf-card-shell pf-training-learner-card">
@@ -40,6 +39,7 @@
     }
     else
     {
+        <div @key="GetDashboardContentKey()">
         <div class="pf-manage-overview pf-training-learner-summary">
             <div class="pf-manage-overview-copy">
                 <h2 class="pf-manage-overview-title">Welcome, @Dashboard.LearnerName</h2>
@@ -103,58 +103,60 @@
                 }
                 else
                 {
-                    <SfGrid DataSource="@Dashboard.RequiredCourses" TValue="MyTrainingCourseListItemModel" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
-                        <GridColumns>
-                            <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Code)" HeaderText="Code" Width="120" />
-                            <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Title)" HeaderText="Course" Width="220" />
-                            <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Summary)" HeaderText="Summary" Width="250" />
-                            <GridColumn HeaderText="Duration" Width="110" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    <span>@(item?.DurationMinutes is > 0 ? $"{item.DurationMinutes} min" : "—")</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Pass Mark" Width="110" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    <span>@(item?.PassMarkPercent ?? 0)%</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Validity" Width="100" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    <span>@(item?.ValidityMonths ?? 0) mo</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    <span class="e-badge @GetStatusBadge(item?.Status ?? TrainingAccessStatus.NotStarted)">@GetStatusText(item?.Status ?? TrainingAccessStatus.NotStarted)</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Progress" Width="130" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    <span>@((item?.ProgressPercent ?? 0m).ToString("0.#"))%</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Due / Expiry" Width="160">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    <span>@GetDueText(item)</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Action" Width="130" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCourseListItemModel; }
-                                    @if (item is not null)
-                                    {
-                                        <a class="e-btn e-primary" href="@($"/my-training/course/{item.CourseId}")">@item.ActionText</a>
-                                    }
-                                </Template>
-                            </GridColumn>
-                        </GridColumns>
-                    </SfGrid>
+                    <div class="pf-training-responsive-grid" @key='"required-training-grid"'>
+                        <SfGrid DataSource="@Dashboard.RequiredCourses" TValue="MyTrainingCourseListItemModel" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Code)" HeaderText="Code" Width="120" />
+                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Title)" HeaderText="Course" Width="220" />
+                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Summary)" HeaderText="Summary" Width="250" />
+                                <GridColumn HeaderText="Duration" Width="110" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        <span>@(item?.DurationMinutes is > 0 ? $"{item.DurationMinutes} min" : "—")</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Pass Mark" Width="110" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        <span>@(item?.PassMarkPercent ?? 0)%</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Validity" Width="100" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        <span>@(item?.ValidityMonths ?? 0) mo</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        <span class="e-badge @GetStatusBadge(item?.Status ?? TrainingAccessStatus.NotStarted)">@GetStatusText(item?.Status ?? TrainingAccessStatus.NotStarted)</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Progress" Width="130" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        <span>@((item?.ProgressPercent ?? 0m).ToString("0.#"))%</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Due / Expiry" Width="160">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        <span>@GetDueText(item)</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Action" Width="130" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCourseListItemModel; }
+                                        @if (item is not null)
+                                        {
+                                            <a class="e-btn e-primary" href="@($"/my-training/course/{item.CourseId}")">@item.ActionText</a>
+                                        }
+                                    </Template>
+                                </GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    </div>
                 }
             </CardContent>
         </SfCard>
@@ -170,70 +172,89 @@
                     }
                     else
                     {
-                        <SfGrid DataSource="@Dashboard.AdditionalCourses" TValue="MyTrainingCourseListItemModel" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
-                            <GridColumns>
-                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Code)" HeaderText="Code" Width="120" />
-                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Title)" HeaderText="Course" Width="240" />
-                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Summary)" HeaderText="Summary" Width="280" />
-                                <GridColumn Field="@nameof(MyTrainingCourseListItemModel.AudienceSummary)" HeaderText="Audience" Width="150" />
-                                <GridColumn HeaderText="Action" Width="130" TextAlign="TextAlign.Center">
-                                    <Template>
-                                        @{ var item = context as MyTrainingCourseListItemModel; }
-                                        @if (item is not null)
-                                        {
-                                            <a class="e-btn e-primary" href="@($"/my-training/course/{item.CourseId}")">Open Course</a>
-                                        }
-                                    </Template>
-                                </GridColumn>
-                            </GridColumns>
-                        </SfGrid>
+                        <div class="pf-training-responsive-grid" @key='"additional-training-grid"'>
+                            <SfGrid DataSource="@Dashboard.AdditionalCourses" TValue="MyTrainingCourseListItemModel" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
+                                <GridColumns>
+                                    <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Code)" HeaderText="Code" Width="120" />
+                                    <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Title)" HeaderText="Course" Width="240" />
+                                    <GridColumn Field="@nameof(MyTrainingCourseListItemModel.Summary)" HeaderText="Summary" Width="280" />
+                                    <GridColumn Field="@nameof(MyTrainingCourseListItemModel.AudienceSummary)" HeaderText="Audience" Width="150" />
+                                    <GridColumn HeaderText="Action" Width="130" TextAlign="TextAlign.Center">
+                                        <Template>
+                                            @{ var item = context as MyTrainingCourseListItemModel; }
+                                            @if (item is not null)
+                                            {
+                                                <a class="e-btn e-primary" href="@($"/my-training/course/{item.CourseId}")">Open Course</a>
+                                            }
+                                        </Template>
+                                    </GridColumn>
+                                </GridColumns>
+                            </SfGrid>
+                        </div>
                     }
                 </CardContent>
             </SfCard>
         }
 
         <SfCard CssClass="pf-card-shell pf-training-learner-card">
-            <CardHeader Title="Certificates" SubTitle="Review completion records and open the generated certificate view for each completed course." />
+            <CardHeader Title="Completed Courses" SubTitle="Review completed training, view results, and open or download the generated certificate for each completed course." />
             <CardContent>
                 @if (Dashboard.Certificates.Count == 0)
                 {
-                    <div class="pf-empty-state">Certificates will appear here after successful course completion.</div>
+                    <div class="pf-empty-state">Completed courses and certificates will appear here after successful course completion.</div>
                 }
                 else
                 {
-                    <SfGrid DataSource="@Dashboard.Certificates" TValue="MyTrainingCertificateListItemModel" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
-                        <GridColumns>
-                            <GridColumn Field="@nameof(MyTrainingCertificateListItemModel.CourseCode)" HeaderText="Code" Width="120" />
-                            <GridColumn Field="@nameof(MyTrainingCertificateListItemModel.CourseTitle)" HeaderText="Course" Width="240" />
-                            <GridColumn Field="@nameof(MyTrainingCertificateListItemModel.CertificateNumber)" HeaderText="Certificate No." Width="200" />
-                            <GridColumn HeaderText="Completed" Width="140">
-                                <Template>
-                                    @{ var item = context as MyTrainingCertificateListItemModel; }
-                                    <span>@(item is null ? "—" : item.CompletedOnUtc.ToLocalTime().ToString("dd MMM yyyy"))</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Expiry" Width="140">
-                                <Template>
-                                    @{ var item = context as MyTrainingCertificateListItemModel; }
-                                    <span>@(item is null ? "—" : item.ExpiresOnUtc.ToLocalTime().ToString("dd MMM yyyy"))</span>
-                                </Template>
-                            </GridColumn>
-                            <GridColumn HeaderText="Action" Width="130" TextAlign="TextAlign.Center">
-                                <Template>
-                                    @{ var item = context as MyTrainingCertificateListItemModel; }
-                                    @if (item is not null)
-                                    {
-                                        <a class="e-btn" href="@item.ViewUrl">View</a>
-                                    }
-                                </Template>
-                            </GridColumn>
-                        </GridColumns>
-                    </SfGrid>
+                    <div class="pf-training-responsive-grid" @key='"completed-training-grid"'>
+                        <SfGrid DataSource="@Dashboard.Certificates" TValue="MyTrainingCertificateListItemModel" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(MyTrainingCertificateListItemModel.CourseTitle)" HeaderText="Course Name" Width="240" />
+                                <GridColumn Field="@nameof(MyTrainingCertificateListItemModel.CourseCode)" HeaderText="Course Code" Width="120" />
+                                <GridColumn HeaderText="Completion Date" Width="150">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCertificateListItemModel; }
+                                        <span>@(item is null ? "—" : item.CompletedOnUtc.ToLocalTime().ToString("dd MMM yyyy"))</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Expiry Date" Width="140">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCertificateListItemModel; }
+                                        <span>@(item is null ? "—" : item.ExpiresOnUtc.ToLocalTime().ToString("dd MMM yyyy"))</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Result / Score" Width="180">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCertificateListItemModel; }
+                                        <span>@GetResultText(item)</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Completion Status" Width="140" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCertificateListItemModel; }
+                                        <span class="e-badge @GetCompletionStatusBadge(item?.CompletionStatus)">@GetCompletionStatusText(item?.CompletionStatus)</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn Field="@nameof(MyTrainingCertificateListItemModel.CertificateNumber)" HeaderText="Certificate No." Width="200" />
+                                <GridColumn HeaderText="Action" Width="220" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var item = context as MyTrainingCertificateListItemModel; }
+                                        @if (item is not null)
+                                        {
+                                            <div class="pf-grid-actions pf-grid-actions--compact">
+                                                <a class="e-btn" href="@item.ViewUrl">View Certificate</a>
+                                                <a class="e-btn e-primary" href="@item.DownloadUrl" target="_blank" rel="noreferrer">Download Certificate</a>
+                                            </div>
+                                        }
+                                    </Template>
+                                </GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    </div>
                 }
             </CardContent>
         </SfCard>
+        </div>
     }
-    </div>
 </div>
 
 @code {
@@ -241,7 +262,6 @@
     private MyTrainingDashboardModel? Dashboard;
     private string? CurrentUserId;
     private string? ErrorMessage;
-    private string _dashboardKey = "loading";
 
     protected override async Task OnInitializedAsync()
     {
@@ -256,7 +276,6 @@
         }
 
         Dashboard = await LearnerTrainingService.GetDashboardAsync(CurrentUserId);
-        _dashboardKey = $"loaded-{CurrentUserId}";
     }
 
     private static string GetStatusText(TrainingAccessStatus status) => status switch
@@ -291,4 +310,37 @@
 
         return "—";
     }
+
+    private static string GetResultText(MyTrainingCertificateListItemModel? item)
+    {
+        if (item?.FinalScorePercent is decimal score && item.PassMarkPercent is decimal passMark)
+        {
+            return $"{score:0.##}% (Pass mark {passMark:0.##}%)";
+        }
+
+        if (item?.FinalScorePercent is decimal finalScore)
+        {
+            return $"{finalScore:0.##}%";
+        }
+
+        if (item?.PassMarkPercent is decimal requiredPassMark)
+        {
+            return $"Pass mark {requiredPassMark:0.##}%";
+        }
+
+        return "Completed";
+    }
+
+    private static string GetCompletionStatusText(string? status)
+        => string.IsNullOrWhiteSpace(status) ? "Completed" : status;
+
+    private static string GetCompletionStatusBadge(string? status)
+        => string.Equals(status, "Expired", StringComparison.OrdinalIgnoreCase)
+            ? "e-badge-warning"
+            : "e-badge-success";
+
+    private string GetDashboardContentKey()
+        => Dashboard is null
+            ? "my-training-empty"
+            : $"my-training-{CurrentUserId}-{Dashboard.RequiredCourses.Count}-{Dashboard.AdditionalCourses.Count}-{Dashboard.Certificates.Count}";
 }

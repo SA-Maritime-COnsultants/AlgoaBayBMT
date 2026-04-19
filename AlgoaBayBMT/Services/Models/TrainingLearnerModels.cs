@@ -54,7 +54,11 @@ public sealed class MyTrainingCertificateListItemModel
     public string VerificationCode { get; set; } = string.Empty;
     public DateTime CompletedOnUtc { get; set; }
     public DateTime ExpiresOnUtc { get; set; }
+    public decimal? FinalScorePercent { get; set; }
+    public decimal? PassMarkPercent { get; set; }
+    public string CompletionStatus { get; set; } = string.Empty;
     public string ViewUrl { get; set; } = string.Empty;
+    public string DownloadUrl { get; set; } = string.Empty;
 }
 
 public sealed class TrainingCoursePlayerModel

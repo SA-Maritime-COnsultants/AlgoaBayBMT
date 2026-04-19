@@ -1046,7 +1046,11 @@ public sealed class LearnerTrainingService(
                     VerificationCode = certificate.VerificationCode,
                     CompletedOnUtc = completion.CompletedOnUtc,
                     ExpiresOnUtc = completion.ExpiryDateUtc,
-                    ViewUrl = $"/my-training/certificates/{certificate.CertificateId}"
+                    FinalScorePercent = completion.FinalScorePercent,
+                    PassMarkPercent = courses.First(x => x.CourseId == completion.CourseId).PassMarkPercent,
+                    CompletionStatus = completion.ExpiryDateUtc < DateTime.UtcNow ? "Expired" : "Completed",
+                    ViewUrl = $"/my-training/certificates/{certificate.CertificateId}",
+                    DownloadUrl = $"/my-training/certificates/{certificate.CertificateId}?download=true"
                 })
             .OrderByDescending(x => x.CompletedOnUtc)
             .ToList();
