@@ -21,202 +21,251 @@
 </SfToast>
 
 <div class="training-player-page">
-
-    @* ── Top bar ──────────────────────────────────────────────── *@
-    <div class="tp-topbar">
-        <div class="tp-topbar-left">
-            <a href="/my-training" class="tp-back-btn">&#8592; My Training</a>
-            @if (Player is not null)
-            {
-                <div class="tp-learner-tag">
-                    <span class="tp-learner-label">My Training</span>
-                    <span class="tp-learner-name">@Player.Title</span>
-                </div>
-                <span class="e-badge tp-topbar-meta" style="flex-shrink:0;">@Player.Code</span>
-            }
-        </div>
-        @if (!string.IsNullOrWhiteSpace(Player?.CertificateUrl))
-        {
-            <a href="@Player.CertificateUrl" class="e-btn e-primary" style="flex-shrink:0;">View Certificate</a>
-        }
-    </div>
-
-    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
-    {
-        <div class="pf-alert pf-alert--warning-strong" role="alert" style="margin:0.5rem;">@ErrorMessage</div>
-    }
-
-    @if (Player is null)
-    {
-        <div style="display:flex;align-items:center;justify-content:center;flex:1;">
-            <div class="pf-empty-state">Loading training player…</div>
-        </div>
-    }
-    else
-    {
-        <div class="training-player-layout">
-
-            @* ── LEFT: Course Journey ─────────────────────────────── *@
-            <CourseJourneyPanel Modules="Player.Modules"
-                                CompletedLessons="Player.CompletedLessons"
-                                TotalLessons="Player.TotalLessons"
-                                OnLessonSelected="NavigateToLesson" />
-
-            @* ── CENTER: Player ───────────────────────────────────── *@
-            <div class="training-panel" style="min-height:0;">
-                <div class="training-panel-header">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    Course Player
-                    @if (Player.CurrentLesson is not null)
+    <div class="tp-shell">
+        @* ── Top hero ─────────────────────────────────────────────── *@
+        <section class="tp-hero">
+            <div class="tp-hero-main">
+                <div class="tp-hero-topline">
+                    <a href="/my-training" class="tp-back-btn">
+                        <span aria-hidden="true">&#8592;</span>
+                        <span>My Training</span>
+                    </a>
+                    @if (Player is not null)
                     {
-                        <span class="tp-header-badge">@Player.CurrentLesson.Title</span>
+                        <span class="e-badge tp-topbar-meta">@Player.Code</span>
                     }
                 </div>
 
-                @* Block chip navigation strip *@
-                <div style="padding:0.5rem 0.75rem;border-bottom:1px solid #dee2e6;flex-shrink:0;">
-                    <div class="tp-block-chips">
-                        @foreach (var block in Player.CurrentLesson?.Blocks ?? Enumerable.Empty<TrainingPlayerBlockModel>())
+                <div class="tp-learner-tag">
+                    <span class="tp-learner-label">My Training</span>
+                    <span class="tp-learner-name">@(Player?.Title ?? "Course Player")</span>
+                </div>
+
+                @if (Player is not null)
+                {
+                    <div class="tp-hero-subtitle">
+                        @(Player.CurrentLesson is null
+                            ? "Continue your assigned learning content from a calmer, more focused course workspace."
+                            : $"Current lesson: {Player.CurrentLesson.Title}")
+                    </div>
+
+                    <div class="tp-hero-badges">
+                        <span class="e-badge pf-role-badge">@Player.CompletedLessons of @Player.TotalLessons lessons complete</span>
+                        <span class="e-badge pf-role-badge">@FormatPercent(Player.CourseProgressPercent)% overall progress</span>
+                        <span class="e-badge pf-role-badge">Pass mark @FormatPercent(Player.PassMarkPercent)%</span>
+                    </div>
+                }
+            </div>
+
+            <div class="tp-hero-side">
+                @if (!string.IsNullOrWhiteSpace(Player?.CertificateUrl))
+                {
+                    <a href="@Player.CertificateUrl" class="e-btn e-primary tp-hero-action">View Certificate</a>
+                }
+
+                @if (Player is not null)
+                {
+                    <div class="tp-hero-progress-card">
+                        <div class="tp-hero-progress-label">Course Progress</div>
+                        <div class="tp-hero-progress-value">@FormatPercent(Player.CourseProgressPercent)%</div>
+                        <div class="pf-training-linear-progress pf-training-linear-progress--course" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@Player.CourseProgressPercent">
+                            <div class="pf-training-linear-progress-fill" style="width:@($"{Player.CourseProgressPercent:0.##}%")"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </section>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+        }
+
+        @if (Player is null)
+        {
+            <div class="tp-loading-shell">
+                <div class="pf-empty-state">Loading training player…</div>
+            </div>
+        }
+        else
+        {
+            <div class="training-player-layout">
+
+                @* ── LEFT: Course Journey ─────────────────────────────── *@
+                <CourseJourneyPanel Modules="Player.Modules"
+                                    CompletedLessons="Player.CompletedLessons"
+                                    TotalLessons="Player.TotalLessons"
+                                    OnLessonSelected="NavigateToLesson" />
+
+                @* ── CENTER: Player ───────────────────────────────────── *@
+                <div class="training-panel tp-content-panel" style="min-height:0;">
+                    <div class="training-panel-header tp-panel-header-soft">
+                        <div class="tp-panel-header-copy">
+                            <div class="tp-panel-header-kicker">Course player</div>
+                            <div class="tp-panel-header-title-row">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                <span>@(Player.CurrentLesson?.Title ?? Player.Title)</span>
+                            </div>
+                        </div>
+                        @if (Player.CurrentBlock is not null)
+                        {
+                            <span class="tp-header-badge">@Player.CurrentBlock.DisplayType</span>
+                        }
+                    </div>
+
+                    @* Block chip navigation strip *@
+                    <div class="tp-block-strip-shell">
+                        <div class="tp-block-strip-header">
+                            <span class="tp-block-strip-title">Lesson content</span>
+                            <span class="tp-block-strip-meta">@(Player.CurrentLesson?.Blocks.Count ?? 0) block(s)</span>
+                        </div>
+                        <div class="tp-block-chips">
+                            @foreach (var block in Player.CurrentLesson?.Blocks ?? Enumerable.Empty<TrainingPlayerBlockModel>())
+                            {
+                                <button type="button"
+                                        @key="block.BlockId"
+                                        class="tp-block-chip @(block.IsCurrent ? "is-current" : string.Empty) @(block.IsCompleted ? "is-completed" : string.Empty)"
+                                        disabled="@block.IsLocked"
+                                        @onclick="() => NavigateToBlock(block.BlockId)">
+                                    @if (block.IsCompleted)
+                                    {
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                    }
+                                    @block.DisplayType
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    @* Current block content *@
+                    <div class="training-panel-body tp-content-body" @key="_blockRenderKey">
+                        @if (Player.CurrentBlock is not null)
+                        {
+                            <div class="tp-block-stage">
+                                @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.Title))
+                                {
+                                    <div class="tp-block-title">@Player.CurrentBlock.Title</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.Subtitle))
+                                {
+                                    <div class="tp-block-subtitle">@Player.CurrentBlock.Subtitle</div>
+                                }
+
+                                <div class="tp-block-content-card">
+                                    @switch (Player.CurrentBlock.BlockType)
+                                    {
+                                        case LessonBlockType.Video:
+                                            <VideoBlockPlayer @key="_blockRenderKey"
+                                                              Block="Player.CurrentBlock"
+                                                              UserId="@CurrentUserId"
+                                                              CourseId="Player.CourseId"
+                                                              LessonId="Player.CurrentLesson!.LessonId"
+                                                              OnCompleted="OnVideoBlockAutoCompleted" />
+                                            break;
+
+                                        case LessonBlockType.TextNarrative:
+                                            <CardBlockPlayer Block="Player.CurrentBlock" />
+                                            break;
+
+                                        case LessonBlockType.Card:
+                                            <CardBlockPlayer Block="Player.CurrentBlock" />
+                                            break;
+
+                                        case LessonBlockType.Flashcard:
+                                            <FlashCardBlockPlayer @ref="_flashCardRef"
+                                                                 Block="Player.CurrentBlock"
+                                                                 UserId="@CurrentUserId"
+                                                                 CourseId="Player.CourseId"
+                                                                 LessonId="Player.CurrentLesson!.LessonId"
+                                                                 OnCompleted="OnBlockAutoCompleted" />
+                                            break;
+
+                                        case LessonBlockType.Quiz:
+                                            <QuizBlockPlayer @key="_blockRenderKey"
+                                                             Block="Player.CurrentBlock"
+                                                             UserId="@CurrentUserId"
+                                                             CourseId="Player.CourseId"
+                                                             LessonId="Player.CurrentLesson!.LessonId"
+                                                             OnCompleted="OnBlockAutoCompleted" />
+                                            break;
+
+                                        case LessonBlockType.Assessment:
+                                            <AssessmentBlockPlayer @key="_blockRenderKey"
+                                                                   Block="Player.CurrentBlock"
+                                                                   UserId="@CurrentUserId"
+                                                                   CourseId="Player.CourseId"
+                                                                   LessonId="Player.CurrentLesson!.LessonId"
+                                                                   OnCompleted="OnBlockAutoCompleted" />
+                                            break;
+
+                                        case LessonBlockType.Download:
+                                            @((MarkupString)(Player.CurrentBlock.ContentHtml ?? string.Empty))
+                                            @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.FileUrl))
+                                            {
+                                                <div style="margin-top:0.75rem;"><a href="@Player.CurrentBlock.FileUrl" target="_blank" rel="noreferrer" class="e-btn">Download Attachment</a></div>
+                                            }
+                                            break;
+
+                                        default:
+                                            @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.ThumbnailUrl))
+                                            {
+                                                <img src="@Player.CurrentBlock.ThumbnailUrl" alt="Visual" style="max-width:100%;border-radius:4px;margin-bottom:0.75rem;" />
+                                            }
+                                            @((MarkupString)(Player.CurrentBlock.ContentHtml ?? string.Empty))
+                                            break;
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    @* Navigation bar *@
+                    <div class="tp-nav-bar">
+                        <button type="button" class="e-btn" disabled="@(!Player.CanGoPrevious)" @onclick="GoPrevious">
+                            ‹ Previous
+                        </button>
+
+                        @* Manual complete for card/flashcard/download — show lock until ready *@
+                        @if (NeedsManualNext())
+                        {
+                            var fcReady = Player.CurrentBlock?.BlockType != LessonBlockType.Flashcard
+                                          || (_flashCardRef?.AllReviewed == true);
+                            <button type="button"
+                                    class="e-btn e-primary @(!fcReady ? "tp-next-locked" : string.Empty)"
+                                    disabled="@(!fcReady)"
+                                    title="@(!fcReady ? "Review all cards to continue" : null)"
+                                    @onclick="ManualCompleteAndAdvanceAsync">
+                                @if (!fcReady)
+                                {
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                }
+                                Next →
+                            </button>
+                        }
+                        else
                         {
                             <button type="button"
-                                    @key="block.BlockId"
-                                    class="tp-block-chip @(block.IsCurrent ? "is-current" : string.Empty) @(block.IsCompleted ? "is-completed" : string.Empty)"
-                                    disabled="@block.IsLocked"
-                                    @onclick="() => NavigateToBlock(block.BlockId)">
-                                @if (block.IsCompleted)
+                                    class="e-btn e-primary @(!CanAdvance ? "tp-next-locked" : string.Empty)"
+                                    disabled="@(!CanAdvance)"
+                                    title="@(!CanAdvance ? "Complete the current content to continue" : null)"
+                                    @onclick="GoNext">
+                                @if (!CanAdvance)
                                 {
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                 }
-                                @block.DisplayType
+                                Next →
                             </button>
                         }
                     </div>
                 </div>
 
-                @* Current block content *@
-                <div class="training-panel-body" @key="_blockRenderKey">
-                    @if (Player.CurrentBlock is not null)
-                    {
-                        @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.Title))
-                        {
-                            <div style="font-weight:600;font-size:1rem;margin-bottom:0.5rem;">@Player.CurrentBlock.Title</div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.Subtitle))
-                        {
-                            <div style="color:#6c757d;font-size:0.85rem;margin-bottom:0.75rem;">@Player.CurrentBlock.Subtitle</div>
-                        }
+                @* ── RIGHT: Lesson Progress ───────────────────────────── *@
+                <LessonProgressPanel CurrentLesson="Player.CurrentLesson"
+                                      CourseProgressPercent="Player.CourseProgressPercent" />
 
-                        @switch (Player.CurrentBlock.BlockType)
-                        {
-                            case LessonBlockType.Video:
-                                <VideoBlockPlayer @key="_blockRenderKey"
-                                                  Block="Player.CurrentBlock"
-                                                  UserId="@CurrentUserId"
-                                                  CourseId="Player.CourseId"
-                                                  LessonId="Player.CurrentLesson!.LessonId"
-                                                  OnCompleted="OnVideoBlockAutoCompleted" />
-                                break;
-
-                            case LessonBlockType.TextNarrative:
-                                <CardBlockPlayer Block="Player.CurrentBlock" />
-                                break;
-
-                            case LessonBlockType.Card:
-                                <CardBlockPlayer Block="Player.CurrentBlock" />
-                                break;
-
-                            case LessonBlockType.Flashcard:
-                                <FlashCardBlockPlayer @ref="_flashCardRef"
-                                                     Block="Player.CurrentBlock"
-                                                     UserId="@CurrentUserId"
-                                                     CourseId="Player.CourseId"
-                                                     LessonId="Player.CurrentLesson!.LessonId"
-                                                     OnCompleted="OnBlockAutoCompleted" />
-                                break;
-
-                            case LessonBlockType.Quiz:
-                                <QuizBlockPlayer @key="_blockRenderKey"
-                                                 Block="Player.CurrentBlock"
-                                                 UserId="@CurrentUserId"
-                                                 CourseId="Player.CourseId"
-                                                 LessonId="Player.CurrentLesson!.LessonId"
-                                                 OnCompleted="OnBlockAutoCompleted" />
-                                break;
-
-                            case LessonBlockType.Assessment:
-                                <AssessmentBlockPlayer @key="_blockRenderKey"
-                                                       Block="Player.CurrentBlock"
-                                                       UserId="@CurrentUserId"
-                                                       CourseId="Player.CourseId"
-                                                       LessonId="Player.CurrentLesson!.LessonId"
-                                                       OnCompleted="OnBlockAutoCompleted" />
-                                break;
-
-                            case LessonBlockType.Download:
-                                @((MarkupString)(Player.CurrentBlock.ContentHtml ?? string.Empty))
-                                @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.FileUrl))
-                                {
-                                    <div style="margin-top:0.75rem;"><a href="@Player.CurrentBlock.FileUrl" target="_blank" rel="noreferrer" class="e-btn">Download Attachment</a></div>
-                                }
-                                break;
-
-                            default:
-                                @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.ThumbnailUrl))
-                                {
-                                    <img src="@Player.CurrentBlock.ThumbnailUrl" alt="Visual" style="max-width:100%;border-radius:4px;margin-bottom:0.75rem;" />
-                                }
-                                @((MarkupString)(Player.CurrentBlock.ContentHtml ?? string.Empty))
-                                break;
-                        }
-                    }
-                </div>
-
-                @* Navigation bar *@
-                <div class="tp-nav-bar">
-                    <button type="button" class="e-btn" disabled="@(!Player.CanGoPrevious)" @onclick="GoPrevious">
-                        ‹ Previous
-                    </button>
-
-                    @* Manual complete for card/flashcard/download — show lock until ready *@
-                    @if (NeedsManualNext())
-                    {
-                        var fcReady = Player.CurrentBlock?.BlockType != LessonBlockType.Flashcard
-                                      || (_flashCardRef?.AllReviewed == true);
-                        <button type="button"
-                                class="e-btn e-primary @(!fcReady ? "tp-next-locked" : string.Empty)"
-                                disabled="@(!fcReady)"
-                                title="@(!fcReady ? "Review all cards to continue" : null)"
-                                @onclick="ManualCompleteAndAdvanceAsync">
-                            @if (!fcReady)
-                            {
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            }
-                            Next →
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="button"
-                                class="e-btn e-primary @(!CanAdvance ? "tp-next-locked" : string.Empty)"
-                                disabled="@(!CanAdvance)"
-                                title="@(!CanAdvance ? "Complete the current content to continue" : null)"
-                                @onclick="GoNext">
-                            @if (!CanAdvance)
-                            {
-                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                            }
-                            Next →
-                        </button>
-                    }
-                </div>
             </div>
-
-            @* ── RIGHT: Lesson Progress ───────────────────────────── *@
-            <LessonProgressPanel CurrentLesson="Player.CurrentLesson"
-                                  CourseProgressPercent="Player.CourseProgressPercent" />
-
-        </div>
-    }
+        }
+    </div>
 </div>
 
 @code {
@@ -247,6 +296,8 @@
             or LessonBlockType.Download
             or LessonBlockType.Flashcard;
     }
+
+    private static string FormatPercent(decimal value) => value.ToString("0.#");
 
     protected override async Task OnParametersSetAsync()
     {
