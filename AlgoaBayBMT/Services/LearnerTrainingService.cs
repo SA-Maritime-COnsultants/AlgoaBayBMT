@@ -325,6 +325,7 @@ public sealed class LearnerTrainingService(
         return new TrainingCoursePlayerModel
         {
             CourseId = courseProjection.CourseId,
+            LearnerName = learner.DisplayName,
             Code = courseProjection.Code,
             Title = courseProjection.Title,
             Summary = courseProjection.Summary,
@@ -362,6 +363,101 @@ public sealed class LearnerTrainingService(
             },
             CurrentBlock = currentBlock
         };
+    }
+
+    public async Task<OperationResult> ResetCourseProgressAsync(string userId, Guid courseId, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var course = await dbContext.Courses
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.CourseId == courseId && x.IsActive && x.CurrentVersionId.HasValue, cancellationToken);
+        if (course is null)
+        {
+            return OperationResult.Failure("Training course not found.");
+        }
+
+        var lessonIds = await dbContext.Lessons.AsNoTracking()
+            .Join(dbContext.Modules.AsNoTracking().Where(x => x.CourseVersionId == course.CurrentVersionId!.Value && x.IsActive),
+                lesson => lesson.ModuleId,
+                module => module.ModuleId,
+                (lesson, module) => lesson)
+            .Where(x => x.IsActive)
+            .Select(x => x.LessonId)
+            .ToListAsync(cancellationToken);
+
+        var lessonProgressRecords = lessonIds.Count == 0
+            ? new List<UserLessonProgress>()
+            : await dbContext.UserLessonProgress
+                .Where(x => x.UserId == userId && lessonIds.Contains(x.LessonId))
+                .ToListAsync(cancellationToken);
+
+        var courseProgress = await dbContext.UserCourseProgress
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.CourseId == courseId, cancellationToken);
+
+        var completionRecords = await dbContext.CourseCompletionRecords
+            .Where(x => x.UserId == userId && x.CourseId == courseId)
+            .ToListAsync(cancellationToken);
+
+        var completionIds = completionRecords.Select(x => x.CourseCompletionRecordId).ToList();
+        var certificates = completionIds.Count == 0
+            ? new List<TrainingCertificate>()
+            : await dbContext.TrainingCertificates
+                .Where(x => completionIds.Contains(x.CourseCompletionRecordId))
+                .ToListAsync(cancellationToken);
+
+        var assessmentIds = await dbContext.LessonBlocks.AsNoTracking()
+            .Where(x => lessonIds.Contains(x.LessonId) && x.IsActive)
+            .Select(x => x.MetadataJson)
+            .ToListAsync(cancellationToken);
+
+        var linkedAssessmentIds = assessmentIds
+            .Select(DeserializeMetadata)
+            .Where(x => x.LinkedAssessmentId.HasValue)
+            .Select(x => x.LinkedAssessmentId!.Value)
+            .Distinct()
+            .ToList();
+
+        var assessmentAttempts = linkedAssessmentIds.Count == 0
+            ? new List<UserAssessmentAttempt>()
+            : await dbContext.UserAssessmentAttempts
+                .Include(x => x.Responses)
+                .Where(x => x.UserId == userId && linkedAssessmentIds.Contains(x.TrainingCourseAssessmentId))
+                .ToListAsync(cancellationToken);
+
+        if (assessmentAttempts.Count > 0)
+        {
+            var responses = assessmentAttempts.SelectMany(x => x.Responses).ToList();
+            if (responses.Count > 0)
+            {
+                dbContext.UserAssessmentResponses.RemoveRange(responses);
+            }
+
+            dbContext.UserAssessmentAttempts.RemoveRange(assessmentAttempts);
+        }
+
+        if (certificates.Count > 0)
+        {
+            dbContext.TrainingCertificates.RemoveRange(certificates);
+        }
+
+        if (completionRecords.Count > 0)
+        {
+            dbContext.CourseCompletionRecords.RemoveRange(completionRecords);
+        }
+
+        if (lessonProgressRecords.Count > 0)
+        {
+            dbContext.UserLessonProgress.RemoveRange(lessonProgressRecords);
+        }
+
+        if (courseProgress is not null)
+        {
+            dbContext.UserCourseProgress.Remove(courseProgress);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return OperationResult.Success("Training progress has been reset. Restart the course from the beginning.");
     }
 
     public async Task<OperationResult> CompleteBlockAsync(string userId, Guid courseId, Guid lessonId, Guid blockId, CancellationToken cancellationToken = default)

@@ -75,7 +75,7 @@
 
                     @if (Model.BlockType == LessonBlockType.TextNarrative || Model.BlockType == LessonBlockType.Card)
                     {
-                        <div class="pf-col-12" @key="GetDynamicEditorKey()">
+                        <div class="pf-col-12">
                             <label class="pf-field-label">@(Model.BlockType == LessonBlockType.Card ? "Card Content" : "Content")</label>
                             <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="@(Model.BlockType == LessonBlockType.Card ? "240px" : "280px")" EnableResize="true" CssClass="cb-richtext-editor">
                                 <RichTextEditorToolbarSettings Items="@RichTextToolbarItems" Type="ToolbarType.MultiRow" />
@@ -102,7 +102,7 @@
 
                     @if (Model.BlockType == LessonBlockType.Flashcard)
                     {
-                        <div class="pf-col-12" @key="GetDynamicEditorKey()">
+                        <div class="pf-col-12">
                             <div class="cb-flashcard-set-header">
                                 <span class="pf-field-label" style="margin:0;">Flash Cards</span>
                                 <SfButton type="button" CssClass="e-primary" OnClick="AddFlashCard">+ Add Card</SfButton>
@@ -158,7 +158,7 @@
 
                     @if (Model.BlockType == LessonBlockType.Video)
                     {
-                        <div class="pf-col-6" @key="GetDynamicEditorKey()">
+                        <div class="pf-col-6">
                             <label class="pf-field-label">Video Upload</label>
                             <div class="pf-training-upload-panel">
                                 <InputFile OnChange="HandleAssetSelectedAsync" accept=".mp4,.webm,.mov,.m4v" />
@@ -189,7 +189,7 @@
 
                     @if (Model.BlockType == LessonBlockType.Download)
                     {
-                        <div class="pf-col-12" @key="GetDynamicEditorKey()">
+                        <div class="pf-col-12">
                             <label class="pf-field-label">Download Description</label>
                             <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
                                 <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
@@ -213,7 +213,7 @@
 
                     @if (Model.BlockType == LessonBlockType.Assessment)
                     {
-                        <div class="pf-col-6" @key="GetDynamicEditorKey()">
+                        <div class="pf-col-6">
                             <label class="pf-field-label">Assessment</label>
                             <SfDropDownList TValue="Guid?" TItem="TrainingCourseAssessmentEditModel" DataSource="@AssessmentOptions" @bind-Value="Model.LinkedAssessmentId" Placeholder="Select an assessment from the bank">
                                 <DropDownListFieldSettings Text="Name" Value="TrainingCourseAssessmentId" />
@@ -235,7 +235,7 @@
 
                     @if (Model.BlockType == LessonBlockType.Quiz)
                     {
-                        <div class="pf-col-12" @key="GetDynamicEditorKey()">
+                        <div class="pf-col-12">
                             <div class="pf-authoring-item-header">
                                 <div>
                                     <h4 class="pf-authoring-item-title">Inline Lesson Quiz</h4>
@@ -404,6 +404,7 @@
 
     protected override void OnParametersSet()
     {
+        Model.UiKey = Model.UiKey == Guid.Empty ? Guid.NewGuid() : Model.UiKey;
         EnsureQuestionKeys();
 
         Model.BlockType = Model.BlockType switch
@@ -594,7 +595,6 @@
     };
 
     private static string GetQuizOptionKey(int qi, int oi) => $"quiz-option-{qi}-{oi}";
-    private string GetDynamicEditorKey() => $"{GetFormName()}-{Model.BlockType}";
     private string GetVisualPreviewKey() => $"visual-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.MediaAssetId?.ToString() ?? "none"}";
     private string GetVideoPreviewKey() => $"video-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.FileUrl ?? "empty"}";
 

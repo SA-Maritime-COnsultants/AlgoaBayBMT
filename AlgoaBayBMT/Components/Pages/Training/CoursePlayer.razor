@@ -6,13 +6,16 @@
 @using AlgoaBayBMT.Services.Models
 @using AlgoaBayBMT.Shared.Models
 @using Microsoft.AspNetCore.Components
+@using Microsoft.JSInterop
 @using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Popups
 
-@implements IDisposable
+@implements IAsyncDisposable
 
 @inject ILearnerTrainingService LearnerTrainingService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <PageTitle>@(Player?.Title ?? "Course Player")</PageTitle>
 
@@ -20,8 +23,19 @@
     <ToastPosition X="Right" Y="Top" />
 </SfToast>
 
+<SfDialog Width="460px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsResetDialogVisible" CssClass="tp-reset-dialog">
+    <DialogTemplates>
+        <Header>Reset Training</Header>
+        <Content>This will reset your progress for this course and restart it from the beginning. Do you want to continue?</Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Cancel" OnClick="@(_ => IsResetDialogVisible = false)" />
+        <DialogButton Content="Reset Training" IsPrimary="true" OnClick="@(_ => ConfirmResetTrainingAsync())" />
+    </DialogButtons>
+</SfDialog>
+
 <div class="training-player-page">
-    <div class="tp-shell">
+    <div class="tp-shell @(IsPlayerFullscreen ? "course-player-fullscreen" : string.Empty)">
         @* ── Top hero ─────────────────────────────────────────────── *@
         <section class="tp-hero">
             <div class="tp-hero-main">
@@ -58,10 +72,25 @@
             </div>
 
             <div class="tp-hero-side">
-                @if (!string.IsNullOrWhiteSpace(Player?.CertificateUrl))
-                {
-                    <a href="@Player.CertificateUrl" class="e-btn e-primary tp-hero-action">View Certificate</a>
-                }
+                <div class="tp-control-actions">
+                    <button type="button" class="e-btn tp-control-btn" @onclick="ToggleFullscreenAsync" disabled="@(!IsFullscreenSupported)">
+                        @if (IsPlayerFullscreen)
+                        {
+                            <span>Exit Fullscreen</span>
+                        }
+                        else
+                        {
+                            <span>Fullscreen</span>
+                        }
+                    </button>
+                    <button type="button" class="e-btn tp-control-btn tp-control-btn--danger" @onclick="OpenResetDialog">
+                        <span>Reset Training</span>
+                    </button>
+                    @if (!string.IsNullOrWhiteSpace(Player?.CertificateUrl))
+                    {
+                        <a href="@Player.CertificateUrl" class="e-btn e-primary tp-hero-action">View Certificate</a>
+                    }
+                </div>
 
                 @if (Player is not null)
                 {
@@ -98,7 +127,7 @@
                                     OnLessonSelected="NavigateToLesson" />
 
                 @* ── CENTER: Player ───────────────────────────────────── *@
-                <div class="training-panel tp-content-panel" style="min-height:0;">
+                <div class="training-panel tp-content-panel" id="@_fullscreenElementId" style="min-height:0;">
                     <div class="training-panel-header tp-panel-header-soft">
                         <div class="tp-panel-header-copy">
                             <div class="tp-panel-header-kicker">Course player</div>
@@ -113,33 +142,31 @@
                         }
                     </div>
 
-                    @* Block chip navigation strip *@
-                    <div class="tp-block-strip-shell">
-                        <div class="tp-block-strip-header">
-                            <span class="tp-block-strip-title">Lesson content</span>
-                            <span class="tp-block-strip-meta">@(Player.CurrentLesson?.Blocks.Count ?? 0) block(s)</span>
-                        </div>
-                        <div class="tp-block-chips">
-                            @foreach (var block in Player.CurrentLesson?.Blocks ?? Enumerable.Empty<TrainingPlayerBlockModel>())
-                            {
-                                <button type="button"
-                                        @key="block.BlockId"
-                                        class="tp-block-chip @(block.IsCurrent ? "is-current" : string.Empty) @(block.IsCompleted ? "is-completed" : string.Empty)"
-                                        disabled="@block.IsLocked"
-                                        @onclick="() => NavigateToBlock(block.BlockId)">
-                                    @if (block.IsCompleted)
-                                    {
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                    }
-                                    @block.DisplayType
-                                </button>
-                            }
-                        </div>
-                    </div>
-
                     @* Current block content *@
                     <div class="training-panel-body tp-content-body" @key="_blockRenderKey">
-                        @if (Player.CurrentBlock is not null)
+                        @if (ShowCompletionSlide)
+                        {
+                            <div class="tp-completion-slide">
+                                <div class="tp-completion-icon" aria-hidden="true">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="42" height="42" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12.5 10.8 15.2 16.5 9.5"></polyline></svg>
+                                </div>
+                                <div class="tp-completion-kicker">Course complete</div>
+                                <h2 class="tp-completion-title">CONGRATULATIONS @Player.LearnerName.ToUpperInvariant() YOU COMPLETED @Player.Title.ToUpperInvariant() SUCCESSFULLY</h2>
+                                <p class="tp-completion-copy">Your training has been completed successfully. You can review the course content again from your My Training dashboard or open your certificate if one is available.</p>
+                                <div class="tp-completion-actions">
+                                    <a href="/my-training" class="e-btn">Back to My Training</a>
+                                    @if (!string.IsNullOrWhiteSpace(Player.CertificateUrl))
+                                    {
+                                        <a href="@Player.CertificateUrl" class="e-btn e-primary">View Certificate</a>
+                                    }
+                                    @if (IsPlayerFullscreen)
+                                    {
+                                        <button type="button" class="e-btn tp-completion-exit-btn" @onclick="ExitFullscreenAsync">Exit</button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else if (Player.CurrentBlock is not null)
                         {
                             <div class="tp-block-stage">
                                 @if (!string.IsNullOrWhiteSpace(Player.CurrentBlock.Title))
@@ -220,43 +247,37 @@
                     </div>
 
                     @* Navigation bar *@
-                    <div class="tp-nav-bar">
-                        <button type="button" class="e-btn" disabled="@(!Player.CanGoPrevious)" @onclick="GoPrevious">
-                            ‹ Previous
-                        </button>
+                    @if (!ShowCompletionSlide)
+                    {
+                        <div class="tp-nav-bar">
+                            <button type="button" class="e-btn" disabled="@(!Player.CanGoPrevious)" @onclick="GoPrevious">
+                                ‹ Previous
+                            </button>
 
-                        @* Manual complete for card/flashcard/download — show lock until ready *@
-                        @if (NeedsManualNext())
-                        {
-                            var fcReady = Player.CurrentBlock?.BlockType != LessonBlockType.Flashcard
-                                          || (_flashCardRef?.AllReviewed == true);
+                            <button type="button" class="e-btn tp-nav-fullscreen-btn" @onclick="ToggleFullscreenAsync" disabled="@(!IsFullscreenSupported)">
+                                @if (IsPlayerFullscreen)
+                                {
+                                    <span>Exit Fullscreen</span>
+                                }
+                                else
+                                {
+                                    <span>Fullscreen</span>
+                                }
+                            </button>
+
                             <button type="button"
-                                    class="e-btn e-primary @(!fcReady ? "tp-next-locked" : string.Empty)"
-                                    disabled="@(!fcReady)"
-                                    title="@(!fcReady ? "Review all cards to continue" : null)"
-                                    @onclick="ManualCompleteAndAdvanceAsync">
-                                @if (!fcReady)
+                                    class="e-btn e-primary @(CanFinishCourse ? "tp-finish-btn" : string.Empty) @(!CanExecutePrimaryAction ? "tp-next-locked" : string.Empty)"
+                                    disabled="@(!CanExecutePrimaryAction)"
+                                    title="@PrimaryActionTitle"
+                                    @onclick="HandlePrimaryActionAsync">
+                                @if (!CanExecutePrimaryAction)
                                 {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                 }
-                                Next →
+                                @PrimaryActionLabel
                             </button>
-                        }
-                        else
-                        {
-                            <button type="button"
-                                    class="e-btn e-primary @(!CanAdvance ? "tp-next-locked" : string.Empty)"
-                                    disabled="@(!CanAdvance)"
-                                    title="@(!CanAdvance ? "Complete the current content to continue" : null)"
-                                    @onclick="GoNext">
-                                @if (!CanAdvance)
-                                {
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                                }
-                                Next →
-                            </button>
-                        }
-                    </div>
+                        </div>
+                    }
                 </div>
 
                 @* ── RIGHT: Lesson Progress ───────────────────────────── *@
@@ -279,16 +300,68 @@
     private string? CurrentUserId;
     private string? ErrorMessage;
     private string _blockRenderKey = string.Empty;
+    private readonly string _fullscreenElementId = $"course-player-panel-{Guid.NewGuid():N}";
     private FlashCardBlockPlayer? _flashCardRef;
+    private IJSObjectReference? _fullscreenModule;
+    private DotNetObjectReference<CoursePlayer>? _dotNetRef;
     private bool _disposed;
+    private bool _fullscreenInteropInitialized;
+    private bool IsPlayerFullscreen { get; set; }
+    private bool IsFullscreenSupported { get; set; } = true;
+    private bool IsResetDialogVisible { get; set; }
+    private bool ShowCompletionSlide { get; set; }
 
     private bool CanAdvance =>
         Player is not null
         && Player.CurrentBlock is not null
         && Player.CurrentBlock.IsCompleted;
 
+    private Guid? _activeLessonId;
+    private Guid? _activeBlockId;
+
+    private bool IsManualAdvanceBlock =>
+        Player?.CurrentBlock?.BlockType is LessonBlockType.Card
+            or LessonBlockType.TextNarrative
+            or LessonBlockType.Download
+            or LessonBlockType.Flashcard;
+
+    private bool IsFlashCardReady =>
+        Player?.CurrentBlock?.BlockType != LessonBlockType.Flashcard
+        || (_flashCardRef?.AllReviewed == true);
+
+    private bool CanExecutePrimaryAction =>
+        ShowCompletionSlide
+            ? false
+            : CanFinishCourse
+                ? true
+                : IsManualAdvanceBlock
+                    ? IsFlashCardReady
+                    : CanAdvance;
+
+    private string PrimaryActionLabel => CanFinishCourse ? "FINISH" : "Next →";
+
+    private string? PrimaryActionTitle => CanExecutePrimaryAction
+        ? null
+        : IsFlashCardReady
+            ? "Complete the current content to continue"
+            : "Review all cards to continue";
+
+    private bool IsOnLastBlockInLesson =>
+        Player?.CurrentLesson?.Blocks is { Count: > 0 }
+        && Player.CurrentBlock is not null
+        && Player.CurrentLesson.Blocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId) == Player.CurrentLesson.Blocks.Count - 1;
+
+    private bool CanFinishCourse =>
+        Player is not null
+        && Player.CurrentBlock is not null
+        && Player.CurrentBlock.IsCompleted
+        && Player.CourseProgressPercent >= 100m
+        && IsOnLastBlockInLesson
+        && !TryGetNextLessonId(out _);
+
     private bool NeedsManualNext()
     {
+        if (ShowCompletionSlide) return false;
         if (Player?.CurrentBlock is null) return false;
         var bt = Player.CurrentBlock.BlockType;
         return bt is LessonBlockType.Card
@@ -304,6 +377,9 @@
         CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync())
             .User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
+        _activeLessonId = LessonId;
+        _activeBlockId = BlockId;
+
         if (string.IsNullOrWhiteSpace(CurrentUserId))
         {
             ErrorMessage = "A signed-in user profile is required to launch training.";
@@ -313,9 +389,24 @@
         await LoadPlayerAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _fullscreenInteropInitialized)
+        {
+            return;
+        }
+
+        _fullscreenModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/coursePlayerFullscreen.js");
+        IsFullscreenSupported = await _fullscreenModule.InvokeAsync<bool>("isFullscreenSupported");
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await _fullscreenModule.InvokeVoidAsync("registerFullscreenChange", _dotNetRef, _fullscreenElementId);
+        _fullscreenInteropInitialized = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task LoadPlayerAsync()
     {
-        Player = await LearnerTrainingService.GetCoursePlayerAsync(CurrentUserId!, CourseId, LessonId, BlockId);
+        Player = await LearnerTrainingService.GetCoursePlayerAsync(CurrentUserId!, CourseId, _activeLessonId, _activeBlockId);
         if (Player is null)
         {
             ErrorMessage = "This course could not be loaded or is not available.";
@@ -323,6 +414,11 @@
         }
 
         ErrorMessage = null;
+        if (!ShowCompletionSlide)
+        {
+            _activeLessonId = Player.CurrentLessonId;
+            _activeBlockId = Player.CurrentBlockId;
+        }
         _blockRenderKey = Player.CurrentBlock is null
             ? $"empty-{CourseId}"
             : $"{Player.CurrentLessonId}-{Player.CurrentBlock.BlockId}-{Player.CurrentBlock.BlockType}";
@@ -330,12 +426,20 @@
 
     private void NavigateToLesson(Guid lessonId)
     {
+        if (_disposed) return;
+        _activeLessonId = lessonId;
+        _activeBlockId = null;
+        ShowCompletionSlide = false;
         NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
             new Dictionary<string, object?> { [nameof(LessonId)] = lessonId, [nameof(BlockId)] = null }));
     }
 
     private void NavigateToBlock(Guid blockId)
     {
+        if (_disposed) return;
+        _activeLessonId = Player?.CurrentLessonId;
+        _activeBlockId = blockId;
+        ShowCompletionSlide = false;
         NavigationManager.NavigateTo(NavigationManager.GetUriWithQueryParameters(
             new Dictionary<string, object?> { [nameof(LessonId)] = Player?.CurrentLessonId, [nameof(BlockId)] = blockId }));
     }
@@ -347,27 +451,193 @@
         if (idx > 0) NavigateToBlock(Player.CurrentLesson.Blocks[idx - 1].BlockId);
     }
 
-    private void GoNext()
+    private async Task GoNextAsync()
     {
-        if (Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null) return;
-        var blocks = Player.CurrentLesson.Blocks;
-        var idx = blocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
-        if (idx >= 0 && idx < blocks.Count - 1)
-            NavigateToBlock(blocks[idx + 1].BlockId);
+        if (ShowCompletionSlide || Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null)
+        {
+            return;
+        }
+
+        if (CanFinishCourse)
+        {
+            await HandleCourseCompletionExperienceAsync();
+            return;
+        }
+
+        if (TryGetNextBlockId(out var nextBlockId))
+        {
+            NavigateToBlock(nextBlockId);
+            return;
+        }
+
+        if (TryGetNextLessonId(out var nextLessonId))
+        {
+            NavigateToLesson(nextLessonId);
+            return;
+        }
+    }
+
+    private async Task HandlePrimaryActionAsync()
+    {
+        if (!CanExecutePrimaryAction)
+        {
+            return;
+        }
+
+        if (CanFinishCourse)
+        {
+            await HandleCourseCompletionExperienceAsync();
+            return;
+        }
+
+        if (IsManualAdvanceBlock)
+        {
+            await ManualCompleteAndAdvanceAsync();
+            return;
+        }
+
+        await GoNextAsync();
     }
 
     private async Task ManualCompleteAndAdvanceAsync()
     {
         if (Player?.CurrentLesson is null || Player.CurrentBlock is null) return;
+        var completedLessonId = Player.CurrentLesson.LessonId;
+        var completedBlockId = Player.CurrentBlock.BlockId;
         await LearnerTrainingService.CompleteBlockAsync(CurrentUserId!, Player.CourseId, Player.CurrentLesson.LessonId, Player.CurrentBlock.BlockId);
+        _activeLessonId = completedLessonId;
+        _activeBlockId = completedBlockId;
         await LoadPlayerAsync();
-        GoNext();
+        if (CanFinishCourse)
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        await GoNextAsync();
+    }
+
+    private bool TryGetNextBlockId(out Guid nextBlockId)
+    {
+        nextBlockId = Guid.Empty;
+        if (Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null)
+        {
+            return false;
+        }
+
+        var blocks = Player.CurrentLesson.Blocks;
+        var idx = blocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
+        if (idx >= 0 && idx < blocks.Count - 1)
+        {
+            nextBlockId = blocks[idx + 1].BlockId;
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool TryGetNextLessonId(out Guid nextLessonId)
+    {
+        nextLessonId = Guid.Empty;
+        if (Player?.Modules is null || Player.CurrentLesson is null)
+        {
+            return false;
+        }
+
+        var flattenedLessons = Player.Modules
+            .OrderBy(module => module.OrderIndex)
+            .SelectMany(module => module.Lessons.OrderBy(lesson => lesson.OrderIndex))
+            .ToList();
+
+        var currentLessonIndex = flattenedLessons.FindIndex(lesson => lesson.LessonId == Player.CurrentLesson.LessonId);
+        if (currentLessonIndex < 0)
+        {
+            return false;
+        }
+
+        var nextLesson = flattenedLessons
+            .Skip(currentLessonIndex + 1)
+            .FirstOrDefault(lesson => !lesson.IsLocked);
+
+        if (nextLesson is null)
+        {
+            return false;
+        }
+
+        nextLessonId = nextLesson.LessonId;
+        return true;
+    }
+
+    private void OpenResetDialog()
+    {
+        IsResetDialogVisible = true;
+    }
+
+    private async Task ConfirmResetTrainingAsync()
+    {
+        if (Player is null || string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            IsResetDialogVisible = false;
+            return;
+        }
+
+        var result = await LearnerTrainingService.ResetCourseProgressAsync(CurrentUserId, Player.CourseId);
+        IsResetDialogVisible = false;
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadPlayerAsync();
+        NavigationManager.NavigateTo($"/my-training/course/{Player.CourseId}", forceLoad: false);
+        await ShowToastAsync("Training reset", result.Message ?? "Training has been reset.", "e-toast-success");
+        if (!_disposed)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ToggleFullscreenAsync()
+    {
+        if (_disposed || _fullscreenModule is null || !IsFullscreenSupported)
+        {
+            return;
+        }
+
+        await _fullscreenModule.InvokeAsync<bool>("toggleCoursePlayerFullscreen", _fullscreenElementId);
+    }
+
+    private async Task HandleCourseCompletionExperienceAsync()
+    {
+        if (_disposed || Player is null)
+        {
+            return;
+        }
+
+        ShowCompletionSlide = true;
+        if (!_disposed)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
     }
 
     private async Task OnBlockAutoCompleted()
     {
         if (_disposed) return;
+        var completedLessonId = Player?.CurrentLesson?.LessonId;
+        var completedBlockId = Player?.CurrentBlock?.BlockId;
         // Reload player state to refresh progress and NEXT unlock
+        if (completedLessonId.HasValue)
+        {
+            _activeLessonId = completedLessonId.Value;
+        }
+
+        if (completedBlockId.HasValue)
+        {
+            _activeBlockId = completedBlockId.Value;
+        }
+
         await LoadPlayerAsync();
         if (!_disposed) await InvokeAsync(StateHasChanged);
     }
@@ -376,12 +646,16 @@
     {
         if (_disposed || Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null) return;
 
+        var completedLessonId = Player.CurrentLesson.LessonId;
+        var completedBlockId = Player.CurrentBlock.BlockId;
         var currentBlocks = Player.CurrentLesson.Blocks;
         var currentIndex = currentBlocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
         var nextBlockId = currentIndex >= 0 && currentIndex < currentBlocks.Count - 1
             ? currentBlocks[currentIndex + 1].BlockId
             : (Guid?)null;
 
+        _activeLessonId = completedLessonId;
+        _activeBlockId = completedBlockId;
         await LoadPlayerAsync();
         if (_disposed) return;
 
@@ -392,6 +666,16 @@
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ExitFullscreenAsync()
+    {
+        if (_disposed || _fullscreenModule is null || !IsPlayerFullscreen)
+        {
+            return;
+        }
+
+        await _fullscreenModule.InvokeAsync<bool>("exitCoursePlayerFullscreen", _fullscreenElementId);
     }
 
     private async Task ShowToastAsync(string title, string content, string cssClass)
@@ -407,8 +691,36 @@
         });
     }
 
-    public void Dispose()
+    [JSInvokable]
+    public async Task OnFullscreenChanged(bool isFullscreen)
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        IsPlayerFullscreen = isFullscreen;
+        if (!_disposed)
+        {
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
     {
         _disposed = true;
+        if (_fullscreenModule is not null)
+        {
+            try
+            {
+                await _fullscreenModule.InvokeVoidAsync("unregisterFullscreenChange", _fullscreenElementId);
+                await _fullscreenModule.DisposeAsync();
+            }
+            catch
+            {
+            }
+        }
+
+        _dotNetRef?.Dispose();
     }
 }

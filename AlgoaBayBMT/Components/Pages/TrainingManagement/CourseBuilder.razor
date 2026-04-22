@@ -333,7 +333,7 @@
                                                     @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
                                                     {
                                                         <TrainingLessonBlockEditor
-                                                            @key="block"
+                                                            @key="block.UiKey"
                                                             Model="block"
                                                             IsSelected="@IsBlockSelected(block)"
                                                             AssessmentOptions="Builder.Assessments"
@@ -557,6 +557,7 @@
         _selectedBlockId = null;
         lesson.Blocks.Add(new TrainingLessonBlockEditModel
         {
+            UiKey = Guid.NewGuid(),
             LessonId = lessonId,
             OrderIndex = lesson.Blocks.Count + 1,
             BlockType = blockType,
@@ -725,6 +726,7 @@
 
         foreach (var block in lesson.Blocks)
         {
+            block.UiKey = block.UiKey == Guid.Empty ? Guid.NewGuid() : block.UiKey;
             block.IsExpanded = block.LessonBlockId.HasValue && _selectedBlockId == block.LessonBlockId;
         }
     }

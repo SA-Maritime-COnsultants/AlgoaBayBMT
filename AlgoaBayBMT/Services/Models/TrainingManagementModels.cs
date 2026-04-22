@@ -223,6 +223,7 @@ namespace AlgoaBayBMT.Services.Models
 
     public sealed class TrainingLessonBlockEditModel
     {
+        public Guid UiKey { get; set; } = Guid.NewGuid();
         public Guid? LessonBlockId { get; set; }
         public Guid LessonId { get; set; }
         public LessonBlockType BlockType { get; set; } = LessonBlockType.TextNarrative;

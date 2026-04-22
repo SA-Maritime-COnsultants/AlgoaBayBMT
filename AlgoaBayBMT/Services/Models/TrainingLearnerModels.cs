@@ -64,6 +64,7 @@ public sealed class MyTrainingCertificateListItemModel
 public sealed class TrainingCoursePlayerModel
 {
     public Guid CourseId { get; set; }
+    public string LearnerName { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string? Summary { get; set; }
