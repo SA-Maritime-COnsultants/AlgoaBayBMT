@@ -138,6 +138,8 @@ public sealed class TrainingPlayerBlockModel
     public string? MimeType { get; set; }
     public int? DurationSeconds { get; set; }
     public int? SavedVideoSeconds { get; set; }
+    public int? SavedFlashCardIndex { get; set; }
+    public int? SavedFlashCardMaxViewedIndex { get; set; }
     public bool IsRequired { get; set; }
     public bool IsCompleted { get; set; }
     public bool IsCurrent { get; set; }

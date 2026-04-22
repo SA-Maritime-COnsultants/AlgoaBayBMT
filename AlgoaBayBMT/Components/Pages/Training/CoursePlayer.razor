@@ -126,7 +126,12 @@
                                 break;
 
                             case LessonBlockType.Flashcard:
-                                <FlashCardBlockPlayer @ref="_flashCardRef" Block="Player.CurrentBlock" />
+                                <FlashCardBlockPlayer @ref="_flashCardRef"
+                                                     Block="Player.CurrentBlock"
+                                                     UserId="@CurrentUserId"
+                                                     CourseId="Player.CourseId"
+                                                     LessonId="Player.CurrentLesson!.LessonId"
+                                                     OnCompleted="OnBlockAutoCompleted" />
                                 break;
 
                             case LessonBlockType.Quiz:

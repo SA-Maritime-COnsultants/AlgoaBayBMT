@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.RichTextEditor
 
 <div class="cb-module-editor-shell">
     <div class="cb-module-editor-body">
@@ -30,7 +31,9 @@
 
             <div class="cb-module-editor-row">
                 <label class="pf-field-label">Summary</label>
-                <InputTextArea @bind-Value="Model.Summary" class="form-control pf-textarea" rows="2" placeholder="Optional lesson summary shown to learners" />
+                <SfRichTextEditor @bind-Value="Model.Summary" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--lesson">
+                    <RichTextEditorToolbarSettings Items="@EditorToolbarItems" Type="ToolbarType.MultiRow" />
+                </SfRichTextEditor>
             </div>
 
             <div class="cb-module-editor-row">
@@ -70,6 +73,29 @@
 
     [Parameter]
     public EventCallback CreateBlockRequested { get; set; }
+
+    private List<ToolbarItemModel> EditorToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Formats },
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.FontSize },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.BackgroundColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.OrderedList },
+        new() { Command = ToolbarCommand.UnorderedList },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.CreateLink },
+        new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo },
+        new() { Command = ToolbarCommand.ClearFormat }
+    ];
 
     private string GetFormName() => Model.LessonId.HasValue
         ? $"training-lesson-{Model.LessonId.Value:N}"

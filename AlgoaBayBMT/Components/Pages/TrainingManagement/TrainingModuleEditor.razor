@@ -3,6 +3,7 @@
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.DropDowns
 @using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.RichTextEditor
 
 <div class="cb-module-editor-shell">
     <div class="cb-module-editor-body">
@@ -32,7 +33,9 @@
             <!-- Row 2: Description -->
             <div class="cb-module-editor-row">
                 <label class="pf-field-label">Description</label>
-                <InputTextArea @bind-Value="Model.Description" class="form-control pf-textarea" rows="3" placeholder="Optional module description shown to learners" />
+                <SfRichTextEditor @bind-Value="Model.Description" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--module">
+                    <RichTextEditorToolbarSettings Items="@EditorToolbarItems" Type="ToolbarType.MultiRow" />
+                </SfRichTextEditor>
             </div>
 
             <!-- Row 3: Assessment toggle -->
@@ -101,6 +104,29 @@
     [Parameter] public EventCallback DeleteRequested { get; set; }
     [Parameter] public EventCallback<int> MoveRequested { get; set; }
     [Parameter] public EventCallback CreateLessonRequested { get; set; }
+
+    private List<ToolbarItemModel> EditorToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Formats },
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.FontSize },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.BackgroundColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.OrderedList },
+        new() { Command = ToolbarCommand.UnorderedList },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.CreateLink },
+        new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo },
+        new() { Command = ToolbarCommand.ClearFormat }
+    ];
 
     private string GetFormName() => Model.ModuleId.HasValue
         ? $"training-module-{Model.ModuleId.Value:N}"

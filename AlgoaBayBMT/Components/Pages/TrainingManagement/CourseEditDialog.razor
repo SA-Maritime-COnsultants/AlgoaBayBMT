@@ -9,8 +9,7 @@
 
 @inject ITrainingAssetStorageService TrainingAssetStorageService
 
-<div @key="GetDialogRenderKey()">
-    <SfDialog Width="1020px" CssClass="pf-training-dialog pf-training-dialog--subtle" IsModal="true" ShowCloseIcon="true" @bind-Visible="Visible">
+<SfDialog Width="1020px" CssClass="pf-training-dialog pf-training-dialog--subtle" IsModal="true" ShowCloseIcon="true" @bind-Visible="Visible">
     <DialogTemplates>
         <Header>@(Model.CourseId.HasValue ? "Edit Course" : "Create Course")</Header>
         <Content>
@@ -124,8 +123,7 @@
             </EditForm>
         </Content>
     </DialogTemplates>
-    </SfDialog>
-</div>
+</SfDialog>
 
 @code {
     private IReadOnlyList<AudienceOption> AudienceOptions =>
@@ -163,8 +161,6 @@
     private string GetFormName() => Model.CourseId.HasValue
         ? $"training-course-{Model.CourseId.Value:N}"
         : $"training-course-new-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Model)}";
-
-    private string GetDialogRenderKey() => $"course-dialog-{GetFormName()}-{Visible}";
 
     private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
 

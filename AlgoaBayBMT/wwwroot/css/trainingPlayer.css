@@ -319,6 +319,33 @@
     margin-bottom: 0.5rem;
 }
 
+.tp-flashcard-content {
+    width: 100%;
+    min-width: 0;
+}
+
+.tp-flashcard-content img,
+.tp-flashcard-content table {
+    max-width: 100%;
+}
+
+.tp-flashcard-content img {
+    height: auto;
+    object-fit: contain;
+    border-radius: 6px;
+}
+
+.tp-flashcard-content p,
+.tp-flashcard-content ul,
+.tp-flashcard-content ol,
+.tp-flashcard-content h1,
+.tp-flashcard-content h2,
+.tp-flashcard-content h3,
+.tp-flashcard-content h4 {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 /* ── Navigation controls ──────────────────────────────────── */
 .tp-nav-bar {
     display: flex;

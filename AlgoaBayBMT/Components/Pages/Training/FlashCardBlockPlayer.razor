@@ -1,4 +1,7 @@
+@using AlgoaBayBMT.Services.Interfaces
 @using AlgoaBayBMT.Services.Models
+
+@inject ILearnerTrainingService LearnerTrainingService
 
 <div style="text-align:center;margin-bottom:0.5rem;">
     <span class="tp-flashcard-label">Card @(_currentIndex + 1) of @_cards.Count</span>
@@ -9,11 +12,11 @@
          @onclick="Flip" style="cursor:pointer;" title="Click to flip">
         <div class="tp-flashcard-face">
             <div class="tp-flashcard-label">Term / Question</div>
-            <div>@((MarkupString)(_cards[_currentIndex].Front ?? string.Empty))</div>
+            <div class="tp-flashcard-content">@((MarkupString)(_cards[_currentIndex].Front ?? string.Empty))</div>
         </div>
         <div class="tp-flashcard-face tp-flashcard-face--back">
             <div class="tp-flashcard-label">Answer / Definition</div>
-            <div>@((MarkupString)(_cards[_currentIndex].Back ?? string.Empty))</div>
+            <div class="tp-flashcard-content">@((MarkupString)(_cards[_currentIndex].Back ?? string.Empty))</div>
         </div>
     </div>
 </div>
@@ -45,6 +48,10 @@ else
 
 @code {
     [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+    [Parameter, EditorRequired] public string UserId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Guid CourseId { get; set; }
+    [Parameter, EditorRequired] public Guid LessonId { get; set; }
+    [Parameter] public EventCallback OnCompleted { get; set; }
 
     private record FlashCard(string? Front, string? Back);
 
@@ -52,48 +59,76 @@ else
     private int _currentIndex;
     private bool _flipped;
     private int _maxReached;
+    private bool _completionRaised;
 
-    public bool AllReviewed => _maxReached >= _cards.Count - 1 && _flipped;
+    public bool AllReviewed => _cards.Count == 0 || _maxReached >= _cards.Count - 1;
 
     protected override void OnParametersSet()
     {
-        // Quiz questions store flashcard pairs: Prompt = front, first option OptionText = back.
-        // For content-only flashcard blocks (no quiz questions), fall back to ContentHtml / SecondaryContentHtml.
-        // Flashcard editor stores: Prompt = front (term/question), ScenarioText = back (answer/definition).
-        // Options are NOT used for flashcards — they are a quiz-only concept.
         _cards = Block.QuizQuestions.Count > 0
             ? Block.QuizQuestions
                 .Select(q => new FlashCard(q.Prompt, q.ScenarioText))
                 .ToList()
             : new List<FlashCard> { new(Block.ContentHtml, Block.SecondaryContentHtml) };
 
-        _currentIndex = 0;
+        _currentIndex = Math.Clamp(Block.SavedFlashCardIndex ?? 0, 0, Math.Max(0, _cards.Count - 1));
         _flipped = false;
-        _maxReached = 0;
+        _maxReached = Math.Clamp(Block.SavedFlashCardMaxViewedIndex ?? _currentIndex, 0, Math.Max(0, _cards.Count - 1));
+        _completionRaised = Block.IsCompleted;
     }
 
-    private void Flip()
+    private async Task Flip()
     {
         _flipped = !_flipped;
-        // Mark this card as reviewed when it has been flipped at least once
         if (_flipped && _currentIndex > _maxReached) _maxReached = _currentIndex;
-        // Also mark on first flip of each card; update maxReached when flipping the last card
         if (_flipped && _currentIndex == _cards.Count - 1 && _maxReached < _currentIndex)
             _maxReached = _currentIndex;
+
+        await PersistProgressAsync();
     }
 
-    private void Previous()
+    private async Task Previous()
     {
-        if (_currentIndex > 0) { _currentIndex--; _flipped = false; }
+        if (_currentIndex > 0)
+        {
+            _currentIndex--;
+            _flipped = false;
+            await PersistProgressAsync();
+        }
     }
 
-    private void Next()
+    private async Task Next()
     {
         if (_currentIndex < _cards.Count - 1)
         {
             _currentIndex++;
             _flipped = false;
             if (_currentIndex > _maxReached) _maxReached = _currentIndex;
+            await PersistProgressAsync();
+        }
+    }
+
+    private async Task PersistProgressAsync()
+    {
+        if (string.IsNullOrWhiteSpace(UserId) || _cards.Count == 0)
+        {
+            return;
+        }
+
+        var result = await LearnerTrainingService.SaveFlashCardProgressAsync(UserId, CourseId, LessonId, Block.BlockId, _currentIndex, _maxReached);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        if (AllReviewed)
+        {
+            Block.IsCompleted = true;
+            if (!_completionRaised)
+            {
+                _completionRaised = true;
+                await OnCompleted.InvokeAsync();
+            }
         }
     }
 }

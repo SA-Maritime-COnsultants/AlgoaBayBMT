@@ -11,6 +11,7 @@
 ## Training Component Formatting
 - When converting training content for AlgoaBayBMT, expect the user to provide plain text plus a selected content type (Slide, Flashcard, Knowledge Check MCQ/True-False, Scenario, Lesson Narrative, Course Overview, Competency Task, or Question Bank Item).
 - Return the corresponding training component format while cleaning and structuring the text automatically.
+- For AlgoaBayBMT flash card authoring, the Front editor should use a minimal RichTextEditor toolbar focused on image insert, font, bold/italic/underline, and color, while preserving existing workflows.
 
 ## Video/Player Behavior
 - When fixing the training video/player behavior in this repo, preserve the current UI and avoid visual changes unless explicitly requested.

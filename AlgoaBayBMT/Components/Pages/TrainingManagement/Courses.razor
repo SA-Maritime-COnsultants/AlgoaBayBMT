@@ -224,7 +224,7 @@
 
 @if (EditModel is not null)
 {
-    <CourseEditDialog @key="GetCourseDialogKey()" @bind-Visible="IsDialogVisible" Model="EditModel" CurrentUserId="CurrentUserId" SaveRequested="SaveCourseAsync" />
+    <CourseEditDialog @bind-Visible="IsDialogVisible" Model="EditModel" CurrentUserId="CurrentUserId" SaveRequested="SaveCourseAsync" />
 }
 
 @code {
@@ -358,5 +358,4 @@
         return $"{label} · {course.CurrentVersionStatus}";
     }
 
-    private string GetCourseDialogKey() => EditModel?.CourseId?.ToString() ?? $"new-course-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(EditModel!)}";
 }

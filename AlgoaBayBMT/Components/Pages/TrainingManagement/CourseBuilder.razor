@@ -9,6 +9,7 @@
 @using Microsoft.AspNetCore.Components
 @using Syncfusion.Blazor.Buttons
 @using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Navigations
 @using Syncfusion.Blazor.Notifications
 
 @implements IDisposable
@@ -26,6 +27,20 @@
 <SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
     <ToastPosition X="Right" Y="Top"></ToastPosition>
 </SfToast>
+
+<div class="page-shell pf-training-admin-shell cb-builder-breadcrumb-shell">
+    <SfBreadcrumb CssClass="cb-builder-breadcrumb">
+        <BreadcrumbItems>
+            <BreadcrumbItem Text="Training Management" Url="/training-management" />
+            <BreadcrumbItem Text="Courses" Url="/training-management/courses" />
+            <BreadcrumbItem Text="Course Builder" Url="@($"/training-management/course-builder/{CourseId}")" />
+            @if (!string.IsNullOrWhiteSpace(Builder?.Title))
+            {
+                <BreadcrumbItem Text="@Builder.Title" />
+            }
+        </BreadcrumbItems>
+    </SfBreadcrumb>
+</div>
 
 <div class="page-shell pf-training-admin-shell">
     <div class="page-header">
@@ -211,7 +226,16 @@
                                                             @if (block.QuizQuestions.Count > 0)
                                                             {
                                                                 <div class="pf-training-preview-label">First card</div>
-                                                                <div class="pf-training-preview-body">@block.QuizQuestions[0].Prompt</div>
+                                                                <div class="cb-preview-flashcard-rich">
+                                                                    <div class="cb-preview-flashcard-face">
+                                                                        <div class="pf-training-preview-label">Front</div>
+                                                                        <div class="cb-preview-rich-content">@((MarkupString)(block.QuizQuestions[0].Prompt ?? string.Empty))</div>
+                                                                    </div>
+                                                                    <div class="cb-preview-flashcard-face cb-preview-flashcard-face--back">
+                                                                        <div class="pf-training-preview-label">Back</div>
+                                                                        <div class="cb-preview-rich-content">@((MarkupString)(block.QuizQuestions[0].ScenarioText ?? string.Empty))</div>
+                                                                    </div>
+                                                                </div>
                                                             }
                                                         </div>
                                                         break;
@@ -301,12 +325,11 @@
                                             }
                                             else
                                             {
-                                                <div class="cb-blocks-list" @key="@($"blocks-{_selectedLessonId?.ToString() ?? "new"}")">
+                                                <div class="cb-blocks-list">
                                                     @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
                                                     {
-                                                        var blockKey = block.LessonBlockId?.ToString() ?? $"nb-{block.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(block)}";
                                                         <TrainingLessonBlockEditor
-                                                            @key="blockKey"
+                                                            @key="block"
                                                             Model="block"
                                                             IsSelected="@IsBlockSelected(block)"
                                                             AssessmentOptions="Builder.Assessments"
@@ -336,10 +359,9 @@
                             }
                             else if (IsModuleContext)
                             {
-                                <section class="cb-editor-section cb-editor-section--module" @key="GetEditorContextKey()">
+                                <section class="cb-editor-section cb-editor-section--module">
                                     <div class="cb-section-body cb-section-body--module">
                                         <TrainingModuleEditor
-                                            @key="@($"me-{_selectedModuleId?.ToString() ?? "new"}")"
                                             Model="SelectedModule"
                                             AssessmentOptions="Builder.Assessments"
                                             SaveRequested="SaveModuleAsync"

@@ -154,6 +154,46 @@ app.MapGet("/training-media/stream", (string path, IWebHostEnvironment env) =>
         enableRangeProcessing: true);
 });
 
+app.MapPost("/training-media/rte-images", async (HttpContext httpContext, ITrainingAssetStorageService trainingAssetStorageService, CancellationToken cancellationToken) =>
+{
+    if (!httpContext.User.Identity?.IsAuthenticated ?? true)
+    {
+        return Results.Unauthorized();
+    }
+
+    if (!httpContext.Request.HasFormContentType)
+    {
+        return Results.BadRequest(new { error = new { message = "No form data was supplied." } });
+    }
+
+    var form = await httpContext.Request.ReadFormAsync(cancellationToken);
+    var file = form.Files.FirstOrDefault();
+    if (file is null)
+    {
+        return Results.BadRequest(new { error = new { message = "No image file was supplied." } });
+    }
+
+    var userId = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    var result = await trainingAssetStorageService.SaveRichTextImageAsync(file, userId, cancellationToken);
+    if (!result.Succeeded || result.Data is null)
+    {
+        return Results.BadRequest(new { error = new { message = result.Message ?? string.Join(", ", result.Errors) } });
+    }
+
+    return Results.Json(new
+    {
+        file = new
+        {
+            name = result.Data.FileName,
+            url = result.Data.Url,
+            size = result.Data.FileSizeBytes,
+            saveUrl = result.Data.Url
+        },
+        path = result.Data.Url,
+        url = result.Data.Url
+    });
+});
+
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

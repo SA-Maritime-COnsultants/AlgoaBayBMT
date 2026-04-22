@@ -6,6 +6,7 @@ using AlgoaBayBMT.Shared.Security;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace AlgoaBayBMT.Services;
 
@@ -648,6 +649,56 @@ public sealed class LearnerTrainingService(
         return OperationResult.Success("Progress saved.");
     }
 
+    public async Task<OperationResult> SaveFlashCardProgressAsync(string userId, Guid courseId, Guid lessonId, Guid blockId, int currentCardIndex, int maxViewedCardIndex, CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var block = await dbContext.LessonBlocks.AsNoTracking().FirstOrDefaultAsync(x => x.LessonBlockId == blockId && x.LessonId == lessonId, cancellationToken);
+        if (block is null)
+        {
+            return OperationResult.Failure("Training block not found.");
+        }
+
+        var lessonProgress = await dbContext.UserLessonProgress.FirstOrDefaultAsync(x => x.UserId == userId && x.LessonId == lessonId, cancellationToken);
+        if (lessonProgress is null)
+        {
+            lessonProgress = new UserLessonProgress
+            {
+                UserLessonProgressId = Guid.NewGuid(),
+                UserId = userId,
+                LessonId = lessonId,
+                StartedOnUtc = DateTime.UtcNow,
+                LastAccessedOnUtc = DateTime.UtcNow,
+                Status = ProgressStatus.Started
+            };
+            dbContext.UserLessonProgress.Add(lessonProgress);
+        }
+
+        var evidence = DeserializeEvidence(lessonProgress.CompletionEvidenceJson);
+        var normalizedCurrentIndex = Math.Max(0, currentCardIndex);
+        var normalizedMaxViewedIndex = Math.Max(normalizedCurrentIndex, maxViewedCardIndex);
+        evidence.FlashCardCurrentIndexByBlock[blockId] = normalizedCurrentIndex;
+        evidence.FlashCardMaxViewedIndexByBlock[blockId] = normalizedMaxViewedIndex;
+
+        lessonProgress.CompletionEvidenceJson = JsonSerializer.Serialize(evidence);
+        lessonProgress.LastAccessedOnUtc = DateTime.UtcNow;
+        lessonProgress.StartedOnUtc ??= DateTime.UtcNow;
+
+        var metadata = DeserializeMetadata(block.MetadataJson);
+        var totalCards = metadata.QuizQuestions.Count > 0 ? metadata.QuizQuestions.Count : 1;
+        var allViewed = normalizedMaxViewedIndex >= totalCards - 1;
+        if (allViewed)
+        {
+            await MarkBlockCompletedInternalAsync(dbContext, userId, courseId, lessonId, blockId, null, cancellationToken);
+        }
+        else
+        {
+            await UpdateLessonProgressAsync(dbContext, userId, courseId, lessonId, lessonProgress, await EnsureCourseProgressAsync(dbContext, userId, courseId, cancellationToken), await dbContext.Courses.FirstAsync(x => x.CourseId == courseId, cancellationToken), cancellationToken);
+        }
+
+        await dbContext.SaveChangesAsync(cancellationToken);
+        return OperationResult.Success(allViewed ? "Flash cards completed." : "Flash card progress saved.");
+    }
+
     private async Task MarkBlockCompletedInternalAsync(ApplicationDbContext dbContext, string userId, Guid courseId, Guid lessonId, Guid blockId, decimal? scorePercent, CancellationToken cancellationToken)
     {
         var course = await dbContext.Courses.FirstAsync(x => x.CourseId == courseId, cancellationToken);
@@ -666,21 +717,7 @@ public sealed class LearnerTrainingService(
             dbContext.UserLessonProgress.Add(lessonProgress);
         }
 
-        var courseProgress = await dbContext.UserCourseProgress.FirstOrDefaultAsync(x => x.UserId == userId && x.CourseId == courseId, cancellationToken);
-        if (courseProgress is null)
-        {
-            courseProgress = new UserCourseProgress
-            {
-                UserCourseProgressId = Guid.NewGuid(),
-                UserId = userId,
-                CourseId = courseId,
-                AssignedOnUtc = DateTime.UtcNow,
-                StartedOnUtc = DateTime.UtcNow,
-                LastAccessedOnUtc = DateTime.UtcNow,
-                Status = ProgressStatus.Started
-            };
-            dbContext.UserCourseProgress.Add(courseProgress);
-        }
+        var courseProgress = await EnsureCourseProgressAsync(dbContext, userId, courseId, cancellationToken);
 
         var evidence = DeserializeEvidence(lessonProgress.CompletionEvidenceJson);
         evidence.CompletedBlockIds.Add(blockId);
@@ -745,15 +782,43 @@ public sealed class LearnerTrainingService(
             : Math.Round((decimal)completedRequiredLessons / requiredLessonIds.Count * 100m, 2);
         courseProgress.Status = courseProgress.PercentComplete >= 100m ? ProgressStatus.Completed : ProgressStatus.Started;
         courseProgress.CompletedOnUtc = courseProgress.Status == ProgressStatus.Completed ? DateTime.UtcNow : null;
-        courseProgress.CurrentLessonId = requiredLessons
+        var nextLessonId = requiredLessons
             .Select(x => x.LessonId)
             .FirstOrDefault(id => !lessonProgressRecords.Any(progress => progress.LessonId == id && progress.Status == ProgressStatus.Completed));
+
+        courseProgress.CurrentLessonId = nextLessonId == Guid.Empty
+            ? null
+            : await dbContext.Lessons.AsNoTracking().AnyAsync(x => x.LessonId == nextLessonId, cancellationToken)
+                ? nextLessonId
+                : null;
         courseProgress.ExpiryDateUtc = courseProgress.Status == ProgressStatus.Completed ? DateTime.UtcNow.AddMonths(course.ValidityMonths) : courseProgress.ExpiryDateUtc;
 
         if (courseProgress.Status == ProgressStatus.Completed)
         {
             await EnsureCompletionRecordAsync(dbContext, userId, course, courseProgress, cancellationToken);
         }
+    }
+
+    private async Task<UserCourseProgress> EnsureCourseProgressAsync(ApplicationDbContext dbContext, string userId, Guid courseId, CancellationToken cancellationToken)
+    {
+        var courseProgress = await dbContext.UserCourseProgress.FirstOrDefaultAsync(x => x.UserId == userId && x.CourseId == courseId, cancellationToken);
+        if (courseProgress is not null)
+        {
+            return courseProgress;
+        }
+
+        courseProgress = new UserCourseProgress
+        {
+            UserCourseProgressId = Guid.NewGuid(),
+            UserId = userId,
+            CourseId = courseId,
+            AssignedOnUtc = DateTime.UtcNow,
+            StartedOnUtc = DateTime.UtcNow,
+            LastAccessedOnUtc = DateTime.UtcNow,
+            Status = ProgressStatus.Started
+        };
+        dbContext.UserCourseProgress.Add(courseProgress);
+        return courseProgress;
     }
 
     private async Task EnsureCompletionRecordAsync(ApplicationDbContext dbContext, string userId, Course course, UserCourseProgress courseProgress, CancellationToken cancellationToken)
@@ -817,14 +882,16 @@ public sealed class LearnerTrainingService(
                 DisplayType = GetDisplayType(block.BlockType),
                 Title = block.Title,
                 Subtitle = block.Subtitle,
-                ContentHtml = block.ContentHtml,
-                SecondaryContentHtml = metadata.SecondaryContentHtml,
-                IntroTextHtml = metadata.IntroTextHtml,
+                ContentHtml = NormalizeRichHtml(block.ContentHtml),
+                SecondaryContentHtml = NormalizeRichHtml(metadata.SecondaryContentHtml),
+                IntroTextHtml = NormalizeRichHtml(metadata.IntroTextHtml),
                 ThumbnailUrl = block.ThumbnailUrl,
                 FileUrl = NormalizeVideoUrl(block.FileUrl, environment),
                 ExternalUrl = block.ExternalUrl,
                 MimeType = block.MimeType,
                 DurationSeconds = block.DurationSeconds,
+                SavedFlashCardIndex = evidence.FlashCardCurrentIndexByBlock.GetValueOrDefault(block.BlockId),
+                SavedFlashCardMaxViewedIndex = evidence.FlashCardMaxViewedIndexByBlock.GetValueOrDefault(block.BlockId),
                 IsCompleted = evidence.CompletedBlockIds.Contains(block.BlockId),
                 CompletionLabel = evidence.CompletedBlockIds.Contains(block.BlockId) ? "Completed" : "Required",
                 LinkedAssessmentId = metadata.LinkedAssessmentId,
@@ -835,9 +902,9 @@ public sealed class LearnerTrainingService(
                 QuizQuestions = metadata.QuizQuestions.Select((question, questionIndex) => new TrainingPlayerQuizQuestionModel
                 {
                     QuestionIndex = questionIndex,
-                    Prompt = question.Prompt,
+                    Prompt = NormalizeRichHtml(question.Prompt) ?? string.Empty,
                     QuestionType = question.QuestionType,
-                    ScenarioText = question.ScenarioText,
+                    ScenarioText = NormalizeRichHtml(question.ScenarioText),
                     Options = question.Options.Select((option, optionIndex) => new TrainingPlayerQuizOptionModel
                     {
                         OptionIndex = optionIndex,
@@ -1239,6 +1306,28 @@ public sealed class LearnerTrainingService(
         public HashSet<Guid> CompletedBlockIds { get; set; } = new();
         public Dictionary<Guid, decimal> BlockScores { get; set; } = new();
         public Dictionary<Guid, int> VideoSecondsByBlock { get; set; } = new();
+        public Dictionary<Guid, int> FlashCardCurrentIndexByBlock { get; set; } = new();
+        public Dictionary<Guid, int> FlashCardMaxViewedIndexByBlock { get; set; } = new();
+    }
+
+    private static string? NormalizeRichHtml(string? html)
+    {
+        if (string.IsNullOrWhiteSpace(html))
+        {
+            return html;
+        }
+
+        return Regex.Replace(
+            html,
+            "(<img[^>]*\\ssrc=[\"'])(?!https?:|/|data:)([^\"']+)([\"'])",
+            match =>
+            {
+                var prefix = match.Groups[1].Value;
+                var path = match.Groups[2].Value.TrimStart('~').TrimStart('/');
+                var suffix = match.Groups[3].Value;
+                return $"{prefix}/{path}{suffix}";
+            },
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 
     private sealed class CourseProjection

@@ -3,6 +3,7 @@ using AlgoaBayBMT.Services.Interfaces;
 using AlgoaBayBMT.Services.Models;
 using AlgoaBayBMT.Shared.Models;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using System.IO;
 using System.Security.Cryptography;
@@ -37,6 +38,12 @@ namespace AlgoaBayBMT.Services
 
         public Task<OperationResult<TrainingMediaUploadModel>> SaveLessonAvatarVideoAsync(IBrowserFile file, string? uploadedByUserId, CancellationToken cancellationToken = default)
             => SaveAssetAsync(file, "avatar-videos", VideoExtensions, 250L * 1024 * 1024, uploadedByUserId, cancellationToken);
+
+        public Task<OperationResult<TrainingMediaUploadModel>> SaveRichTextImageAsync(IBrowserFile file, string? uploadedByUserId, CancellationToken cancellationToken = default)
+            => SaveAssetAsync(file, "rte-images", ImageExtensions, 10 * 1024 * 1024, uploadedByUserId, cancellationToken);
+
+        public Task<OperationResult<TrainingMediaUploadModel>> SaveRichTextImageAsync(IFormFile file, string? uploadedByUserId, CancellationToken cancellationToken = default)
+            => SaveAssetAsync(file, "rte-images", ImageExtensions, 10 * 1024 * 1024, uploadedByUserId, cancellationToken);
 
         public async Task DeleteMediaAssetAsync(Guid? mediaAssetId, CancellationToken cancellationToken = default)
         {
@@ -161,6 +168,76 @@ namespace AlgoaBayBMT.Services
             };
 
             return OperationResult<TrainingMediaUploadModel>.Success(result, "File uploaded successfully.");
+        }
+
+        private async Task<OperationResult<TrainingMediaUploadModel>> SaveAssetAsync(
+            IFormFile file,
+            string category,
+            HashSet<string> allowedExtensions,
+            long maxSizeBytes,
+            string? uploadedByUserId,
+            CancellationToken cancellationToken)
+        {
+            if (file is null)
+            {
+                return OperationResult<TrainingMediaUploadModel>.Failure("No file was selected.");
+            }
+
+            var extension = Path.GetExtension(file.FileName);
+            if (string.IsNullOrWhiteSpace(extension) || !allowedExtensions.Contains(extension.ToLowerInvariant()))
+            {
+                return OperationResult<TrainingMediaUploadModel>.Failure("The selected file type is not supported.");
+            }
+
+            if (file.Length <= 0 || file.Length > maxSizeBytes)
+            {
+                return OperationResult<TrainingMediaUploadModel>.Failure($"The selected file exceeds the allowed size of {maxSizeBytes / 1024 / 1024} MB.");
+            }
+
+            var safeName = $"{DateTime.UtcNow:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}{extension.ToLowerInvariant()}";
+            var relativePath = Path.Combine(TrainingUploadsRoot, category, safeName).Replace("\\", "/");
+            var absolutePath = Path.Combine(environment.WebRootPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(absolutePath)!);
+
+            await using (var outputStream = new FileStream(absolutePath, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+            {
+                await using var inputStream = file.OpenReadStream();
+                await inputStream.CopyToAsync(outputStream, cancellationToken);
+                await outputStream.FlushAsync(cancellationToken);
+            }
+
+            string hash;
+            await using (var fileStream = new FileStream(absolutePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                using var sha256 = SHA256.Create();
+                hash = Convert.ToHexString(await sha256.ComputeHashAsync(fileStream, cancellationToken));
+            }
+
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var asset = new MediaAsset
+            {
+                MediaAssetId = Guid.NewGuid(),
+                FileName = file.FileName,
+                StoredFileName = safeName,
+                RelativePath = relativePath,
+                ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? GetContentType(extension) : file.ContentType,
+                FileSizeBytes = file.Length,
+                UploadedByUserId = uploadedByUserId,
+                UploadedOnUtc = DateTime.UtcNow,
+                HashSha256 = hash
+            };
+
+            dbContext.MediaAssets.Add(asset);
+            await dbContext.SaveChangesAsync(cancellationToken);
+
+            return OperationResult<TrainingMediaUploadModel>.Success(new TrainingMediaUploadModel
+            {
+                MediaAssetId = asset.MediaAssetId,
+                FileName = asset.FileName,
+                ContentType = asset.ContentType,
+                FileSizeBytes = asset.FileSizeBytes,
+                Url = $"/{asset.RelativePath.TrimStart('/')}"
+            }, "File uploaded successfully.");
         }
 
         private void DeletePhysicalFile(string? relativeOrAbsoluteUrl)

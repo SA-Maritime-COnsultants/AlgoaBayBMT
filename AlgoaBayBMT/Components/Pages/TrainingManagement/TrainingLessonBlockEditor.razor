@@ -9,7 +9,7 @@
 
 @inject ITrainingAssetStorageService TrainingAssetStorageService
 
-<div class="cb-block-accordion-item cb-block-type-@GetBlockTypeClass() @(IsSelected ? "is-selected" : string.Empty)" @key="GetBlockEditorRenderKey()">
+<div class="cb-block-accordion-item cb-block-type-@GetBlockTypeClass() @(IsSelected ? "is-selected" : string.Empty)">
     <div class="cb-block-accordion-header" @onclick="SelectAsync">
         <div class="cb-block-accordion-left">
             <span class="cb-block-type-dot cb-dot-@GetBlockTypeClass()"></span>
@@ -77,7 +77,7 @@
                     {
                         <div class="pf-col-12" @key="GetDynamicEditorKey()">
                             <label class="pf-field-label">@(Model.BlockType == LessonBlockType.Card ? "Card Content" : "Content")</label>
-                            <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="@(Model.BlockType == LessonBlockType.Card ? "240px" : "280px")">
+                            <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="@(Model.BlockType == LessonBlockType.Card ? "240px" : "280px")" EnableResize="true" CssClass="cb-richtext-editor">
                                 <RichTextEditorToolbarSettings Items="@RichTextToolbarItems" Type="ToolbarType.MultiRow" />
                             </SfRichTextEditor>
                         </div>
@@ -121,11 +121,17 @@
                                     <div class="pf-form-grid">
                                         <div class="pf-col-6">
                                             <label class="pf-field-label">Front — Term / Question</label>
-                                            <SfTextBox @bind-Value="card.Item.Prompt" Placeholder="Front of card" FloatLabelType="FloatLabelType.Never" />
+                                            <SfRichTextEditor @bind-Value="card.Item.Prompt" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--flashcard">
+                                                <RichTextEditorToolbarSettings Items="@FlashCardFrontToolbarItems" Type="ToolbarType.MultiRow" />
+                                                <RichTextEditorImageSettings SaveUrl="/training-media/rte-images" Path="/uploads/training/rte-images/" />
+                                            </SfRichTextEditor>
                                         </div>
                                         <div class="pf-col-6">
                                             <label class="pf-field-label">Back — Definition / Answer</label>
-                                            <SfTextBox @bind-Value="card.Item.ScenarioText" Placeholder="Back of card" FloatLabelType="FloatLabelType.Never" />
+                                            <SfRichTextEditor @bind-Value="card.Item.ScenarioText" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--flashcard">
+                                                <RichTextEditorToolbarSettings Items="@FlashCardBackToolbarItems" Type="ToolbarType.MultiRow" />
+                                                <RichTextEditorImageSettings SaveUrl="/training-media/rte-images" Path="/uploads/training/rte-images/" />
+                                            </SfRichTextEditor>
                                         </div>
                                     </div>
                                 </div>
@@ -155,7 +161,7 @@
                         }
                         <div class="pf-col-12">
                             <label class="pf-field-label">Description (optional)</label>
-                            <SfRichTextEditor @bind-Value="Model.IntroTextHtml" Height="180px">
+                            <SfRichTextEditor @bind-Value="Model.IntroTextHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
                                 <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
                             </SfRichTextEditor>
                         </div>
@@ -168,7 +174,7 @@
                     {
                         <div class="pf-col-12" @key="GetDynamicEditorKey()">
                             <label class="pf-field-label">Download Description</label>
-                            <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="180px">
+                            <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
                                 <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
                             </SfRichTextEditor>
                         </div>
@@ -204,7 +210,7 @@
                         }
                         <div class="pf-col-12">
                             <label class="pf-field-label">Assessment Intro (optional)</label>
-                            <SfRichTextEditor @bind-Value="Model.IntroTextHtml" Height="180px">
+                            <SfRichTextEditor @bind-Value="Model.IntroTextHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
                                 <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
                             </SfRichTextEditor>
                         </div>
@@ -334,6 +340,36 @@
         new() { Command = ToolbarCommand.Undo },
         new() { Command = ToolbarCommand.Redo },
         new() { Command = ToolbarCommand.ClearFormat }
+    ];
+
+    private List<ToolbarItemModel> FlashCardFrontToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo }
+    ];
+
+    private List<ToolbarItemModel> FlashCardBackToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo }
     ];
 
     // Compact toolbar — video description, download description, assessment intro
@@ -508,7 +544,6 @@
         => $"quiz-question-{index}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(question)}";
     private static string GetQuizOptionKey(int qi, int oi) => $"quiz-option-{qi}-{oi}";
     private string GetDynamicEditorKey() => $"{GetFormName()}-{Model.BlockType}";
-    private string GetBlockEditorRenderKey() => $"{GetDynamicEditorKey()}-{Model.LessonBlockId?.ToString() ?? "new"}";
     private string GetVisualPreviewKey() => $"visual-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.MediaAssetId?.ToString() ?? "none"}";
     private string GetVideoPreviewKey() => $"video-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.FileUrl ?? "empty"}";
 
