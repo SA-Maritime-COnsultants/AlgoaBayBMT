@@ -12,6 +12,7 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<OperationResult<TrainingMediaUploadModel>> SaveLessonAvatarVideoAsync(IBrowserFile file, string? uploadedByUserId, CancellationToken cancellationToken = default);
         Task<OperationResult<TrainingMediaUploadModel>> SaveRichTextImageAsync(IBrowserFile file, string? uploadedByUserId, CancellationToken cancellationToken = default);
         Task<OperationResult<TrainingMediaUploadModel>> SaveRichTextImageAsync(IFormFile file, string? uploadedByUserId, CancellationToken cancellationToken = default);
+        Task<OperationResult<TrainingMediaUploadModel>> SaveFlashCardImageAsync(IBrowserFile file, string? uploadedByUserId, CancellationToken cancellationToken = default);
         Task DeleteMediaAssetAsync(Guid? mediaAssetId, CancellationToken cancellationToken = default);
         Task DeleteFilesAsync(IEnumerable<string> urls, CancellationToken cancellationToken = default);
     }

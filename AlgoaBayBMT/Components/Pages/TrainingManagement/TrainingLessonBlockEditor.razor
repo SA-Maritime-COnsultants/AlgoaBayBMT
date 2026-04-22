@@ -113,7 +113,7 @@
                             }
                             @foreach (var card in Model.QuizQuestions.Select((item, i) => new { Item = item, Index = i }))
                             {
-                                <div class="cb-flashcard-item" @key="GetQuizQuestionKey(card.Item, card.Index)">
+                                <div class="cb-flashcard-item" @key="card.Item.UiKey">
                                     <div class="cb-flashcard-item-header">
                                         <span class="cb-flashcard-item-num">Card @(card.Index + 1)</span>
                                         <SfButton type="button" CssClass="e-flat e-danger" OnClick="@(() => RemoveFlashCard(card.Index))">Remove</SfButton>
@@ -121,17 +121,34 @@
                                     <div class="pf-form-grid">
                                         <div class="pf-col-6">
                                             <label class="pf-field-label">Front — Term / Question</label>
-                                            <SfRichTextEditor @bind-Value="card.Item.Prompt" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--flashcard">
-                                                <RichTextEditorToolbarSettings Items="@FlashCardFrontToolbarItems" Type="ToolbarType.MultiRow" />
-                                                <RichTextEditorImageSettings SaveUrl="/training-media/rte-images" Path="/uploads/training/rte-images/" />
-                                            </SfRichTextEditor>
+                                            <InputTextArea @bind-Value="card.Item.FrontText" class="form-control pf-textarea pf-textarea--large cb-flashcard-textarea" />
+                                            <div class="cb-flashcard-image-toggle">
+                                                <label class="pf-inline-check">
+                                                    <InputCheckbox @bind-Value="card.Item.IncludeFrontImage" />
+                                                    <span>Include image on front of flashcard</span>
+                                                </label>
+                                            </div>
+                                            @if (card.Item.IncludeFrontImage)
+                                            {
+                                                <div class="cb-flashcard-image-editor">
+                                                    <label class="pf-field-label">Upload Front Image</label>
+                                                    <div class="pf-training-upload-panel">
+                                                        <InputFile @key="card.Item.UiKey" OnChange="@(args => HandleFlashCardImageSelectedAsync(args, card.Item.UiKey))" accept=".jpg,.jpeg,.png,.webp,.gif" />
+                                                        <div class="pf-training-upload-hint">Upload a front image for this flashcard.</div>
+                                                    </div>
+
+                                                    @if (!string.IsNullOrWhiteSpace(card.Item.FrontImageUrl))
+                                                    {
+                                                        <div class="cb-flashcard-image-preview-shell">
+                                                            <img src="@card.Item.FrontImageUrl" alt="Flashcard front image" class="cb-flashcard-image-preview" />
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
                                         </div>
                                         <div class="pf-col-6">
                                             <label class="pf-field-label">Back — Definition / Answer</label>
-                                            <SfRichTextEditor @bind-Value="card.Item.ScenarioText" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--flashcard">
-                                                <RichTextEditorToolbarSettings Items="@FlashCardBackToolbarItems" Type="ToolbarType.MultiRow" />
-                                                <RichTextEditorImageSettings SaveUrl="/training-media/rte-images" Path="/uploads/training/rte-images/" />
-                                            </SfRichTextEditor>
+                                            <InputTextArea @bind-Value="card.Item.BackText" class="form-control pf-textarea pf-textarea--large cb-flashcard-textarea" />
                                         </div>
                                     </div>
                                 </div>
@@ -229,7 +246,7 @@
                             <div class="pf-authoring-item-list">
                                 @foreach (var question in Model.QuizQuestions.Select((item, index) => new { Item = item, Index = index }))
                                 {
-                                    <div class="pf-training-quiz-editor-card" @key="GetQuizQuestionKey(question.Item, question.Index)">
+                                    <div class="pf-training-quiz-editor-card" @key="question.Item.UiKey">
                                         <div class="pf-authoring-item-header">
                                             <h4 class="pf-authoring-item-title">Question @(question.Index + 1)</h4>
                                             <SfButton type="button" CssClass="e-flat e-danger" OnClick="@(() => RemoveQuizQuestion(question.Index))">Remove</SfButton>
@@ -342,36 +359,6 @@
         new() { Command = ToolbarCommand.ClearFormat }
     ];
 
-    private List<ToolbarItemModel> FlashCardFrontToolbarItems { get; } =
-    [
-        new() { Command = ToolbarCommand.FontName },
-        new() { Command = ToolbarCommand.Bold },
-        new() { Command = ToolbarCommand.Italic },
-        new() { Command = ToolbarCommand.Underline },
-        new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.FontColor },
-        new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.Alignments },
-        new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.Image },
-        new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.Undo },
-        new() { Command = ToolbarCommand.Redo }
-    ];
-
-    private List<ToolbarItemModel> FlashCardBackToolbarItems { get; } =
-    [
-        new() { Command = ToolbarCommand.FontName },
-        new() { Command = ToolbarCommand.Bold },
-        new() { Command = ToolbarCommand.Italic },
-        new() { Command = ToolbarCommand.Underline },
-        new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.FontColor },
-        new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.Undo },
-        new() { Command = ToolbarCommand.Redo }
-    ];
-
     // Compact toolbar — video description, download description, assessment intro
     private List<ToolbarItemModel> CompactToolbarItems { get; } =
     [
@@ -417,6 +404,8 @@
 
     protected override void OnParametersSet()
     {
+        EnsureQuestionKeys();
+
         Model.BlockType = Model.BlockType switch
         {
             LessonBlockType.Flashcard or LessonBlockType.Card or LessonBlockType.Video
@@ -484,27 +473,91 @@
         }
     }
 
+    private async Task HandleFlashCardImageSelectedAsync(InputFileChangeEventArgs args, Guid cardUiKey)
+    {
+        UploadError = null;
+        AssetSummary = null;
+
+        var flashCard = Model.QuizQuestions.FirstOrDefault(x => x.UiKey == cardUiKey);
+        if (flashCard is null)
+        {
+            return;
+        }
+
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        var result = await TrainingAssetStorageService.SaveFlashCardImageAsync(file, CurrentUserId);
+        if (!result.Succeeded || result.Data is null)
+        {
+            UploadError = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        flashCard.IncludeFrontImage = true;
+        flashCard.FrontImageUrl = result.Data.Url;
+        flashCard.FrontImageFileName = result.Data.FileName;
+        AssetSummary = $"{result.Data.FileName} uploaded.";
+    }
+
     private void AddQuizQuestion() => Model.QuizQuestions.Add(new TrainingLessonQuizQuestionEditModel
-        { Options = [new() { OrderIndex = 1 }, new() { OrderIndex = 2 }] });
+        {
+            UiKey = Guid.NewGuid(),
+            OrderIndex = Model.QuizQuestions.Count + 1,
+            Options = [new() { OrderIndex = 1 }, new() { OrderIndex = 2 }]
+        });
 
     private void RemoveQuizQuestion(int index)
     {
         if (index >= 0 && index < Model.QuizQuestions.Count) Model.QuizQuestions.RemoveAt(index);
+        ReindexQuestions();
         if (Model.QuizQuestions.Count == 0) AddQuizQuestion();
     }
 
     // Flash card helpers — repurpose QuizQuestions: Prompt = Front, ScenarioText = Back
     private void AddFlashCard() => Model.QuizQuestions.Add(new TrainingLessonQuizQuestionEditModel
     {
+        UiKey = Guid.NewGuid(),
+        OrderIndex = Model.QuizQuestions.Count + 1,
         Prompt = string.Empty,
+        FrontText = string.Empty,
         ScenarioText = string.Empty,
+        BackText = string.Empty,
         Options = []
     });
 
     private void RemoveFlashCard(int index)
     {
         if (index >= 0 && index < Model.QuizQuestions.Count) Model.QuizQuestions.RemoveAt(index);
+        ReindexQuestions();
         if (Model.QuizQuestions.Count == 0) AddFlashCard();
+    }
+
+    private void ReindexQuestions()
+    {
+        for (var index = 0; index < Model.QuizQuestions.Count; index++)
+        {
+            Model.QuizQuestions[index].OrderIndex = index + 1;
+            if (Model.QuizQuestions[index].UiKey == Guid.Empty)
+            {
+                Model.QuizQuestions[index].UiKey = Guid.NewGuid();
+            }
+        }
+    }
+
+    private void EnsureQuestionKeys()
+    {
+        foreach (var question in Model.QuizQuestions)
+        {
+            question.UiKey = question.UiKey == Guid.Empty ? Guid.NewGuid() : question.UiKey;
+            question.FrontText ??= question.Prompt;
+            question.BackText ??= question.ScenarioText;
+        }
+
+        ReindexQuestions();
     }
 
     private void AddQuizOption(int questionIndex)
@@ -540,8 +593,6 @@
         _ => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>"
     };
 
-    private static string GetQuizQuestionKey(TrainingLessonQuizQuestionEditModel question, int index)
-        => $"quiz-question-{index}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(question)}";
     private static string GetQuizOptionKey(int qi, int oi) => $"quiz-option-{qi}-{oi}";
     private string GetDynamicEditorKey() => $"{GetFormName()}-{Model.BlockType}";
     private string GetVisualPreviewKey() => $"visual-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.MediaAssetId?.ToString() ?? "none"}";

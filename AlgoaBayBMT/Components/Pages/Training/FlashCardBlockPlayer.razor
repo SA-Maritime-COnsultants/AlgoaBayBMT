@@ -12,11 +12,19 @@
          @onclick="Flip" style="cursor:pointer;" title="Click to flip">
         <div class="tp-flashcard-face">
             <div class="tp-flashcard-label">Term / Question</div>
-            <div class="tp-flashcard-content">@((MarkupString)(_cards[_currentIndex].Front ?? string.Empty))</div>
+            <div class="tp-flashcard-content tp-flashcard-content--front">
+                <div class="tp-flashcard-text">@_cards[_currentIndex].FrontText</div>
+                @if (!string.IsNullOrWhiteSpace(_cards[_currentIndex].FrontImageUrl))
+                {
+                    <img src="@_cards[_currentIndex].FrontImageUrl" alt="Flashcard visual" class="tp-flashcard-image" />
+                }
+            </div>
         </div>
         <div class="tp-flashcard-face tp-flashcard-face--back">
             <div class="tp-flashcard-label">Answer / Definition</div>
-            <div class="tp-flashcard-content">@((MarkupString)(_cards[_currentIndex].Back ?? string.Empty))</div>
+            <div class="tp-flashcard-content tp-flashcard-content--back">
+                <div class="tp-flashcard-text">@_cards[_currentIndex].BackText</div>
+            </div>
         </div>
     </div>
 </div>
@@ -53,7 +61,7 @@ else
     [Parameter, EditorRequired] public Guid LessonId { get; set; }
     [Parameter] public EventCallback OnCompleted { get; set; }
 
-    private record FlashCard(string? Front, string? Back);
+    private record FlashCard(string FrontText, string? FrontImageUrl, string BackText);
 
     private List<FlashCard> _cards = new();
     private int _currentIndex;
@@ -67,9 +75,9 @@ else
     {
         _cards = Block.QuizQuestions.Count > 0
             ? Block.QuizQuestions
-                .Select(q => new FlashCard(q.Prompt, q.ScenarioText))
+                .Select(q => new FlashCard(q.FrontText, q.IncludeFrontImage ? q.FrontImageUrl : null, q.BackText ?? string.Empty))
                 .ToList()
-            : new List<FlashCard> { new(Block.ContentHtml, Block.SecondaryContentHtml) };
+            : new List<FlashCard> { new(Block.ContentHtml ?? string.Empty, null, Block.SecondaryContentHtml ?? string.Empty) };
 
         _currentIndex = Math.Clamp(Block.SavedFlashCardIndex ?? 0, 0, Math.Max(0, _cards.Count - 1));
         _flipped = false;

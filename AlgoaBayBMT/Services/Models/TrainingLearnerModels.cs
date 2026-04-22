@@ -156,8 +156,12 @@ public sealed class TrainingPlayerQuizQuestionModel
 {
     public int QuestionIndex { get; set; }
     public string Prompt { get; set; } = string.Empty;
+    public string FrontText { get; set; } = string.Empty;
     public TrainingQuestionType QuestionType { get; set; }
     public string? ScenarioText { get; set; }
+    public string? BackText { get; set; }
+    public bool IncludeFrontImage { get; set; }
+    public string? FrontImageUrl { get; set; }
     public List<TrainingPlayerQuizOptionModel> Options { get; set; } = new();
 }
 

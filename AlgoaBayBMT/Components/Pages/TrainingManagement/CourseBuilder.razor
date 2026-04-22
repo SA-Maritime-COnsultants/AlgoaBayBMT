@@ -229,11 +229,15 @@
                                                                 <div class="cb-preview-flashcard-rich">
                                                                     <div class="cb-preview-flashcard-face">
                                                                         <div class="pf-training-preview-label">Front</div>
-                                                                        <div class="cb-preview-rich-content">@((MarkupString)(block.QuizQuestions[0].Prompt ?? string.Empty))</div>
+                                                                        <div class="cb-preview-flashcard-text">@block.QuizQuestions[0].FrontText</div>
+                                                                        @if (block.QuizQuestions[0].IncludeFrontImage && !string.IsNullOrWhiteSpace(block.QuizQuestions[0].FrontImageUrl))
+                                                                        {
+                                                                            <img src="@block.QuizQuestions[0].FrontImageUrl" alt="Flashcard front image" class="cb-preview-flashcard-image" />
+                                                                        }
                                                                     </div>
                                                                     <div class="cb-preview-flashcard-face cb-preview-flashcard-face--back">
                                                                         <div class="pf-training-preview-label">Back</div>
-                                                                        <div class="cb-preview-rich-content">@((MarkupString)(block.QuizQuestions[0].ScenarioText ?? string.Empty))</div>
+                                                                        <div class="cb-preview-flashcard-text">@block.QuizQuestions[0].BackText</div>
                                                                     </div>
                                                                 </div>
                                                             }

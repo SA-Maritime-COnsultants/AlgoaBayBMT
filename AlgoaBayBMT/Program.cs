@@ -180,17 +180,19 @@ app.MapPost("/training-media/rte-images", async (HttpContext httpContext, ITrain
         return Results.BadRequest(new { error = new { message = result.Message ?? string.Join(", ", result.Errors) } });
     }
 
+    var normalizedUrl = result.Data.Url.StartsWith('/') ? result.Data.Url : $"/{result.Data.Url}";
+
     return Results.Json(new
     {
         file = new
         {
             name = result.Data.FileName,
-            url = result.Data.Url,
+            url = normalizedUrl,
             size = result.Data.FileSizeBytes,
-            saveUrl = result.Data.Url
+            saveUrl = normalizedUrl
         },
-        path = result.Data.Url,
-        url = result.Data.Url
+        path = normalizedUrl,
+        url = normalizedUrl
     });
 });
 

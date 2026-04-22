@@ -1005,6 +1005,11 @@ namespace AlgoaBayBMT.Services
                     .FirstOrDefaultAsync(cancellationToken);
             }
 
+            if (model.BlockType == LessonBlockType.Flashcard)
+            {
+                model.QuizQuestions = NormalizeQuizQuestions(model.QuizQuestions);
+            }
+
             LessonBlock block;
             if (model.LessonBlockId.HasValue)
             {
@@ -1495,9 +1500,16 @@ namespace AlgoaBayBMT.Services
                 .Where(x => !string.IsNullOrWhiteSpace(x.Prompt))
                 .Select(question => new TrainingLessonQuizQuestionEditModel
                 {
+                    UiKey = question.UiKey == Guid.Empty ? Guid.NewGuid() : question.UiKey,
+                    OrderIndex = question.OrderIndex,
                     Prompt = question.Prompt.Trim(),
+                    FrontText = string.IsNullOrWhiteSpace(question.FrontText) ? question.Prompt.Trim() : question.FrontText.Trim(),
                     QuestionType = question.QuestionType,
                     ScenarioText = string.IsNullOrWhiteSpace(question.ScenarioText) ? null : question.ScenarioText.Trim(),
+                    BackText = string.IsNullOrWhiteSpace(question.BackText) ? (string.IsNullOrWhiteSpace(question.ScenarioText) ? null : question.ScenarioText.Trim()) : question.BackText.Trim(),
+                    IncludeFrontImage = question.IncludeFrontImage && !string.IsNullOrWhiteSpace(question.FrontImageUrl),
+                    FrontImageUrl = string.IsNullOrWhiteSpace(question.FrontImageUrl) ? null : question.FrontImageUrl.Trim(),
+                    FrontImageFileName = string.IsNullOrWhiteSpace(question.FrontImageFileName) ? null : question.FrontImageFileName.Trim(),
                     Options = NormalizeQuizOptions(question.Options)
                 })
                 .ToList() ?? new List<TrainingLessonQuizQuestionEditModel>();

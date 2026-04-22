@@ -271,14 +271,31 @@ namespace AlgoaBayBMT.Services.Models
 
     public sealed class TrainingLessonQuizQuestionEditModel
     {
+        public Guid UiKey { get; set; } = Guid.NewGuid();
+        public int OrderIndex { get; set; }
+
         [Required]
         [StringLength(500)]
         public string Prompt { get; set; } = string.Empty;
+
+        [StringLength(1000)]
+        public string? FrontText { get; set; }
 
         public TrainingQuestionType QuestionType { get; set; } = TrainingQuestionType.MultipleChoice;
 
         [StringLength(2000)]
         public string? ScenarioText { get; set; }
+
+        [StringLength(2000)]
+        public string? BackText { get; set; }
+
+        public bool IncludeFrontImage { get; set; }
+
+        [StringLength(1000)]
+        public string? FrontImageUrl { get; set; }
+
+        [StringLength(260)]
+        public string? FrontImageFileName { get; set; }
 
         public List<TrainingLessonQuizOptionEditModel> Options { get; set; } =
         [

@@ -902,9 +902,13 @@ public sealed class LearnerTrainingService(
                 QuizQuestions = metadata.QuizQuestions.Select((question, questionIndex) => new TrainingPlayerQuizQuestionModel
                 {
                     QuestionIndex = questionIndex,
-                    Prompt = NormalizeRichHtml(question.Prompt) ?? string.Empty,
+                    Prompt = question.Prompt,
+                    FrontText = string.IsNullOrWhiteSpace(question.FrontText) ? question.Prompt : question.FrontText,
                     QuestionType = question.QuestionType,
-                    ScenarioText = NormalizeRichHtml(question.ScenarioText),
+                    ScenarioText = question.ScenarioText,
+                    BackText = string.IsNullOrWhiteSpace(question.BackText) ? question.ScenarioText : question.BackText,
+                    IncludeFrontImage = question.IncludeFrontImage && !string.IsNullOrWhiteSpace(question.FrontImageUrl),
+                    FrontImageUrl = question.FrontImageUrl,
                     Options = question.Options.Select((option, optionIndex) => new TrainingPlayerQuizOptionModel
                     {
                         OptionIndex = optionIndex,
@@ -1319,7 +1323,7 @@ public sealed class LearnerTrainingService(
 
         return Regex.Replace(
             html,
-            "(<img[^>]*\\ssrc=[\"'])(?!https?:|/|data:)([^\"']+)([\"'])",
+            "(<img[^>]*\\ssrc=[\"'])(?!https?:|blob:|/|data:)([^\"']+)([\"'])",
             match =>
             {
                 var prefix = match.Groups[1].Value;

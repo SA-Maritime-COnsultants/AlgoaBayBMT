@@ -45,6 +45,9 @@ namespace AlgoaBayBMT.Services
         public Task<OperationResult<TrainingMediaUploadModel>> SaveRichTextImageAsync(IFormFile file, string? uploadedByUserId, CancellationToken cancellationToken = default)
             => SaveAssetAsync(file, "rte-images", ImageExtensions, 10 * 1024 * 1024, uploadedByUserId, cancellationToken);
 
+        public Task<OperationResult<TrainingMediaUploadModel>> SaveFlashCardImageAsync(IBrowserFile file, string? uploadedByUserId, CancellationToken cancellationToken = default)
+            => SaveAssetAsync(file, "flashcards", ImageExtensions, 10 * 1024 * 1024, uploadedByUserId, cancellationToken);
+
         public async Task DeleteMediaAssetAsync(Guid? mediaAssetId, CancellationToken cancellationToken = default)
         {
             if (!mediaAssetId.HasValue)
