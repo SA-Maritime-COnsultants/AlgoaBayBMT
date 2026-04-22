@@ -800,6 +800,376 @@ h1, h2, h3, h4, h5, h6 {
     background: linear-gradient(135deg, rgba(11, 31, 51, 0.88), rgba(18, 48, 77, 0.72)) !important;
 }
 
+.pf-training-dashboard-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem;
+}
+
+.pf-training-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.8fr);
+    gap: 1rem;
+    padding: 1.2rem 1.35rem;
+    border: 1px solid rgba(31, 79, 91, 0.14);
+    border-radius: 18px;
+    background: linear-gradient(135deg, rgba(247, 250, 251, 0.98), rgba(237, 245, 246, 0.95));
+    box-shadow: 0 16px 32px rgba(16, 41, 56, 0.06);
+}
+
+.pf-training-eyebrow,
+.pf-training-section-kicker {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #5b7480;
+}
+
+.pf-training-hero-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.pf-training-hero .page-title {
+    margin-bottom: 0.15rem;
+}
+
+.pf-training-hero .page-subtitle {
+    max-width: 64ch;
+    color: #4b616d;
+}
+
+.pf-training-hero-welcome {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f3f49;
+}
+
+.pf-training-hero-badges {
+    gap: 0.5rem;
+}
+
+.pf-training-hero-note {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 1rem 1.1rem;
+    border-radius: 16px;
+    border: 1px solid rgba(58, 117, 130, 0.16);
+    background: rgba(255, 255, 255, 0.82);
+}
+
+.pf-training-hero-note-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #617783;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.pf-training-hero-note-text {
+    color: #274654;
+    line-height: 1.55;
+}
+
+.pf-training-compliance-section,
+.pf-training-dashboard-section {
+    border: 1px solid rgba(31, 79, 91, 0.12);
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 14px 28px rgba(16, 41, 56, 0.05);
+}
+
+.pf-training-compliance-section {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(240px, 0.7fr);
+    gap: 1rem;
+    align-items: center;
+    padding: 1.25rem 1.35rem;
+}
+
+.pf-training-compliance-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+}
+
+.pf-training-section-title {
+    margin: 0;
+    color: #173845;
+    font-size: clamp(1.2rem, 1.7vw, 1.55rem);
+}
+
+.pf-training-section-description {
+    margin: 0;
+    color: #586f7a;
+    line-height: 1.6;
+}
+
+.pf-training-dashboard-grid--soft {
+    gap: 0.85rem;
+}
+
+.pf-training-metric-card--soft {
+    min-width: 0;
+    padding: 1rem 1.05rem;
+    border: 1px solid rgba(31, 79, 91, 0.08);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(247, 250, 251, 0.9), rgba(255, 255, 255, 0.98));
+}
+
+.pf-training-compliance-visual {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pf-training-compliance-ring {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    padding: 14px;
+    box-shadow: inset 0 0 0 1px rgba(31, 79, 91, 0.05), 0 16px 32px rgba(24, 66, 79, 0.10);
+}
+
+.pf-training-compliance-ring-inner {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(180deg, #ffffff, #f5fafb);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 0 0 1px rgba(31, 79, 91, 0.06);
+}
+
+.pf-training-compliance-value {
+    font-size: 2.1rem;
+    font-weight: 700;
+    color: #173845;
+}
+
+.pf-training-compliance-label {
+    font-size: 0.9rem;
+    color: #607783;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.pf-training-compliant-stamp {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.pf-training-compliant-stamp-ring {
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 10px solid rgba(45, 134, 106, 0.18);
+    background: radial-gradient(circle at center, rgba(239, 249, 245, 0.98), rgba(219, 241, 233, 0.92));
+    color: #2b755d;
+    font-size: 1.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 2px rgba(45, 134, 106, 0.16), 0 16px 32px rgba(28, 87, 67, 0.10);
+}
+
+.pf-training-compliant-caption {
+    color: #55706a;
+    text-align: center;
+    max-width: 24ch;
+}
+
+.pf-training-dashboard-section {
+    padding: 1.2rem 1.35rem;
+}
+
+.pf-training-dashboard-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.pf-training-section-count {
+    flex-shrink: 0;
+    border-radius: 999px;
+    padding: 0.45rem 0.85rem;
+    background: rgba(231, 239, 242, 0.95);
+    color: #46606c;
+    font-weight: 700;
+    font-size: 0.82rem;
+}
+
+.pf-training-course-grid-v2,
+.pf-training-certificate-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.pf-training-course-grid-v2--compact {
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.pf-training-course-card-v2,
+.pf-training-certificate-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1rem;
+    border: 1px solid rgba(31, 79, 91, 0.10);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(249, 251, 252, 0.98));
+    box-shadow: 0 10px 24px rgba(16, 41, 56, 0.05);
+}
+
+.pf-training-course-card-v2--compact {
+    gap: 0.85rem;
+}
+
+.pf-training-course-card-media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 152px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(235, 243, 245, 0.95), rgba(223, 236, 239, 0.9));
+    overflow: hidden;
+}
+
+.pf-training-course-card-image {
+    width: 100%;
+    height: 152px;
+    object-fit: cover;
+}
+
+.pf-training-course-card-placeholder {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    background: rgba(47, 124, 137, 0.16);
+    color: #2d6874;
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+}
+
+.pf-training-course-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.pf-training-course-card-topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.pf-training-course-code {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #607783;
+}
+
+.pf-training-course-title {
+    margin: 0;
+    font-size: 1.05rem;
+    color: #173845;
+}
+
+.pf-training-course-summary {
+    margin: 0;
+    color: #60707a;
+    line-height: 1.55;
+}
+
+.pf-training-course-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    color: #6c8089;
+    font-size: 0.84rem;
+}
+
+.pf-training-course-progress-block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.pf-training-course-progress-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.84rem;
+    color: #516772;
+    font-weight: 600;
+}
+
+.pf-training-linear-progress--course {
+    min-height: 12px;
+    border-radius: 999px;
+}
+
+.pf-training-linear-progress--course .pf-training-linear-progress-fill {
+    border-radius: inherit;
+}
+
+.pf-training-course-card-actions {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    margin-top: auto;
+}
+
+.pf-training-certificate-meta {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.pf-training-certificate-meta div {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.pf-training-certificate-meta span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #6b818c;
+}
+
+.pf-training-certificate-meta strong {
+    color: #173845;
+    font-size: 0.94rem;
+}
+
 .pf-training-learner-card,
 .pf-training-learner-summary {
     margin-bottom: 1rem;
@@ -2193,6 +2563,24 @@ h1:focus {
     min-width: 760px;
 }
 
+.pf-training-learner-shell .e-card .e-card-header {
+    background: linear-gradient(135deg, rgba(240, 246, 248, 0.98), rgba(233, 241, 243, 0.96)) !important;
+    color: #173845 !important;
+    border-bottom: 1px solid rgba(31, 79, 91, 0.10);
+}
+
+.pf-training-learner-shell .e-card .e-card-header-title,
+.pf-training-learner-shell .e-card .e-card-sub-title {
+    color: #173845 !important;
+}
+
+.pf-training-learner-shell .pf-card-shell,
+.pf-training-learner-shell .e-card {
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 14px 28px rgba(16, 41, 56, 0.05);
+}
+
 .pf-training-panel-link {
     color: #007bba;
     font-weight: 700;
@@ -2207,5 +2595,39 @@ h1:focus {
 @media (max-width: 768px) {
     .pf-training-responsive-grid .e-grid {
         min-width: 620px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .pf-training-hero,
+    .pf-training-compliance-section {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-compliance-visual {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .pf-training-hero,
+    .pf-training-dashboard-section,
+    .pf-training-compliance-section {
+        padding: 1rem;
+    }
+
+    .pf-training-dashboard-section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pf-training-certificate-meta {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-compliance-ring,
+    .pf-training-compliant-stamp-ring {
+        width: 180px;
+        height: 180px;
     }
 }

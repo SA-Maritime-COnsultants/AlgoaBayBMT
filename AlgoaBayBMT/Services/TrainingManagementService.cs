@@ -1497,12 +1497,15 @@ namespace AlgoaBayBMT.Services
         private static List<TrainingLessonQuizQuestionEditModel> NormalizeQuizQuestions(IEnumerable<TrainingLessonQuizQuestionEditModel>? questions)
         {
             return questions?
-                .Where(x => !string.IsNullOrWhiteSpace(x.Prompt))
+                .Where(x => !string.IsNullOrWhiteSpace(x.FrontText) || !string.IsNullOrWhiteSpace(x.Prompt))
+                .OrderBy(x => x.OrderIndex)
                 .Select(question => new TrainingLessonQuizQuestionEditModel
                 {
                     UiKey = question.UiKey == Guid.Empty ? Guid.NewGuid() : question.UiKey,
-                    OrderIndex = question.OrderIndex,
-                    Prompt = question.Prompt.Trim(),
+                    OrderIndex = question.OrderIndex > 0 ? question.OrderIndex : 0,
+                    Prompt = string.IsNullOrWhiteSpace(question.FrontText)
+                        ? question.Prompt.Trim()
+                        : question.FrontText.Trim(),
                     FrontText = string.IsNullOrWhiteSpace(question.FrontText) ? question.Prompt.Trim() : question.FrontText.Trim(),
                     QuestionType = question.QuestionType,
                     ScenarioText = string.IsNullOrWhiteSpace(question.ScenarioText) ? null : question.ScenarioText.Trim(),
