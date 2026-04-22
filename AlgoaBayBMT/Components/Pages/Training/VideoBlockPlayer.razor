@@ -65,6 +65,7 @@
     private bool _disposed;
     private Guid _initializedForBlock;
     private bool _completionHandled;
+    private Guid _jsPreparedForBlock;
     private const string TrainingPlayerModulePath = "/js/trainingPlayer.js?v=20260418f";
 
     protected override void OnParametersSet()
@@ -83,13 +84,18 @@
         if (string.IsNullOrWhiteSpace(Block.FileUrl)) return;
         // Re-initialize whenever the block changes, not just on firstRender,
         // because Blazor may reuse the component instance for a new block.
-        if (_initializedForBlock == Block.BlockId) return;
+        if (_initializedForBlock == Block.BlockId && _jsPreparedForBlock == Block.BlockId) return;
         _initializedForBlock = Block.BlockId;
 
         try
         {
             _module ??= await JS.InvokeAsync<IJSObjectReference>("import", TrainingPlayerModulePath);
+            if (_jsPreparedForBlock != Guid.Empty && _jsPreparedForBlock != Block.BlockId)
+            {
+                try { await _module.InvokeVoidAsync("destroyPlayer", $"video-{_jsPreparedForBlock:N}"); } catch { }
+            }
             await _module.InvokeVoidAsync("prepareVideoPlayer", _videoId);
+            _jsPreparedForBlock = Block.BlockId;
         }
         catch (JSException ex)
         {

@@ -766,6 +766,7 @@ namespace AlgoaBayBMT.Services
                                      var metadata = DeserializeBlockMetadata(block.MetadataJson);
                                      return new TrainingLessonBlockEditModel
                                      {
+                                          UiKey = block.LessonBlockId,
                                          LessonBlockId = block.LessonBlockId,
                                          LessonId = block.LessonId,
                                          BlockType = block.BlockType,
@@ -775,8 +776,8 @@ namespace AlgoaBayBMT.Services
                                          ContentHtml = block.MarkdownBody,
                                          SecondaryContentHtml = metadata.SecondaryContentHtml,
                                          IntroTextHtml = metadata.IntroTextHtml,
-                                         ThumbnailUrl = block.ThumbnailUrl,
-                                         FileUrl = block.FileUrl,
+                                          ThumbnailUrl = NormalizeStoredTrainingUrl(block.ThumbnailUrl),
+                                          FileUrl = NormalizeStoredTrainingUrl(block.FileUrl),
                                          ExternalUrl = block.ExternalUrl,
                                          MimeType = block.MimeType,
                                          DurationSeconds = block.DurationSeconds,
@@ -1035,8 +1036,8 @@ namespace AlgoaBayBMT.Services
             block.Title = model.Title?.Trim();
             block.Subtitle = model.Subtitle?.Trim();
             block.MarkdownBody = model.ContentHtml?.Trim();
-            block.ThumbnailUrl = model.ThumbnailUrl?.Trim();
-            block.FileUrl = model.FileUrl?.Trim();
+            block.ThumbnailUrl = NormalizeStoredTrainingUrl(model.ThumbnailUrl);
+            block.FileUrl = NormalizeStoredTrainingUrl(model.FileUrl);
             block.ExternalUrl = model.ExternalUrl?.Trim();
             block.MimeType = model.MimeType?.Trim();
             block.DurationSeconds = model.DurationSeconds;
@@ -1542,6 +1543,22 @@ namespace AlgoaBayBMT.Services
             }
 
             return normalizedOptions;
+        }
+
+        private static string? NormalizeStoredTrainingUrl(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            var trimmed = value.Trim();
+            if (trimmed.StartsWith("blob:", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            return trimmed;
         }
     }
 }
