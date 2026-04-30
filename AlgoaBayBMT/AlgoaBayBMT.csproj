@@ -20,24 +20,24 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-	    <PackageReference Include="Syncfusion.Blazor.Grid" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.ImageEditor" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.InPlaceEditor" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Schedule" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.MultiColumnComboBox" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Popups" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Cards" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Spinner" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.DataForm" Version="33.2.3" />
-    <PackageReference Include="Syncfusion.Blazor.Themes" Version="33.2.3" />
+	    <PackageReference Include="Syncfusion.Blazor.Grid" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.ImageEditor" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.InPlaceEditor" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Calendars" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.RichTextEditor" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Schedule" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.DropDowns" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.MultiColumnComboBox" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Popups" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Layouts" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Cards" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Inputs" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Buttons" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Navigations" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Spinner" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Notifications" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.DataForm" Version="33.2.4" />
+    <PackageReference Include="Syncfusion.Blazor.Themes" Version="33.2.4" />
   </ItemGroup>
 
   <ItemGroup>

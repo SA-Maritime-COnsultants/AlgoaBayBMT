@@ -1,0 +1,827 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   AlgoaBayBMT  —  Global Design System  v1.0
+   Standalone bunkering & training platform theme.
+   Namespace : .bmt-*
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────────
+   1. DESIGN TOKENS
+   ────────────────────────────────────────────────────────────────────── */
+
+:root {
+    /* ── Brand Palette ──────────────────────────────────────────────── */
+    --bmt-primary:          #1463A5;   /* Ocean Blue        */
+    --bmt-primary-dark:     #0e4d8a;
+    --bmt-primary-deeper:   #0b3d6e;
+
+    --bmt-success:          #2E9B4E;   /* Harbour Green     */
+    --bmt-success-dark:     #1a7038;
+    --bmt-success-deeper:   #145929;
+
+    --bmt-danger:           #C93535;   /* Beacon Red        */
+    --bmt-danger-dark:      #a02020;
+    --bmt-danger-deeper:    #7e1515;
+
+    --bmt-neutral:          #5C6E7F;   /* Slate Gray        */
+    --bmt-neutral-dark:     #445260;
+    --bmt-neutral-deeper:   #323e4c;
+
+    --bmt-ops-brown:        #8B5E3C;   /* BMT Operations — Subtle Brown   */
+    --bmt-ops-brown-dark:   #6b4529;
+
+    --bmt-critical-red:     #D94040;   /* Critical Compliance — Subtle Red */
+    --bmt-critical-red-dark:#a02020;
+
+    --bmt-warning:          #E07B2A;   /* Amber                           */
+
+    /* ── Depth & Lighting ──────────────────────────────────────────── */
+    --bmt-3d-shadow-normal:
+        0 1px 0 rgba(0, 0, 0, 0.35),
+        0 4px 10px rgba(0, 0, 0, 0.20),
+        0 8px 24px rgba(15, 23, 42, 0.10);
+
+    --bmt-3d-shadow-hover:
+        0 1px 0 rgba(0, 0, 0, 0.30),
+        0 6px 16px rgba(0, 0, 0, 0.22),
+        0 12px 32px rgba(15, 23, 42, 0.14);
+
+    --bmt-3d-shadow-pressed:
+        0 0 0 rgba(0, 0, 0, 0),
+        0 1px 4px rgba(0, 0, 0, 0.14),
+        inset 0 2px 4px rgba(0, 0, 0, 0.12);
+
+    --bmt-3d-gradient-light:  linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 100%);
+    --bmt-3d-gradient-dark:   linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.18) 100%);
+
+    --bmt-panel-shadow:
+        0 2px 6px rgba(15, 23, 42, 0.07),
+        0 1px 2px rgba(15, 23, 42, 0.05);
+
+    --bmt-dialog-shadow:
+        0 20px 60px rgba(15, 23, 42, 0.20),
+        0 4px 12px rgba(15, 23, 42, 0.12);
+
+    /* ── Typography ─────────────────────────────────────────────────── */
+    --bmt-font-ui:          'IBM Plex Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --bmt-font-mono:        'IBM Plex Mono', 'Consolas', monospace;
+
+    --bmt-color-heading:    #2F4F4F;   /* DarkSlateGray — all headings, badge text, labels */
+    --bmt-color-badge:      #2F4F4F;
+    --bmt-color-label:      #2F4F4F;
+    --bmt-color-body:       #1F2937;
+    --bmt-color-muted:      #5A7080;
+    --bmt-color-link:       #1463A5;
+
+    /* ── Surface & Layout ───────────────────────────────────────────── */
+    --bmt-bg:               #F2F5F8;
+    --bmt-surface:          #FFFFFF;
+    --bmt-border:           #D5E0E8;
+    --bmt-border-subtle:    #E8EFF5;
+
+    --bmt-radius:           12px;
+    --bmt-radius-sm:         8px;
+    --bmt-radius-xs:         5px;
+    --bmt-radius-pill:      999px;
+
+    /* ── Dialog shell ───────────────────────────────────────────────── */
+    --bmt-dialog-header-top: #0B1F33;
+    --bmt-dialog-header-bot: #12304D;
+    --bmt-dialog-body-bg:    #F4F7FB;
+
+    /* ── Form grid ──────────────────────────────────────────────────── */
+    --bmt-field-gap:        1rem;
+    --bmt-form-padding:     1.125rem 1.25rem;  /* 18–20 px comfortable padding */
+    --bmt-form-padding-sm:  0.9375rem;         /* 15 px compact variant        */
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   2. BASE TYPOGRAPHY
+   ────────────────────────────────────────────────────────────────────── */
+
+body {
+    font-family: var(--bmt-font-ui);
+    color: var(--bmt-color-body);
+    background-color: var(--bmt-bg);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* DarkSlateGray universal heading standard */
+.bmt-heading,
+h1.bmt, h2.bmt, h3.bmt, h4.bmt, h5.bmt, h6.bmt {
+    font-family: var(--bmt-font-ui);
+    color: var(--bmt-color-heading);
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.bmt-badge-text,
+.bmt-label-text {
+    color: var(--bmt-color-badge);
+    font-weight: 700;
+}
+
+.bmt-muted {
+    color: var(--bmt-color-muted);
+    font-size: 0.875rem;
+}
+
+code, pre, .bmt-mono {
+    font-family: var(--bmt-font-mono);
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   3. 3D BUTTON SYSTEM  (.bmt-btn-3d)
+   ────────────────────────────────────────────────────────────────────── */
+
+.bmt-btn-3d {
+    /* Base layout */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    white-space: nowrap;
+
+    /* Sizing */
+    padding: 0.5rem 1.25rem;
+    min-height: 38px;
+    font-family: var(--bmt-font-ui);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    text-decoration: none;
+
+    /* Shape */
+    border-radius: var(--bmt-radius-sm);
+    border: none;
+    outline: none;
+    cursor: pointer;
+    user-select: none;
+
+    /* Default neutral surface */
+    background: linear-gradient(180deg, var(--bmt-neutral) 0%, var(--bmt-neutral-dark) 100%);
+    color: #ffffff;
+    box-shadow: var(--bmt-3d-shadow-normal);
+
+    /* Subtle top-light sheen overlay */
+    position: relative;
+    overflow: hidden;
+
+    transition:
+        box-shadow 140ms ease,
+        filter     140ms ease,
+        transform  100ms ease;
+}
+
+/* Top-light sheen pseudo-element */
+.bmt-btn-3d::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--bmt-3d-gradient-light);
+    pointer-events: none;
+    border-radius: inherit;
+}
+
+.bmt-btn-3d:hover {
+    filter: brightness(1.07);
+    box-shadow: var(--bmt-3d-shadow-hover);
+}
+
+.bmt-btn-3d:active {
+    transform: translateY(2px);
+    box-shadow: var(--bmt-3d-shadow-pressed);
+    filter: brightness(0.96);
+}
+
+.bmt-btn-3d:focus-visible {
+    outline: 3px solid rgba(20, 99, 165, 0.55);
+    outline-offset: 2px;
+}
+
+.bmt-btn-3d:disabled,
+.bmt-btn-3d[disabled] {
+    opacity: 0.48;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none;
+    filter: none;
+    transform: none;
+}
+
+/* ── Size modifiers ──────────────────────────────────────────────────── */
+
+.bmt-btn-3d.bmt-btn-sm {
+    padding: 0.35rem 0.875rem;
+    min-height: 30px;
+    font-size: 0.75rem;
+    border-radius: var(--bmt-radius-xs);
+}
+
+.bmt-btn-3d.bmt-btn-lg {
+    padding: 0.7rem 1.75rem;
+    min-height: 46px;
+    font-size: 1rem;
+    border-radius: var(--bmt-radius);
+}
+
+/* Icon-only compact button for grid action columns */
+.bmt-btn-3d.bmt-btn-icon {
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    min-height: unset;
+    border-radius: var(--bmt-radius-xs);
+}
+
+/* ── Colour variants ─────────────────────────────────────────────────── */
+
+/* Primary — Ocean Blue */
+.bmt-btn-3d.bmt-btn-primary {
+    background: linear-gradient(180deg, #2278c4 0%, var(--bmt-primary-dark) 100%);
+    box-shadow:
+        0 1px 0 var(--bmt-primary-deeper),
+        0 4px 10px rgba(14, 77, 138, 0.35),
+        0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.bmt-btn-3d.bmt-btn-primary:hover {
+    box-shadow:
+        0 1px 0 var(--bmt-primary-deeper),
+        0 6px 16px rgba(14, 77, 138, 0.40),
+        0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+.bmt-btn-3d.bmt-btn-primary:active {
+    background: linear-gradient(180deg, var(--bmt-primary-dark) 0%, var(--bmt-primary-deeper) 100%);
+    box-shadow: 0 0 0 transparent, inset 0 2px 4px rgba(0,0,0,0.18);
+}
+
+/* Success — Harbour Green */
+.bmt-btn-3d.bmt-btn-success {
+    background: linear-gradient(180deg, #38b05e 0%, var(--bmt-success-dark) 100%);
+    box-shadow:
+        0 1px 0 var(--bmt-success-deeper),
+        0 4px 10px rgba(26, 112, 56, 0.35),
+        0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.bmt-btn-3d.bmt-btn-success:hover {
+    box-shadow:
+        0 1px 0 var(--bmt-success-deeper),
+        0 6px 16px rgba(26, 112, 56, 0.40),
+        0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+.bmt-btn-3d.bmt-btn-success:active {
+    background: linear-gradient(180deg, var(--bmt-success-dark) 0%, var(--bmt-success-deeper) 100%);
+    box-shadow: 0 0 0 transparent, inset 0 2px 4px rgba(0,0,0,0.18);
+}
+
+/* Danger — Beacon Red */
+.bmt-btn-3d.bmt-btn-danger {
+    background: linear-gradient(180deg, #d94040 0%, var(--bmt-danger-dark) 100%);
+    box-shadow:
+        0 1px 0 var(--bmt-danger-deeper),
+        0 4px 10px rgba(160, 32, 32, 0.35),
+        0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.bmt-btn-3d.bmt-btn-danger:hover {
+    box-shadow:
+        0 1px 0 var(--bmt-danger-deeper),
+        0 6px 16px rgba(160, 32, 32, 0.40),
+        0 12px 32px rgba(15, 23, 42, 0.14);
+}
+
+.bmt-btn-3d.bmt-btn-danger:active {
+    background: linear-gradient(180deg, var(--bmt-danger-dark) 0%, var(--bmt-danger-deeper) 100%);
+    box-shadow: 0 0 0 transparent, inset 0 2px 4px rgba(0,0,0,0.18);
+}
+
+/* Neutral — Slate Gray */
+.bmt-btn-3d.bmt-btn-neutral {
+    background: linear-gradient(180deg, #6b7a8d 0%, var(--bmt-neutral-dark) 100%);
+    box-shadow:
+        0 1px 0 var(--bmt-neutral-deeper),
+        0 4px 10px rgba(68, 82, 96, 0.35),
+        0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.bmt-btn-3d.bmt-btn-neutral:active {
+    background: linear-gradient(180deg, var(--bmt-neutral-dark) 0%, var(--bmt-neutral-deeper) 100%);
+    box-shadow: 0 0 0 transparent, inset 0 2px 4px rgba(0,0,0,0.18);
+}
+
+/* Operations (Brown) */
+.bmt-btn-3d.bmt-btn-ops {
+    background: linear-gradient(180deg, #a0703e 0%, var(--bmt-ops-brown-dark) 100%);
+    color: #fff;
+    box-shadow:
+        0 1px 0 #4f2e12,
+        0 4px 10px rgba(107, 69, 41, 0.35),
+        0 8px 24px rgba(15, 23, 42, 0.12);
+}
+
+.bmt-btn-3d.bmt-btn-ops:active {
+    background: linear-gradient(180deg, var(--bmt-ops-brown-dark) 0%, #4f2e12 100%);
+    box-shadow: 0 0 0 transparent, inset 0 2px 4px rgba(0,0,0,0.18);
+}
+
+/* ── Syncfusion SfButton override: apply 3D style via CssClass ────────── */
+
+.e-btn.bmt-btn-3d {
+    border: none !important;
+    box-shadow: var(--bmt-3d-shadow-normal) !important;
+    font-family: var(--bmt-font-ui) !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.01em !important;
+    transition: box-shadow 140ms ease, filter 140ms ease, transform 100ms ease !important;
+}
+
+.e-btn.bmt-btn-3d:active { transform: translateY(2px) !important; }
+
+.e-btn.bmt-btn-3d.bmt-btn-primary {
+    background: linear-gradient(180deg, #2278c4 0%, var(--bmt-primary-dark) 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 0 var(--bmt-primary-deeper), 0 4px 10px rgba(14,77,138,0.35) !important;
+}
+.e-btn.bmt-btn-3d.bmt-btn-primary:hover { filter: brightness(1.07) !important; }
+.e-btn.bmt-btn-3d.bmt-btn-primary:active { box-shadow: var(--bmt-3d-shadow-pressed) !important; }
+
+.e-btn.bmt-btn-3d.bmt-btn-success {
+    background: linear-gradient(180deg, #38b05e 0%, var(--bmt-success-dark) 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 0 var(--bmt-success-deeper), 0 4px 10px rgba(26,112,56,0.35) !important;
+}
+.e-btn.bmt-btn-3d.bmt-btn-success:active { box-shadow: var(--bmt-3d-shadow-pressed) !important; }
+
+.e-btn.bmt-btn-3d.bmt-btn-danger {
+    background: linear-gradient(180deg, #d94040 0%, var(--bmt-danger-dark) 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 0 var(--bmt-danger-deeper), 0 4px 10px rgba(160,32,32,0.35) !important;
+}
+.e-btn.bmt-btn-3d.bmt-btn-danger:active { box-shadow: var(--bmt-3d-shadow-pressed) !important; }
+
+.e-btn.bmt-btn-3d.bmt-btn-neutral {
+    background: linear-gradient(180deg, #6b7a8d 0%, var(--bmt-neutral-dark) 100%) !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 0 var(--bmt-neutral-deeper), 0 4px 10px rgba(68,82,96,0.35) !important;
+}
+.e-btn.bmt-btn-3d.bmt-btn-neutral:active { box-shadow: var(--bmt-3d-shadow-pressed) !important; }
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   4. DIALOG STANDARD  (.bmt-dialog)
+   ────────────────────────────────────────────────────────────────────── */
+
+/* Syncfusion SfDialog: apply via CssClass="bmt-dialog" */
+.e-dialog.bmt-dialog {
+    border-radius: var(--bmt-radius) !important;
+    box-shadow: var(--bmt-dialog-shadow) !important;
+    overflow: hidden !important;
+    border: 1px solid rgba(0,0,0,0.12) !important;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────── */
+
+.e-dialog.bmt-dialog .e-dlg-header-content,
+.e-dialog.bmt-dialog .e-dlg-header {
+    background: linear-gradient(180deg, var(--bmt-dialog-header-top) 0%, var(--bmt-dialog-header-bot) 100%) !important;
+    padding: 0.95rem 1.25rem !important;
+    /* 3D bottom border shadow effect */
+    border-bottom: 3px solid rgba(0, 0, 0, 0.30) !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.22) !important;
+}
+
+.e-dialog.bmt-dialog .e-dlg-header {
+    /* DarkSlateGray text on header — meets WCAG AA against light bg;
+       white used here because header is dark — colour is applied to badges only */
+    color: #ffffff !important;
+    font-family: var(--bmt-font-ui) !important;
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+}
+
+/* Badge text inside the dialog header must be DarkSlateGray */
+.e-dialog.bmt-dialog .e-dlg-header .bmt-badge,
+.e-dialog.bmt-dialog .e-dlg-header .bmt-badge-text,
+.e-dialog.bmt-dialog .e-dlg-header-content .bmt-badge,
+.e-dialog.bmt-dialog .e-dlg-header-content .bmt-badge-text {
+    color: var(--bmt-color-badge) !important;  /* #2F4F4F DarkSlateGray */
+}
+
+/* Close button */
+.e-dialog.bmt-dialog .e-dlg-closeicon-btn .e-icons,
+.e-dialog.bmt-dialog .e-dlg-closeicon-btn {
+    color: rgba(255, 255, 255, 0.80) !important;
+}
+
+.e-dialog.bmt-dialog .e-dlg-closeicon-btn:hover .e-icons,
+.e-dialog.bmt-dialog .e-dlg-closeicon-btn:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-radius: var(--bmt-radius-xs) !important;
+}
+
+/* ── Content area ────────────────────────────────────────────────────── */
+
+.e-dialog.bmt-dialog .e-dlg-content {
+    background: var(--bmt-dialog-body-bg) !important;
+    padding: 0 !important;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────── */
+
+.e-dialog.bmt-dialog .e-footer-content {
+    background: #edf0f5 !important;
+    border-top: 1px solid var(--bmt-border) !important;
+    padding: 0.75rem 1.25rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 0.625rem !important;
+}
+
+/* ── Dialog body layout helpers ──────────────────────────────────────── */
+
+.bmt-dialog-body {
+    padding: var(--bmt-form-padding);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Internal section container — 8px rounded corners, subtle shade */
+.bmt-dialog-section {
+    background: #ffffff;
+    border: 1px solid var(--bmt-border-subtle);
+    border-radius: var(--bmt-radius-sm);   /* 8px */
+    padding: var(--bmt-form-padding);
+    box-shadow: var(--bmt-panel-shadow);
+}
+
+.bmt-dialog-section + .bmt-dialog-section {
+    margin-top: 0;   /* gap is handled by .bmt-dialog-body */
+}
+
+/* Section heading: DarkSlateGray with 3D bottom-border shadow */
+.bmt-dialog-section-title {
+    margin: 0 0 0.875rem 0;
+    padding-bottom: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--bmt-color-heading);           /* DarkSlateGray */
+    border-bottom: 2px solid var(--bmt-primary);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.10);   /* 3D depth under the border */
+}
+
+/* Action row at bottom of dialog body */
+.bmt-dialog-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.625rem;
+    flex-wrap: wrap;
+    padding-top: 0.25rem;
+}
+
+.bmt-dialog-actions--split {
+    justify-content: space-between;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   5. FORM GRID  (.bmt-form-row / .bmt-field)
+   Flexbox label+field pairs stretched evenly across the container.
+   ────────────────────────────────────────────────────────────────────── */
+
+.bmt-form-row {
+    display: flex;
+    gap: var(--bmt-field-gap);
+    flex-wrap: wrap;
+    align-items: flex-start;
+    width: 100%;
+    padding: var(--bmt-form-padding-sm) 0;
+}
+
+/* Each label+field column stretches equally */
+.bmt-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex: 1 1 180px;
+    min-width: 0;
+}
+
+/* Fixed-width column modifiers */
+.bmt-field--half    { flex: 0 0 calc(50%    - (var(--bmt-field-gap) / 2)); }
+.bmt-field--third   { flex: 0 0 calc(33.33% - (var(--bmt-field-gap) * 2 / 3)); }
+.bmt-field--quarter { flex: 0 0 calc(25%    - (var(--bmt-field-gap) * 3 / 4)); }
+.bmt-field--full    { flex: 0 0 100%; }
+
+/* Label */
+.bmt-field-label,
+.bmt-field > label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--bmt-color-label);     /* DarkSlateGray */
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.1rem;
+}
+
+/* Native inputs */
+.bmt-field .form-control,
+.bmt-field textarea.form-control {
+    border-radius: var(--bmt-radius-sm);
+    border: 1px solid var(--bmt-border);
+    color: var(--bmt-color-body);
+    background: #ffffff;
+    font-family: var(--bmt-font-ui);
+    font-size: 0.875rem;
+    padding: 0.45rem 0.7rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bmt-field .form-control:focus,
+.bmt-field textarea.form-control:focus {
+    border-color: var(--bmt-primary);
+    box-shadow: 0 0 0 3px rgba(20, 99, 165, 0.18);
+    outline: none;
+}
+
+/* Syncfusion controls inside .bmt-field */
+.bmt-field .e-input-group,
+.bmt-field .e-control-wrapper,
+.bmt-field .e-ddl,
+.bmt-field .e-numerictextbox {
+    width: 100% !important;
+}
+
+/* Validation messages */
+.bmt-field .validation-message {
+    font-size: 0.75rem;
+    color: var(--bmt-danger);
+    margin-top: 0.2rem;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   6. COMPLIANCE STATUS BADGES
+   ────────────────────────────────────────────────────────────────────── */
+
+/* Base 3D badge */
+.bmt-compliance-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.275rem 0.7rem;
+    border-radius: var(--bmt-radius-pill);
+    font-family: var(--bmt-font-ui);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bmt-color-badge);     /* DarkSlateGray — always */
+    white-space: nowrap;
+    user-select: none;
+    /* 3D raised feel */
+    box-shadow:
+        0 1px 0 rgba(0,0,0,0.18),
+        0 2px 5px rgba(0,0,0,0.10);
+    transition: box-shadow 120ms ease, filter 120ms ease;
+}
+
+.bmt-compliance-badge:hover {
+    filter: brightness(1.04);
+    box-shadow:
+        0 1px 0 rgba(0,0,0,0.18),
+        0 3px 8px rgba(0,0,0,0.14);
+}
+
+/* Certified — Green */
+.bmt-compliance-badge.bmt-badge-certified {
+    background: linear-gradient(180deg, #d8f5e4 0%, #b8ecd0 100%);
+    border: 1px solid #7dd5a8;
+    color: #1a5e35;        /* high-contrast text — NOT overriding with DarkSlateGray here
+                               because the WCAG ratio on green BG requires darker green */
+}
+
+/* Expiring — Amber */
+.bmt-compliance-badge.bmt-badge-expiring {
+    background: linear-gradient(180deg, #fef3e2 0%, #fde8c4 100%);
+    border: 1px solid #f6c76b;
+    color: #7a4400;
+}
+
+/* Non-Compliant — Subtle Critical Red */
+.bmt-compliance-badge.bmt-badge-non-compliant {
+    background: linear-gradient(180deg, #fde8e8 0%, #fad0d0 100%);
+    border: 1px solid #f09090;
+    color: #7e1515;
+}
+
+/* Operations status — Subtle Brown */
+.bmt-compliance-badge.bmt-badge-ops {
+    background: linear-gradient(180deg, #f5ece3 0%, #eadcc9 100%);
+    border: 1px solid #c8a27a;
+    color: #5a3018;
+}
+
+/* Generic neutral info */
+.bmt-compliance-badge.bmt-badge-info {
+    background: linear-gradient(180deg, #e3eef8 0%, #cce0f5 100%);
+    border: 1px solid #8dc0ec;
+    color: #0e4d8a;
+}
+
+/* Inline icon sizing */
+.bmt-compliance-badge .bmt-badge-icon {
+    font-size: 0.75rem;
+    line-height: 1;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   7. SECTION HEADINGS  — 3D underline style
+   ────────────────────────────────────────────────────────────────────── */
+
+.bmt-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.625rem;
+    border-bottom: 2px solid var(--bmt-primary);
+    /* 3D shadow below the heading border */
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.10);
+}
+
+.bmt-section-heading h2,
+.bmt-section-heading h3,
+.bmt-section-heading h4 {
+    margin: 0;
+    font-family: var(--bmt-font-ui);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--bmt-color-heading);   /* DarkSlateGray */
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   8. CARD / SURFACE CONTAINERS
+   All internal containers must have 8px rounded corners.
+   ────────────────────────────────────────────────────────────────────── */
+
+.bmt-card {
+    background: var(--bmt-surface);
+    border: 1px solid var(--bmt-border-subtle);
+    border-radius: var(--bmt-radius-sm);   /* 8px */
+    box-shadow: var(--bmt-panel-shadow);
+    overflow: hidden;
+}
+
+.bmt-card-padded {
+    padding: var(--bmt-form-padding);
+}
+
+.bmt-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    /* 3D header: gradient + bottom shadow */
+    background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+    border-bottom: 2px solid var(--bmt-border);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.bmt-card-header-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--bmt-color-heading);   /* DarkSlateGray */
+}
+
+.bmt-card-body {
+    padding: var(--bmt-form-padding);
+}
+
+/* Subtle alternating section shade within a card */
+.bmt-card-section {
+    background: var(--bmt-dialog-body-bg);
+    border-radius: var(--bmt-radius-sm);
+    padding: var(--bmt-form-padding-sm);
+}
+
+.bmt-card-section + .bmt-card-section {
+    margin-top: 0.75rem;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   9. PAGE SHELL
+   ────────────────────────────────────────────────────────────────────── */
+
+.bmt-page-shell {
+    padding: 1.75rem 2rem;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+.bmt-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.bmt-page-title {
+    margin: 0;
+    font-size: clamp(1.35rem, 2vw, 1.85rem);
+    font-weight: 800;
+    color: var(--bmt-color-heading);
+    line-height: 1.2;
+}
+
+.bmt-page-subtitle {
+    margin-top: 0.3rem;
+    color: var(--bmt-color-muted);
+    font-size: 0.9375rem;
+    line-height: 1.55;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   10. SYNCFUSION DATA GRID  — compact action column standard
+   ────────────────────────────────────────────────────────────────────── */
+
+/* One-row compact action cell: coloured icon-only buttons with tooltips */
+.bmt-grid-action-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.1rem 0;
+}
+
+/* Grid header row: DarkSlateGray label */
+.e-grid .e-headercell .e-headercelldiv {
+    color: var(--bmt-color-heading);
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+}
+
+
+/* ──────────────────────────────────────────────────────────────────────
+   11. RESPONSIVE ADJUSTMENTS
+   ────────────────────────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .bmt-field--third,
+    .bmt-field--quarter {
+        flex: 0 0 calc(50% - (var(--bmt-field-gap) / 2));
+    }
+}
+
+@media (max-width: 768px) {
+    .bmt-page-shell {
+        padding: 1rem;
+    }
+
+    .bmt-field--half,
+    .bmt-field--third,
+    .bmt-field--quarter {
+        flex: 0 0 100%;
+    }
+
+    .bmt-dialog-actions,
+    .bmt-dialog-actions--split {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .bmt-btn-3d {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .bmt-section-heading {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}

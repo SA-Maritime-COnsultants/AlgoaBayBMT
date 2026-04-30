@@ -23,18 +23,15 @@
             </button>
             <div class="side-nav-collapsible @(_opsExpanded ? "side-nav-collapsible--open" : "")">
                 <ul class="side-nav-items">
-                    @foreach (var item in PrimaryNavItems)
-                    {
-                        <li class="side-nav-item">
-                            <NavLink class="side-nav-link" href="@item.Href" Match="@item.Match" @onclick="HandleNavClick">
-                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)item.IconSvg)</span>
-                                <span class="side-nav-copy">
-                                    <span class="side-nav-label">@item.Text</span>
-                                    <span class="side-nav-meta">@item.Meta</span>
-                                </span>
-                            </NavLink>
-                        </li>
-                    }
+                    <li class="side-nav-item">
+                        <NavLink class="side-nav-link" href="/" Match="NavLinkMatch.All" @onclick="HandleNavClick">
+                            <span class="side-nav-icon" aria-hidden="true">@((MarkupString)HomeIcon)</span>
+                            <span class="side-nav-copy">
+                                <span class="side-nav-label">Home</span>
+                                <span class="side-nav-meta">Control room overview</span>
+                            </span>
+                        </NavLink>
+                    </li>
                 </ul>
             </div>
         </section>
@@ -82,30 +79,7 @@
             </section>
         </AuthorizeView>
 
-        <section class="side-nav-group" aria-labelledby="system-nav-heading">
-            <button id="system-nav-heading" type="button" class="side-nav-group-toggle"
-                    @onclick="ToggleSystemAsync"
-                    aria-expanded="@_systemExpanded.ToString().ToLower()">
-                <span class="side-nav-group-label">System</span>
-                <span class="side-nav-chevron @(_systemExpanded ? "side-nav-chevron--open" : "")" aria-hidden="true">@((MarkupString)ChevronIcon)</span>
-            </button>
-            <div class="side-nav-collapsible @(_systemExpanded ? "side-nav-collapsible--open" : "")">
-                <ul class="side-nav-items">
-                    @foreach (var item in SecondaryNavItems)
-                    {
-                        <li class="side-nav-item">
-                            <NavLink class="side-nav-link" href="@item.Href" Match="@item.Match" @onclick="HandleNavClick">
-                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)item.IconSvg)</span>
-                                <span class="side-nav-copy">
-                                    <span class="side-nav-label">@item.Text</span>
-                                    <span class="side-nav-meta">@item.Meta</span>
-                                </span>
-                            </NavLink>
-                        </li>
-                    }
-                </ul>
-            </div>
-        </section>
+
 
         <AuthorizeView Roles="@RoleNames.Admin">
             <section class="side-nav-group" aria-labelledby="admin-nav-heading">
@@ -308,7 +282,6 @@
     private string returnUrl = "/";
     private bool _opsExpanded = true;
     private bool _crewMgmtExpanded = true;
-    private bool _systemExpanded = true;
     private bool _adminExpanded = true;
     private bool _trainingMgmtExpanded = true;
     private bool _userMgmtExpanded = true;
@@ -318,21 +291,7 @@
     [Parameter]
     public EventCallback OnNavigate { get; set; }
 
-    private IReadOnlyList<NavItem> PrimaryNavItems =>
-    [
-        new("Home", "", "Control room overview", HomeIcon, NavLinkMatch.All),
-        new("Training", "my-training", "Modules and certifications", TrainingIcon),
-        new("Bunkering Operations", "bunkering-operations", "Transfer procedures", OperationsIcon),
-        new("Wildlife & Environment", "wildlife-environment", "Marine safeguards", WildlifeIcon),
-        new("Emergency Response", "emergency-response", "Incident command", EmergencyIcon),
-        new("Compliance & Documents", "compliance-documents", "Controlled records", ComplianceIcon)
-    ];
 
-    private IReadOnlyList<NavItem> SecondaryNavItems =>
-    [
-        new("Dashboards", "dashboards", "Metrics and reporting", DashboardIcon),
-        new("Settings", "settings", "System preferences", SettingsIcon)
-    ];
 
     protected override void OnInitialized()
     {
@@ -366,8 +325,6 @@
 
     private Task ToggleCrewManagementAsync() => ToggleSectionAsync(() => _crewMgmtExpanded = !_crewMgmtExpanded);
 
-    private Task ToggleSystemAsync() => ToggleSectionAsync(() => _systemExpanded = !_systemExpanded);
-
     private Task ToggleAdminAsync() => ToggleSectionAsync(() => _adminExpanded = !_adminExpanded);
 
     private Task ToggleTrainingManagementAsync() => ToggleSectionAsync(() => _trainingMgmtExpanded = !_trainingMgmtExpanded);
@@ -393,7 +350,6 @@
                 {
                     _opsExpanded = state.OperationsExpanded;
                     _crewMgmtExpanded = state.CrewManagementExpanded;
-                    _systemExpanded = state.SystemExpanded;
                     _adminExpanded = state.AdminExpanded;
                     _trainingMgmtExpanded = state.TrainingManagementExpanded;
                     _userMgmtExpanded = state.UserManagementExpanded;
@@ -424,7 +380,6 @@
             var json = System.Text.Json.JsonSerializer.Serialize(new MenuState(
                 _opsExpanded,
                 _crewMgmtExpanded,
-                _systemExpanded,
                 _adminExpanded,
                 _trainingMgmtExpanded,
                 _userMgmtExpanded));
@@ -461,12 +416,9 @@
         NavigationManager.LocationChanged -= OnLocationChanged;
     }
 
-    private sealed record NavItem(string Text, string Href, string Meta, string IconSvg, NavLinkMatch Match = NavLinkMatch.Prefix);
-
     private sealed record MenuState(
         bool OperationsExpanded,
         bool CrewManagementExpanded,
-        bool SystemExpanded,
         bool AdminExpanded,
         bool TrainingManagementExpanded,
         bool UserManagementExpanded);
