@@ -452,6 +452,54 @@ main.app-content .e-grid .pf-btn-square.e-btn .e-icons {
     margin: 0 !important;
 }
 
+/* ?? Grid approval toggle button ??????????????????????????????????????????? */
+.e-btn.pf-approval-btn {
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    min-width: 90px !important;
+    width: 90px !important;
+    padding: 0 8px !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    text-shadow: none !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 1px 2px rgba(0,0,0,0.10) !important;
+    transition: filter 120ms ease, transform 100ms ease !important;
+    cursor: pointer !important;
+}
+
+.e-btn.pf-approval-btn--on {
+    background: linear-gradient(180deg, #c8ecd5 0%, #b8e4c8 52%, #a0d4b4 100%) !important;
+    border-color: #82c49c !important;
+    color: #1a5c34 !important;
+}
+.e-btn.pf-approval-btn--on:hover {
+    background: linear-gradient(180deg, #a8d8b8 0%, #94ccaa 52%, #80be98 100%) !important;
+    border-color: #62a87c !important;
+    color: #134426 !important;
+    transform: translateY(-1px);
+}
+
+.e-btn.pf-approval-btn--off {
+    background: linear-gradient(180deg, #fdf0d4 0%, #f5e0a8 52%, #eacc7a 100%) !important;
+    border-color: #d4b054 !important;
+    color: #6b4b06 !important;
+}
+.e-btn.pf-approval-btn--off:hover {
+    background: linear-gradient(180deg, #eacc7a 0%, #ddb84e 52%, #cc9e2c 100%) !important;
+    border-color: #b88c28 !important;
+    color: #4a3204 !important;
+    transform: translateY(-1px);
+}
+
 /* ?? Role badges in Users grid ????????????????????????????????????????????? */
 .pf-role-badge-list {
     display: flex !important;

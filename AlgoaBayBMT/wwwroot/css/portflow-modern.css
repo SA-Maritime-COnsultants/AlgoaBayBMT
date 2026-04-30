@@ -404,7 +404,7 @@ a.button:active {
     text-shadow: 0 1px 0 rgba(0,0,0,0.18) !important;
 }
 
-.e-btn.e-flat:not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.pf-btn-details):not(.pf-btn-edit):not(.pf-btn-roles):not(.pf-btn-email):not(.pf-btn-deactivate):not(.pf-btn-delete):not(.pf-user-edit-dialog-btn),
+.e-btn.e-flat:not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.pf-btn-details):not(.pf-btn-edit):not(.pf-btn-roles):not(.pf-btn-email):not(.pf-btn-deactivate):not(.pf-btn-delete):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn),
 .e-btn.e-link,
 .btn-link {
     background: transparent !important;

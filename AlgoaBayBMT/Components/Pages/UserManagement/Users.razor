@@ -101,9 +101,17 @@
                                 <div class="pf-grid-toggle">
                                     @if (IsAdmin)
                                     {
-                                        <SfCheckBox Checked="@user.IsAccountApproved" ValueChange="@((Syncfusion.Blazor.Buttons.ChangeEventArgs<bool> args) => ToggleApprovalAsync(user, args.Checked))" />
+                                        <div class="pf-grid-toggle">
+                                            <SfButton CssClass="@(user.IsAccountApproved ? "pf-approval-btn pf-approval-btn--on" : "pf-approval-btn pf-approval-btn--off")"
+                                                      OnClick="@(_ => ToggleApprovalAsync(user, !user.IsAccountApproved))">
+                                                @(user.IsAccountApproved ? "✓ Approved" : "⏳ Pending")
+                                            </SfButton>
+                                        </div>
                                     }
-                                    <span class="badge @(user.IsAccountApproved ? "bg-success" : "bg-warning text-dark")">@(user.IsAccountApproved ? "Approved" : "Pending")</span>
+                                    else
+                                    {
+                                        <span class="badge @(user.IsAccountApproved ? "bg-success" : "bg-warning text-dark")">@(user.IsAccountApproved ? "Approved" : "Pending")</span>
+                                    }
                                 </div>
                             }
                         </Template>
