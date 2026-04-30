@@ -6,7 +6,7 @@
     --bmt-sidebar-text: #1c3d3a;
     --bmt-sidebar-muted: #5a8480;
     --bmt-sidebar-border: rgba(42, 157, 143, 0.18);
-    --bmt-sidebar-logo-height: 180px;
+    --bmt-sidebar-logo-height: 200px;
 }
 
 .sidebar-surface {
@@ -22,10 +22,21 @@
     align-items: center;
     text-align: center;
     gap: 0.35rem;
-    padding: 1.05rem 1rem 1.15rem;
+    padding: 1.05rem 1rem 0;
     color: var(--bmt-sidebar-text);
     background-color: #c8e8e4;
-    border-bottom: 1px solid var(--bmt-sidebar-border);
+    border-bottom: none;
+}
+
+::deep .side-nav-brand::after {
+    content: "";
+    display: block;
+    width: 85%;
+    height: 1px;
+    margin: 1rem auto 0;
+    background: rgba(14, 77, 71, 0.30);
+    box-shadow: 0 2px 6px rgba(6, 31, 29, 0.28), 0 1px 0 rgba(255, 255, 255, 0.55);
+    border-radius: 1px;
 }
 
 ::deep .side-nav-brand:hover,

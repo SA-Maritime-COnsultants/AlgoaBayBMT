@@ -7,6 +7,7 @@
 @using AlgoaBayBMT.Shared.Security
 @using Syncfusion.Blazor.Grids
 @using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Popups
 
 @inject ITrainingManagementService TrainingManagementService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -24,26 +25,28 @@
             <div class="page-subtitle">Manage online training courses, configure pass marks and validity, and launch the live course builder preview workspace.</div>
         </div>
         <div class="pf-grid-actions pf-grid-actions--compact">
-            <SfButton CssClass="e-outline e-danger" OnClick="PromptResetTrainingData">Reset Training Data</SfButton>
-            <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="OpenCreateDialogAsync">Create Course</SfButton>
+            <SfButton CssClass="pf-training-page-action-btn pf-training-reset-data-btn" IconCss="e-icons e-refresh" IconPosition="IconPosition.Left" OnClick="PromptResetTrainingData">Reset Training Data</SfButton>
+            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="OpenCreateDialogAsync">Create Course</SfButton>
         </div>
     </div>
 
-    @if (ShowResetConfirmation)
-    {
-        <SfCard CssClass="pf-card-shell pf-training-danger-card">
-            <CardHeader Title="Training Reset" SubTitle="Delete only training-related records so the training platform can be rebuilt cleanly." />
-            <CardContent>
-                <div class="pf-alert pf-alert--warning-strong" role="alert">
-                    This action removes training courses, modules, lessons, lesson blocks, assessments, question bank items, training progress, attempts, completions, certificates, training audit entries, and training-only uploaded media. Users, roles, vessels, crew assignments, and unrelated operational data remain unchanged.
+    <SfDialog Width="720px" CssClass="abmt-dialog pf-training-reset-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="ShowResetConfirmation">
+        <DialogTemplates>
+            <Header>Training Reset</Header>
+            <Content>
+                <div class="pf-training-reset-dialog-content">
+                    <p class="pf-training-reset-dialog-subtitle">Delete only training-related records so the training platform can be rebuilt cleanly.</p>
+                    <div class="pf-alert pf-alert--warning-strong" role="alert">
+                        This action removes training courses, modules, lessons, lesson blocks, assessments, question bank items, training progress, attempts, completions, certificates, training audit entries, and training-only uploaded media. Users, roles, vessels, crew assignments, and unrelated operational data remain unchanged.
+                    </div>
+                    <div class="pf-dialog-actions pf-dialog-actions--split pf-training-dialog-actions">
+                        <SfButton CssClass="abmt-btn-gray-3d abmt-dialog-action-btn" IconCss="e-icons e-close" type="button" OnClick="CancelResetPrompt">Cancel</SfButton>
+                        <SfButton CssClass="abmt-btn-red-3d abmt-dialog-action-btn" IconCss="e-icons e-refresh" type="button" OnClick="ResetTrainingDataAsync">Confirm Reset</SfButton>
+                    </div>
                 </div>
-                <div class="pf-dialog-actions pf-dialog-actions--split">
-                    <SfButton type="button" OnClick="CancelResetPrompt">Cancel</SfButton>
-                    <SfButton CssClass="e-danger" type="button" OnClick="ResetTrainingDataAsync">Confirm Reset</SfButton>
-                </div>
-            </CardContent>
-        </SfCard>
-    }
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
 
     <div class="pf-training-dashboard-grid pf-training-dashboard-grid--compact">
         <SfCard CssClass="pf-card-shell pf-training-metric-card">
@@ -77,7 +80,7 @@
         <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
     }
 
-    <SfCard CssClass="pf-card-shell">
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
         <CardHeader Title="Courses" SubTitle="Authoring entry point for training management content." />
         <CardContent>
             @if (CoursesData.Count == 0)
@@ -87,7 +90,7 @@
             else
             {
                 <div class="pf-training-responsive-grid">
-                    <SfGrid DataSource="@CoursesData" TValue="TrainingCourseListItemModel" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact">
+                    <SfGrid DataSource="@CoursesData" TValue="TrainingCourseListItemModel" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
                         <GridColumns>
                             <GridColumn Field="@nameof(TrainingCourseListItemModel.Code)" HeaderText="Code" Width="130" />
@@ -137,29 +140,29 @@
                                     @{ var course = context as TrainingCourseListItemModel; }
                                     @if (course is not null)
                                     {
-                                        <div class="pf-grid-actions pf-grid-actions--compact">
+                                        <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
                                             <span class="pf-icon-action" title="Edit Course">
-                                                <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square" OnClick="@(() => OpenEditDialogAsync(course.CourseId))" aria-label="Edit Course">
+                                                <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" OnClick="@(() => OpenEditDialogAsync(course.CourseId))" aria-label="Edit Course">
                                                     <span class="e-icons e-edit" aria-hidden="true"></span>
                                                 </SfButton>
                                             </span>
                                             <span class="pf-icon-action" title="Open Builder">
-                                                <a class="e-btn e-flat pf-btn-details pf-btn-icon pf-btn-square" href="@($"/training-management/course-builder/{course.CourseId}")" aria-label="Open Course Builder">
+                                                <a class="e-btn e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" href="@($"/training-management/course-builder/{course.CourseId}")" aria-label="Open Course Builder">
                                                     <span class="e-icons e-folder-open" aria-hidden="true"></span>
                                                 </a>
                                             </span>
                                             <span class="pf-icon-action" title="Question Bank">
-                                                <a class="e-btn e-flat pf-btn-email pf-btn-icon pf-btn-square" href="@($"/training-management/question-bank/{course.CourseId}")" aria-label="Open Question Bank">
+                                                <a class="e-btn e-flat pf-btn-email pf-btn-icon pf-btn-square abmt-grid-action-question-bank" href="@($"/training-management/question-bank/{course.CourseId}")" aria-label="Open Question Bank">
                                                     <span class="e-icons e-list-unordered" aria-hidden="true"></span>
                                                 </a>
                                             </span>
                                             <span class="pf-icon-action" title="Create Next Version">
-                                                <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" OnClick="@(() => CreateNextVersionAsync(course.CourseId))" aria-label="Create Next Version">
+                                                <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square abmt-grid-action-version" OnClick="@(() => CreateNextVersionAsync(course.CourseId))" aria-label="Create Next Version">
                                                     <span class="e-icons e-copy" aria-hidden="true"></span>
                                                 </SfButton>
                                             </span>
                                             <span class="pf-icon-action" title="Toggle Active">
-                                                <SfButton CssClass="e-flat pf-btn-deactivate pf-btn-icon pf-btn-square" OnClick="@(() => ToggleActiveAsync(course))" aria-label="Toggle Active">
+                                                <SfButton CssClass="e-flat pf-btn-deactivate pf-btn-icon pf-btn-square abmt-grid-action-toggle" OnClick="@(() => ToggleActiveAsync(course))" aria-label="Toggle Active">
                                                     <span class="e-icons e-check" aria-hidden="true"></span>
                                                 </SfButton>
                                             </span>
@@ -174,7 +177,7 @@
         </CardContent>
     </SfCard>
 
-    <SfCard CssClass="pf-card-shell">
+    <SfCard CssClass="pf-card-shell abmt-panel-3d pf-training-courses-panel--participation">
         <CardHeader Title="Course Participation" SubTitle="Select a course name to review learner progress, completions, results, and certificate availability." />
         <CardContent>
             @if (CoursesData.Count == 0)

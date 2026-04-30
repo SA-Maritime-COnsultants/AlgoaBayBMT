@@ -23,7 +23,10 @@
             <div class="page-subtitle">Author, publish, and govern compliance training content for crews and operational users.</div>
         </div>
         <div class="pf-grid-actions pf-grid-actions--compact">
-            <a class="e-btn e-primary" href="/training-management/courses">Manage Courses</a>
+            <a class="e-btn abmt-btn-manage pf-training-manage-courses-btn" href="/training-management/courses">
+                <span class="e-icons e-edit" aria-hidden="true"></span>
+                <span>Manage Courses</span>
+            </a>
         </div>
     </div>
 
@@ -64,7 +67,7 @@
             </SfCard>
         </div>
 
-        <SfCard CssClass="pf-card-shell">
+        <SfCard CssClass="pf-card-shell pf-training-dashboard-panel pf-training-dashboard-panel--participation">
             <CardHeader Title="Training Participation" SubTitle="Admin summary of learners assigned to training, active participants, and completed training records." />
             <CardContent>
                 <div class="pf-training-dashboard-grid pf-training-dashboard-grid--compact">
@@ -90,7 +93,7 @@
             </CardContent>
         </SfCard>
 
-        <SfCard CssClass="pf-card-shell">
+        <SfCard CssClass="pf-card-shell pf-training-dashboard-panel pf-training-dashboard-panel--recent">
             <CardHeader Title="Recent Courses" SubTitle="Quick access to the latest training definitions and active authoring targets." />
             <CardContent>
                 <div class="pf-training-responsive-grid">

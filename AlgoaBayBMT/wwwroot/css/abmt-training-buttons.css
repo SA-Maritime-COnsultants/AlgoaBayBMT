@@ -1,0 +1,142 @@
+/* ═══════════════════════════════════════════════════════════════════
+   Training page top action buttons — loaded LAST so these rules win.
+   Syncfusion renders IconCss as: <span class="e-btn-icon e-icons e-add e-icon-left">
+   ═══════════════════════════════════════════════════════════════════ */
+
+.pf-training-page-action-btn.e-btn {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    /* kill any gradient from global rules */
+    background-image: none !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18) !important;
+    transition: filter 120ms ease !important;
+    transform: none !important;
+}
+
+/* Icon glyph — Syncfusion wraps it in .e-btn-icon */
+.pf-training-page-action-btn.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    font-weight: normal !important;
+    speak: none !important;
+    -webkit-font-smoothing: antialiased;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* ── Reset Training Data — subtle red ─────────────────── */
+.pf-training-reset-data-btn.e-btn,
+.pf-training-reset-data-btn.e-btn:focus,
+.pf-training-reset-data-btn.e-btn:active {
+    background: #c0392b !important;
+    background-image: none !important;
+    border-color: #96281b !important;
+    color: #ffffff !important;
+}
+
+.pf-training-reset-data-btn.e-btn:hover {
+    background: #96281b !important;
+    background-image: none !important;
+    border-color: #7b2218 !important;
+    color: #ffffff !important;
+    filter: none !important;
+}
+
+/* ── Create Course — subtle green ─────────────────────── */
+.pf-training-create-course-btn.e-btn,
+.pf-training-create-course-btn.e-btn:focus,
+.pf-training-create-course-btn.e-btn:active {
+    background: #27ae60 !important;
+    background-image: none !important;
+    border-color: #1e8449 !important;
+    color: #ffffff !important;
+}
+
+.pf-training-create-course-btn.e-btn:hover {
+    background: #1e8449 !important;
+    background-image: none !important;
+    border-color: #196f3d !important;
+    color: #ffffff !important;
+    filter: none !important;
+}
+
+/* ── Create Course dialog overrides: Syncfusion dialogs render outside scoped CSS boundaries. ── */
+.pf-course-create-dialog.e-dialog .e-dlg-content { margin-top: 10px !important; }
+.pf-course-create-dialog.e-dialog .e-dlg-header-content { min-height: 42px !important; padding: 0.45rem 1.15rem !important; display: flex !important; align-items: center !important; background: linear-gradient(180deg, #0f5f64 0%, #0a4c52 52%, #073a40 100%) !important; border-bottom: 1px solid rgba(3,45,49,0.72) !important; box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 18px rgba(7,58,64,0.20) !important; }
+.pf-course-create-dialog.e-dialog .e-dlg-header { min-height: 30px !important; display: flex !important; align-items: center !important; background: transparent !important; color: #ffffff !important; font-size: 0.98rem !important; font-weight: 800 !important; line-height: 1.1 !important; }
+.pf-course-create-dialog.e-dialog .e-dlg-closeicon-btn { align-self: center !important; margin-top: 0 !important; }
+.pf-course-create-dialog-actions { display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 0.65rem !important; margin-top: 1rem !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Edit User / Add User dialog — styled identically to Create Course.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Dialog chrome — same dark-teal header as Create Course */
+.pf-user-edit-dialog.e-dialog .e-dlg-content { margin-top: 10px !important; }
+.pf-user-edit-dialog.e-dialog .e-dlg-header-content { min-height: 42px !important; padding: 0.45rem 1.15rem !important; display: flex !important; align-items: center !important; background: linear-gradient(180deg, #0f5f64 0%, #0a4c52 52%, #073a40 100%) !important; border-bottom: 1px solid rgba(3,45,49,0.72) !important; box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 18px rgba(7,58,64,0.20) !important; }
+.pf-user-edit-dialog.e-dialog .e-dlg-header { min-height: 30px !important; display: flex !important; align-items: center !important; background: transparent !important; color: #ffffff !important; font-size: 0.98rem !important; font-weight: 800 !important; line-height: 1.1 !important; }
+.pf-user-edit-dialog.e-dialog .e-dlg-closeicon-btn { align-self: center !important; margin-top: 0 !important; }
+
+/* Actions row */
+.pf-user-edit-dialog-actions { display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 0.65rem !important; margin-top: 1rem !important; }
+
+/* Shared button base — 145x40px */
+.pf-user-edit-dialog-btn.e-btn { width: 145px !important; min-width: 145px !important; height: 40px !important; min-height: 40px !important; max-height: 40px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0 !important; padding: 0 0.6rem !important; border-radius: 8px !important; border-width: 1px !important; border-style: solid !important; color: inherit !important; font-size: 0.72rem !important; font-weight: 700 !important; line-height: 1.1 !important; text-decoration: none !important; white-space: nowrap !important; background-image: none !important; box-shadow: 0 1px 0 rgba(255,255,255,0.50) inset, 0 2px 5px rgba(0,0,0,0.14) !important; transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important; }
+.pf-user-edit-dialog-btn.e-btn .e-btn-icon { font-family: 'e-icons' !important; font-size: 0.95rem !important; font-style: normal !important; font-weight: normal !important; line-height: 1 !important; margin: 0 4px 0 0 !important; padding: 0 !important; color: inherit !important; display: inline-block !important; width: auto !important; height: auto !important; flex-shrink: 0 !important; }
+
+/* Cancel — pastel gray */
+.pf-user-edit-dialog-btn--cancel.e-btn,
+.pf-user-edit-dialog-btn--cancel.e-btn:focus,
+.pf-user-edit-dialog-btn--cancel.e-btn:active { background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important; border-color: #adb2ba !important; color: #2d3748 !important; text-shadow: none !important; }
+.pf-user-edit-dialog-btn--cancel.e-btn:hover { background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important; border-color: #969ca6 !important; color: #1a2433 !important; filter: none !important; transform: translateY(-1px); }
+.pf-user-edit-dialog-btn--cancel.e-btn .e-btn-icon { color: #2d3748 !important; }
+
+/* Save — pastel green */
+.pf-user-edit-dialog-btn--save.e-btn,
+.pf-user-edit-dialog-btn--save.e-btn:focus,
+.pf-user-edit-dialog-btn--save.e-btn:active { background: linear-gradient(180deg, #c8ecd5 0%, #b8e4c8 52%, #a0d4b4 100%) !important; border-color: #82c49c !important; color: #1a5c34 !important; text-shadow: none !important; }
+.pf-user-edit-dialog-btn--save.e-btn:hover { background: linear-gradient(180deg, #a8d8b8 0%, #94ccaa 52%, #80be98 100%) !important; border-color: #62a87c !important; color: #134426 !important; filter: none !important; transform: translateY(-1px); }
+.pf-user-edit-dialog-btn--save.e-btn .e-btn-icon { color: #1a5c34 !important; }
+
+/* Re-send Email — pastel amber */
+.pf-user-edit-dialog-btn--resend.e-btn,
+.pf-user-edit-dialog-btn--resend.e-btn:focus,
+.pf-user-edit-dialog-btn--resend.e-btn:active { background: linear-gradient(180deg, #fdf0d4 0%, #f5e0a8 52%, #eacc7a 100%) !important; border-color: #d4b054 !important; color: #6b4b06 !important; text-shadow: none !important; }
+.pf-user-edit-dialog-btn--resend.e-btn:hover { background: linear-gradient(180deg, #eacc7a 0%, #ddb84e 52%, #cc9e2c 100%) !important; border-color: #b88c28 !important; color: #4a3204 !important; filter: none !important; transform: translateY(-1px); }
+.pf-user-edit-dialog-btn--resend.e-btn .e-btn-icon { color: #6b4b06 !important; }
+
+@media (max-width: 640px) {
+    .pf-user-edit-dialog-actions { display: grid !important; grid-template-columns: 1fr !important; }
+    .pf-user-edit-dialog-btn.e-btn { width: 100% !important; min-width: 0 !important; }
+}
+.pf-course-create-dialog-btn.e-btn { width: 155px !important; min-width: 155px !important; height: 46px !important; min-height: 46px !important; max-height: 46px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0 !important; padding: 0 0.6rem !important; border-radius: 8px !important; border-width: 1px !important; border-style: solid !important; color: #ffffff !important; font-size: 0.72rem !important; font-weight: 700 !important; line-height: 1.1 !important; text-decoration: none !important; white-space: nowrap !important; background-image: none !important; box-shadow: 0 1px 0 rgba(255,255,255,0.16) inset, 0 2px 5px rgba(0,0,0,0.22) !important; transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important; }
+.pf-course-create-dialog-btn.e-btn .e-btn-icon { font-family: 'e-icons' !important; font-size: 0.95rem !important; font-style: normal !important; font-weight: normal !important; line-height: 1 !important; margin: 0 4px 0 0 !important; padding: 0 !important; color: #ffffff !important; display: inline-block !important; width: auto !important; height: auto !important; flex-shrink: 0 !important; }
+.pf-course-create-dialog-btn--cancel.e-btn, .pf-course-create-dialog-btn--cancel.e-btn:focus, .pf-course-create-dialog-btn--cancel.e-btn:active { background: linear-gradient(180deg, #6b7280 0%, #4b5563 58%, #374151 100%) !important; border-color: #313a46 !important; }
+.pf-course-create-dialog-btn--cancel.e-btn:hover { background: linear-gradient(180deg, #5f6673 0%, #434c59 58%, #313a46 100%) !important; border-color: #27313c !important; filter: none !important; transform: translateY(-1px); }
+.pf-course-create-dialog-btn--save.e-btn, .pf-course-create-dialog-btn--save.e-btn:focus, .pf-course-create-dialog-btn--save.e-btn:active { background: linear-gradient(180deg, #27ae60 0%, #229954 58%, #1e8449 100%) !important; border-color: #1e8449 !important; }
+.pf-course-create-dialog-btn--save.e-btn:hover { background: linear-gradient(180deg, #229954 0%, #1e8449 58%, #196f3d 100%) !important; border-color: #196f3d !important; filter: none !important; transform: translateY(-1px); }
+@media (max-width: 640px) { .pf-course-create-dialog-actions { display: grid !important; grid-template-columns: 1fr !important; } .pf-course-create-dialog-btn.e-btn { width: 100% !important; min-width: 0 !important; } }

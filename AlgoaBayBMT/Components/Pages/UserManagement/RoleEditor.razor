@@ -40,9 +40,9 @@
                                 var role = context as RoleEditorRowModel;
                             }
                             <div class="pf-grid-actions">
-                                <SfButton CssClass="e-flat e-primary" IconCss="e-icons e-edit"
+                                <SfButton CssClass="abmt-grid-action-edit abmt-grid-action-text" IconCss="e-icons e-edit"
                                           OnClick="@(() => OpenEditDialog(role))">Edit</SfButton>
-                                <SfButton CssClass="e-flat e-danger" IconCss="e-icons e-delete"
+                                <SfButton CssClass="abmt-grid-action-delete abmt-grid-action-text" IconCss="e-icons e-delete"
                                           OnClick="@(() => OpenDeleteDialog(role))">Delete</SfButton>
                             </div>
                         </Template>
@@ -53,7 +53,7 @@
     </SfCard>
 </div>
 
-<SfDialog Width="440px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
+<SfDialog Width="440px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
     <DialogTemplates>
         <Header>Edit Role</Header>
         <Content>
@@ -68,14 +68,14 @@
                 </CardContent>
             </SfCard>
             <div class="pf-dialog-actions">
-                <SfButton OnClick="@CloseEditDialog">Cancel</SfButton>
-                <SfButton CssClass="e-primary" OnClick="@SaveRoleAsync">Save</SfButton>
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@CloseEditDialog">Cancel</SfButton>
+                <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" OnClick="@SaveRoleAsync">Save</SfButton>
             </div>
         </Content>
     </DialogTemplates>
 </SfDialog>
 
-<SfDialog Width="420px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+<SfDialog Width="420px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
     <DialogTemplates>
         <Header>Confirm Delete</Header>
         <Content>
@@ -89,8 +89,8 @@
                 </CardContent>
             </SfCard>
             <div class="pf-dialog-actions">
-                <SfButton OnClick="@CloseDeleteDialog">Cancel</SfButton>
-                <SfButton CssClass="e-danger" OnClick="@ConfirmDeleteAsync" Disabled="@((DeleteTarget?.UserCount ?? 0) > 0)">Delete</SfButton>
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@CloseDeleteDialog">Cancel</SfButton>
+                <SfButton CssClass="e-danger abmt-btn-red-3d abmt-dialog-action-btn" IconCss="e-icons e-delete" OnClick="@ConfirmDeleteAsync" Disabled="@((DeleteTarget?.UserCount ?? 0) > 0)">Delete</SfButton>
             </div>
         </Content>
     </DialogTemplates>

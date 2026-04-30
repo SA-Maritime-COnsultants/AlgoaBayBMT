@@ -9,7 +9,7 @@
 
 @inject ITrainingAssetStorageService TrainingAssetStorageService
 
-<SfDialog Width="1020px" CssClass="pf-training-dialog pf-training-dialog--subtle" IsModal="true" ShowCloseIcon="true" @bind-Visible="Visible">
+<SfDialog Width="1020px" CssClass="@DialogCssClass" IsModal="true" ShowCloseIcon="true" @bind-Visible="Visible">
     <DialogTemplates>
         <Header>@(Model.CourseId.HasValue ? "Edit Course" : "Create Course")</Header>
         <Content>
@@ -116,9 +116,9 @@
                     </div>
                 </div>
 
-                <div class="pf-dialog-actions">
-                    <SfButton type="button" OnClick="CloseAsync">Cancel</SfButton>
-                    <SfButton CssClass="e-primary" IsPrimary="true" type="submit">Save Course</SfButton>
+                <div class="@DialogActionsCssClass">
+                    <SfButton CssClass="@CancelButtonCssClass" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseAsync">Cancel</SfButton>
+                    <SfButton CssClass="@SaveButtonCssClass" IconCss="e-icons e-save" IconPosition="IconPosition.Left" IsPrimary="true" type="submit">Save Course</SfButton>
                 </div>
             </EditForm>
         </Content>
@@ -151,6 +151,24 @@
 
     private string? UploadError { get; set; }
     private string? UploadStatusMessage { get; set; }
+
+    private bool IsCreateDialog => !Model.CourseId.HasValue;
+
+    private string DialogCssClass => IsCreateDialog
+        ? "pf-training-dialog pf-training-dialog--subtle pf-course-create-dialog abmt-dialog"
+        : "pf-training-dialog pf-training-dialog--subtle abmt-dialog";
+
+    private string DialogActionsCssClass => IsCreateDialog
+        ? "pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions"
+        : "pf-dialog-actions pf-training-dialog-actions";
+
+    private string CancelButtonCssClass => IsCreateDialog
+        ? "pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel"
+        : "abmt-btn-cancel";
+
+    private string SaveButtonCssClass => IsCreateDialog
+        ? "pf-course-create-dialog-btn pf-course-create-dialog-btn--save"
+        : "abmt-btn-save";
 
     protected override void OnParametersSet()
     {

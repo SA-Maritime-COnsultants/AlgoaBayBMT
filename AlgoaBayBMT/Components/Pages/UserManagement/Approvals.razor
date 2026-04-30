@@ -52,8 +52,8 @@
                                 var user = context as ApplicationUser;
                             }
                             <div class="pf-grid-actions">
-                                <SfButton CssClass="e-flat e-success" OnClick="@(_ => ApproveAsync(user?.Id))">Approve</SfButton>
-                                <SfButton CssClass="e-flat e-danger" OnClick="@(_ => RejectAsync(user?.Id))">Reject</SfButton>
+                                <SfButton CssClass="abmt-grid-action-approve abmt-grid-action-text" OnClick="@(_ => ApproveAsync(user?.Id))">Approve</SfButton>
+                                <SfButton CssClass="abmt-grid-action-reject abmt-grid-action-text" OnClick="@(_ => RejectAsync(user?.Id))">Reject</SfButton>
                             </div>
                         </Template>
                     </GridColumn>

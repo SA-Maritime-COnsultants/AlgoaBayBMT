@@ -33,10 +33,10 @@
         <CardContent>
             <div class="pf-toolbar-row">
                 <SfTextBox Placeholder="Search by name, email, country, cell number, role, or SID" @bind-Value="SearchTerm" />
-                <SfButton CssClass="e-primary" OnClick="@(_ => LoadAsync())">Search</SfButton>
+                <SfButton CssClass="abmt-btn-search" IconCss="e-icons e-search" OnClick="@(_ => LoadAsync())">Search</SfButton>
                 @if (IsAdmin)
                 {
-                    <SfButton CssClass="e-primary" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add User</SfButton>
+                    <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add User</SfButton>
                 }
             </div>
 
@@ -138,7 +138,7 @@
                                             <SfButton CssClass="e-flat pf-btn-roles pf-btn-icon pf-btn-square" IconCss="e-icons e-user" OnClick="@(_ => OpenRolesDialogAsync(user))"><span class="visually-hidden">Allocate Roles</span></SfButton>
                                         </span>
                                         <span class="pf-icon-action" title="Re-send Welcome Email">
-                                            <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" IconCss="e-icons e-mail" OnClick="@(_ => ResendWelcomeEmailAsync(user))"><span class="visually-hidden">Re-send Welcome Email</span></SfButton>
+                                            <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" IconCss="e-icons e-send" OnClick="@(_ => ResendWelcomeEmailAsync(user))"><span class="visually-hidden">Re-send Welcome Email</span></SfButton>
                                         </span>
                                         <span class="pf-icon-action" title="@(user.IsActive ? "Deactivate User" : "Activate User")">
                                             <SfButton CssClass="@(user.IsActive ? "e-flat pf-btn-deactivate e-danger pf-btn-icon pf-btn-square" : "e-flat pf-btn-deactivate e-warning pf-btn-icon pf-btn-square")" IconCss="@(user.IsActive ? "e-icons e-eye-slash" : "e-icons e-eye")" OnClick="@(_ => ToggleActiveAsync(user))"><span class="visually-hidden">@(user.IsActive ? "Deactivate User" : "Activate User")</span></SfButton>
@@ -160,7 +160,7 @@
     </SfCard>
 </div>
 
-<SfDialog Width="920px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDetailsDialogVisible">
+<SfDialog Width="920px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDetailsDialogVisible">
     <DialogTemplates>
         <Header>User Details</Header>
         <Content>
@@ -190,7 +190,7 @@
     </DialogTemplates>
 </SfDialog>
 
-<SfDialog Width="980px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+<SfDialog Width="980px" CssClass="pf-training-dialog pf-training-dialog--subtle pf-user-edit-dialog abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
     <DialogTemplates>
         <Header>@(IsEditMode ? "Edit User" : "Add User")</Header>
         <Content>
@@ -293,19 +293,19 @@
                     </CardContent>
                 </SfCard>
             </EditForm>
-            <div class="pf-dialog-actions">
+            <div class="pf-dialog-actions pf-user-edit-dialog-actions">
                 @if (IsAdmin && IsEditMode)
                 {
-                    <SfButton CssClass="pf-btn-email" IconCss="e-icons e-mail" OnClick="@(_ => ResendWelcomeEmailAsync(EditModel.UserId))">Re-send Welcome Email</SfButton>
+                    <SfButton CssClass="pf-user-edit-dialog-btn pf-user-edit-dialog-btn--resend" IconCss="e-icons e-send" IconPosition="IconPosition.Left" OnClick="@(_ => ResendWelcomeEmailAsync(EditModel.UserId))">Re-send Email</SfButton>
                 }
-                <SfButton OnClick="@(_ => CloseDialog())">Cancel</SfButton>
-                <SfButton CssClass="e-primary" OnClick="@(_ => SaveAsync())">Save</SfButton>
+                <SfButton CssClass="pf-user-edit-dialog-btn pf-user-edit-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" OnClick="@(_ => CloseDialog())">Cancel</SfButton>
+                <SfButton CssClass="pf-user-edit-dialog-btn pf-user-edit-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" OnClick="@(_ => SaveAsync())">Save</SfButton>
             </div>
         </Content>
     </DialogTemplates>
 </SfDialog>
 
-<SfDialog Width="760px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsRolesDialogVisible">
+<SfDialog Width="760px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsRolesDialogVisible">
     <DialogTemplates>
         <Header>Allocate Roles</Header>
         <Content>
@@ -323,14 +323,14 @@
                 </CardContent>
             </SfCard>
             <div class="pf-dialog-actions">
-                <SfButton OnClick="@(_ => CloseRolesDialog())">Cancel</SfButton>
-                <SfButton CssClass="e-primary" OnClick="@(_ => SaveRolesAsync())">Save Roles</SfButton>
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@(_ => CloseRolesDialog())">Cancel</SfButton>
+                <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" OnClick="@(_ => SaveRolesAsync())">Save Roles</SfButton>
             </div>
         </Content>
     </DialogTemplates>
 </SfDialog>
 
-<SfDialog Width="520px" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+<SfDialog Width="520px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
     <DialogTemplates>
         <Header>Permanent Delete</Header>
         <Content>
@@ -340,8 +340,8 @@
                 <p class="mb-0">Related records may also be affected depending on database relationships.</p>
             </div>
             <div class="pf-dialog-actions">
-                <SfButton OnClick="@(_ => CloseDeleteDialog())">Cancel</SfButton>
-                <SfButton CssClass="e-danger pf-btn-delete" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDeleteAsync())">Delete Permanently</SfButton>
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@(_ => CloseDeleteDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-danger abmt-btn-red-3d abmt-dialog-action-btn" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDeleteAsync())">Delete Permanently</SfButton>
             </div>
         </Content>
     </DialogTemplates>
