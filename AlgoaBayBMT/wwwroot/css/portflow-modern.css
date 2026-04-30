@@ -1,0 +1,483 @@
+/* PortFlow Modern Global Theme
+   Loaded after Bootstrap, app styles, and Syncfusion theme.
+   Purpose: align all Blazor + Syncfusion UI with the My Training baseline. */
+
+:root {
+    --pf-modern-navy: #0b1f33;
+    --pf-modern-navy-2: #12304d;
+    --pf-modern-navy-3: #1b4668;
+    --pf-modern-teal: #12b5cb;
+    --pf-modern-teal-2: #0e97aa;
+    --pf-modern-green: #2e8b57;
+    --pf-modern-amber: #d98b22;
+    --pf-modern-red: #c84a4a;
+    --pf-modern-bg: #eef4f8;
+    --pf-modern-bg-soft: #f7fafc;
+    --pf-modern-surface: #ffffff;
+    --pf-modern-surface-soft: #f5f9fc;
+    --pf-modern-border: #d8e4ec;
+    --pf-modern-border-strong: #bed2df;
+    --pf-modern-text: #1f2937;
+    --pf-modern-muted: #607284;
+    --pf-modern-radius: 16px;
+    --pf-modern-radius-sm: 10px;
+    --pf-modern-radius-xs: 7px;
+    --pf-modern-shadow-soft: 0 12px 30px rgba(15, 35, 56, 0.08);
+    --pf-modern-shadow-panel: 0 1px 2px rgba(15, 35, 56, 0.05), 0 10px 24px rgba(15, 35, 56, 0.08);
+    --pf-modern-shadow-3d: 0 1px 0 rgba(255,255,255,0.36) inset, 0 2px 0 rgba(8, 28, 44, 0.28), 0 8px 18px rgba(15, 35, 56, 0.18);
+    --pf-modern-shadow-3d-hover: 0 1px 0 rgba(255,255,255,0.42) inset, 0 3px 0 rgba(8, 28, 44, 0.30), 0 12px 26px rgba(15, 35, 56, 0.22);
+    --pf-modern-shadow-3d-pressed: 0 1px 3px rgba(15, 35, 56, 0.18) inset, 0 1px 3px rgba(15, 35, 56, 0.12);
+}
+
+html,
+body {
+    background:
+        radial-gradient(circle at top left, rgba(18, 181, 203, 0.10), transparent 34rem),
+        linear-gradient(180deg, #f8fbfd 0%, var(--pf-modern-bg) 100%) !important;
+    color: var(--pf-modern-text);
+    font-family: Inter, "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+    min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6,
+.page-title,
+.bmt-page-title,
+.pf-training-section-title {
+    color: var(--pf-modern-navy) !important;
+    letter-spacing: -0.02em;
+}
+
+p,
+.page-subtitle,
+.bmt-page-subtitle,
+.pf-training-section-description {
+    color: var(--pf-modern-muted);
+}
+
+.app-shell,
+.app-content {
+    background:
+        radial-gradient(circle at 80% 0%, rgba(18, 181, 203, 0.08), transparent 28rem),
+        linear-gradient(180deg, #f8fbfd 0%, var(--pf-modern-bg) 100%) !important;
+}
+
+.app-content {
+    padding: clamp(1rem, 2vw, 1.75rem) !important;
+}
+
+.page-shell,
+.bmt-page-shell,
+.pf-training-learner-shell,
+.pf-training-admin-shell {
+    width: min(100%, 1680px);
+    margin-inline: auto;
+}
+
+.page-header,
+.bmt-page-header,
+.pf-training-hero,
+.pf-training-dashboard-section-header {
+    border-radius: var(--pf-modern-radius);
+}
+
+.pf-training-hero,
+.bmt-surface-header,
+.e-card .e-card-header,
+.e-dialog .e-dlg-header-content {
+    background:
+        linear-gradient(135deg, rgba(11, 31, 51, 0.98) 0%, rgba(18, 48, 77, 0.95) 55%, rgba(18, 181, 203, 0.58) 100%) !important;
+    color: #f8fbff !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 22px rgba(11, 31, 51, 0.16);
+}
+
+.pf-training-hero h1,
+.pf-training-hero h2,
+.pf-training-hero h3,
+.pf-training-hero .page-title,
+.bmt-surface-header-title,
+.e-card .e-card-header-title,
+.e-card .e-card-sub-title,
+.e-dialog .e-dlg-header,
+.e-dialog .e-dlg-header-content,
+.e-dialog .e-dlg-closeicon-btn {
+    color: #f8fbff !important;
+}
+
+/* Surfaces / cards */
+.e-card,
+.pf-card-shell,
+.bmt-surface,
+.pf-training-course-card-v2,
+.pf-training-certificate-card,
+.pf-training-metric-card,
+.pf-training-preview-block,
+.pf-training-lesson-card,
+.pf-training-check-card,
+.pf-training-slide-card,
+.pf-training-scenario-card,
+.pf-training-exam-summary,
+.pf-training-course-meta-panel,
+.pf-training-preview-face,
+.pf-training-quiz-editor-card,
+.pf-training-quiz-preview-item {
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,252,0.98)) !important;
+    border: 1px solid rgba(216, 228, 236, 0.95) !important;
+    border-radius: var(--pf-modern-radius) !important;
+    box-shadow: var(--pf-modern-shadow-panel) !important;
+}
+
+.e-card:hover,
+.pf-training-course-card-v2:hover,
+.pf-training-certificate-card:hover,
+.pf-training-metric-card:hover {
+    border-color: rgba(18, 181, 203, 0.30) !important;
+    box-shadow: 0 1px 2px rgba(15, 35, 56, 0.06), 0 16px 34px rgba(15, 35, 56, 0.12) !important;
+}
+
+.e-card .e-card-content,
+.bmt-surface-body {
+    padding: 1.25rem !important;
+}
+
+.pf-empty-state,
+.e-emptyrow,
+.e-grid .e-emptyrow td {
+    color: var(--pf-modern-muted) !important;
+    background: rgba(245, 249, 252, 0.72) !important;
+}
+
+/* Syncfusion grids */
+.e-grid {
+    border: 1px solid var(--pf-modern-border) !important;
+    border-radius: var(--pf-modern-radius) !important;
+    overflow: hidden;
+    background: var(--pf-modern-surface) !important;
+    box-shadow: var(--pf-modern-shadow-panel) !important;
+}
+
+.e-grid .e-gridheader,
+.e-grid .e-headercontent,
+.e-grid .e-headercell {
+    background: linear-gradient(180deg, #f9fcfe 0%, #edf5f9 100%) !important;
+    color: var(--pf-modern-navy) !important;
+    border-color: var(--pf-modern-border) !important;
+}
+
+.e-grid .e-headercelldiv {
+    color: var(--pf-modern-navy) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.e-grid .e-rowcell {
+    border-color: rgba(216, 228, 236, 0.72) !important;
+    color: var(--pf-modern-text) !important;
+}
+
+.e-grid .e-row:hover .e-rowcell,
+.e-grid .e-altrow:hover .e-rowcell {
+    background: rgba(18, 181, 203, 0.055) !important;
+}
+
+.e-grid .e-altrow .e-rowcell {
+    background: rgba(247, 250, 252, 0.72) !important;
+}
+
+.e-grid .e-toolbar,
+.e-grid .e-pager,
+.e-pager {
+    background: linear-gradient(180deg, #ffffff 0%, #f3f8fb 100%) !important;
+    border-color: var(--pf-modern-border) !important;
+}
+
+/* Forms / inputs / Syncfusion content controls */
+.e-input-group,
+.e-control-wrapper,
+.e-ddl.e-input-group,
+.e-date-wrapper,
+.e-datetime-wrapper,
+.e-numeric.e-input-group,
+.e-multiselect.e-input-group,
+.form-control,
+.form-select,
+textarea,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="date"],
+select {
+    border-color: var(--pf-modern-border) !important;
+    border-radius: var(--pf-modern-radius-sm) !important;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdfe 100%) !important;
+    color: var(--pf-modern-text) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.8) inset, 0 1px 2px rgba(15, 35, 56, 0.04) !important;
+}
+
+.e-input-group.e-input-focus,
+.e-control-wrapper.e-input-focus,
+.form-control:focus,
+.form-select:focus,
+textarea:focus,
+input:focus,
+select:focus {
+    border-color: rgba(18, 181, 203, 0.70) !important;
+    box-shadow: 0 0 0 3px rgba(18, 181, 203, 0.16), 0 1px 0 rgba(255,255,255,0.8) inset !important;
+    outline: none !important;
+}
+
+.pf-field-label,
+.bmt-field-label,
+.bmt-field label,
+label {
+    color: var(--pf-modern-navy-2);
+    font-weight: 700;
+}
+
+/* Tabs, accordions, dialogs, toasts */
+.e-tab,
+.e-accordion,
+.e-dialog,
+.e-toast,
+.e-tooltip-wrap {
+    border-radius: var(--pf-modern-radius) !important;
+}
+
+.e-tab .e-tab-header {
+    background: rgba(245, 249, 252, 0.86) !important;
+    border-color: var(--pf-modern-border) !important;
+    border-radius: var(--pf-modern-radius) var(--pf-modern-radius) 0 0 !important;
+}
+
+.e-tab .e-tab-header .e-toolbar-item.e-active .e-tab-wrap {
+    background: linear-gradient(180deg, rgba(18, 181, 203, 0.14), rgba(18, 181, 203, 0.05)) !important;
+    border-radius: var(--pf-modern-radius-sm) !important;
+}
+
+.e-tab .e-tab-header .e-toolbar-item.e-active .e-tab-text,
+.e-tab .e-tab-header .e-toolbar-item.e-active .e-icons {
+    color: var(--pf-modern-navy) !important;
+    font-weight: 800 !important;
+}
+
+.e-dialog {
+    border: 1px solid rgba(216, 228, 236, 0.95) !important;
+    box-shadow: 0 24px 70px rgba(11, 31, 51, 0.24), 0 4px 12px rgba(11, 31, 51, 0.14) !important;
+    overflow: hidden;
+}
+
+.e-dialog .e-dlg-content {
+    background: linear-gradient(180deg, #f8fbfd 0%, #eef4f8 100%) !important;
+}
+
+.e-toast {
+    box-shadow: var(--pf-modern-shadow-panel) !important;
+    border: 1px solid rgba(216, 228, 236, 0.95) !important;
+}
+
+/* Badges */
+.e-badge,
+.badge,
+.pf-role-badge,
+.topbar-status-chip,
+.role-badge {
+    border-radius: 999px !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.04em;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset, 0 2px 6px rgba(15, 35, 56, 0.08);
+}
+
+.badge.info,
+.e-badge.e-info,
+.pf-role-badge {
+    background: rgba(18, 181, 203, 0.12) !important;
+    border: 1px solid rgba(18, 181, 203, 0.28) !important;
+    color: var(--pf-modern-navy) !important;
+}
+
+/* Universal 3D button system: Syncfusion, Bootstrap, anchors styled as buttons, and normal app buttons. */
+.e-btn,
+button.e-btn,
+a.e-btn,
+.btn,
+button.btn,
+a.btn,
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+.bmt-btn-3d,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret),
+a.button {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    min-height: 36px;
+    border-radius: var(--pf-modern-radius-sm) !important;
+    border: 1px solid rgba(9, 49, 70, 0.12) !important;
+    background: linear-gradient(180deg, #fefefe 0%, #dfeaf1 100%) !important;
+    color: var(--pf-modern-navy) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.01em;
+    text-decoration: none !important;
+    box-shadow: var(--pf-modern-shadow-3d) !important;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.52);
+    cursor: pointer;
+    transform: translateY(0);
+    transition: transform 110ms ease, box-shadow 140ms ease, filter 140ms ease, background 140ms ease !important;
+    user-select: none;
+}
+
+.e-btn::before,
+.btn::before,
+.bmt-btn-3d::before,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret)::before,
+a.button::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.02) 52%, rgba(0,0,0,0.08) 100%);
+}
+
+.e-btn:hover,
+.btn:hover,
+.bmt-btn-3d:hover,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):hover,
+a.button:hover {
+    filter: brightness(1.04);
+    box-shadow: var(--pf-modern-shadow-3d-hover) !important;
+    transform: translateY(-1px);
+}
+
+.e-btn:active,
+.btn:active,
+.bmt-btn-3d:active,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):active,
+a.button:active {
+    transform: translateY(2px) !important;
+    box-shadow: var(--pf-modern-shadow-3d-pressed) !important;
+    filter: brightness(0.98);
+}
+
+.e-btn.e-primary,
+.e-btn.e-success,
+.btn-primary,
+.bmt-btn-primary,
+.e-grid .e-toolbar .e-btn.e-primary {
+    background: linear-gradient(180deg, #19c1d6 0%, #0f8fa3 52%, #0c7287 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(10, 107, 127, 0.75) !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.25) !important;
+}
+
+.e-btn.e-secondary,
+.btn-secondary,
+.bmt-btn-secondary {
+    background: linear-gradient(180deg, #ffffff 0%, #e3edf4 100%) !important;
+    color: var(--pf-modern-navy) !important;
+}
+
+.e-btn.e-danger,
+.btn-danger,
+.bmt-btn-danger {
+    background: linear-gradient(180deg, #db6a67 0%, #c84a4a 54%, #a93535 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(169, 53, 53, 0.75) !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.24) !important;
+}
+
+.e-btn.e-warning,
+.btn-warning,
+.bmt-btn-warning {
+    background: linear-gradient(180deg, #efae58 0%, #d98b22 56%, #b87316 100%) !important;
+    color: #ffffff !important;
+    border-color: rgba(184, 115, 22, 0.75) !important;
+    text-shadow: 0 1px 0 rgba(0,0,0,0.18) !important;
+}
+
+.e-btn.e-flat,
+.e-btn.e-link,
+.btn-link {
+    background: transparent !important;
+    color: var(--pf-modern-teal-2) !important;
+    border-color: transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+}
+
+.e-btn:disabled,
+.e-btn.e-disabled,
+.btn:disabled,
+button:disabled,
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+.bmt-btn-3d:disabled {
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    filter: grayscale(0.15) !important;
+    box-shadow: none !important;
+}
+
+.pf-grid-actions,
+.pf-training-course-card-actions,
+.pf-training-card-actions,
+.pf-dialog-actions,
+.bmt-dialog-actions {
+    gap: 0.65rem !important;
+}
+
+.pf-grid-actions .e-btn,
+.e-grid .e-rowcell .e-btn,
+.bmt-btn-icon {
+    min-width: 34px !important;
+    min-height: 34px !important;
+    padding-inline: 0.62rem !important;
+}
+
+/* Layout-specific buttons also get gentle 3D treatment without changing size. */
+.sidebar-toggle,
+.profile-button,
+.topbar-weather {
+    background: linear-gradient(180deg, #ffffff 0%, #e9f1f6 100%) !important;
+    border-color: var(--pf-modern-border) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.80) inset, 0 2px 0 rgba(15, 35, 56, 0.14), 0 7px 16px rgba(15, 35, 56, 0.09) !important;
+}
+
+.side-nav-link,
+.side-nav-button {
+    border-radius: 12px !important;
+}
+
+.side-nav-link:hover,
+.side-nav-button:hover,
+.side-nav-link.active {
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 16px rgba(0,0,0,0.12) !important;
+}
+
+/* Mobile polish */
+@media (max-width: 768px) {
+    .app-content {
+        padding: 0.875rem !important;
+    }
+
+    .e-card .e-card-content,
+    .bmt-surface-body {
+        padding: 1rem !important;
+    }
+
+    .e-btn,
+    .btn,
+    button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret) {
+        min-height: 40px;
+    }
+}

@@ -18,7 +18,6 @@ namespace AlgoaBayBMT.Services.Models
         public string? CellNo { get; set; }
         public string? Address { get; set; }
         public string? Country { get; set; }
-        public int? CompanyId { get; set; }
         public bool IsCrew { get; set; }
         public CrewRank? CrewRank { get; set; }
         public string? SidNumber { get; set; }

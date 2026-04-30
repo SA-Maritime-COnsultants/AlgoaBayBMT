@@ -5,9 +5,6 @@
 @using Syncfusion.Blazor.Notifications
 
 @inject IUserManagementService UserManagementService
-@inject IAreaService AreaService
-@inject ICompanyService CompanyService
-@inject IVesselService VesselService
 @inject IApplicationEmailService EmailService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
@@ -187,9 +184,6 @@
                     <div class="pf-detail-item"><span class="pf-detail-label">Approved</span><span class="pf-detail-value">@(SelectedUser.IsAccountApproved ? "Yes" : "No")</span></div>
                     <div class="pf-detail-item"><span class="pf-detail-label">Approval Status</span><span class="pf-detail-value">@SelectedUser.ApprovalStatus</span></div>
                     <div class="pf-detail-item"><span class="pf-detail-label">Active</span><span class="pf-detail-value">@(SelectedUser.IsActive ? "Yes" : "No")</span></div>
-                    <div class="pf-detail-item"><span class="pf-detail-label">Company</span><span class="pf-detail-value">@(SelectedUser.Company?.Name ?? "-")</span></div>
-                    <div class="pf-detail-item"><span class="pf-detail-label">Area</span><span class="pf-detail-value">@(SelectedUser.PrimaryArea?.Name ?? "-")</span></div>
-                    <div class="pf-detail-item"><span class="pf-detail-label">Vessel</span><span class="pf-detail-value">@(SelectedUser.Vessel?.Name ?? "-")</span></div>
                 </div>
             }
         </Content>
@@ -269,24 +263,6 @@
                                     <SfDatePicker TValue="DateTime?" @bind-Value="EditModel.SidExpiryDate" Placeholder="Expiry date" Format="yyyy-MM-dd" />
                                 </div>
                             }
-                            <div class="pf-col-4">
-                                <label class="pf-field-label">Company</label>
-                                <SfDropDownList TValue="int?" TItem="BunkeringCompany" DataSource="@CompanyItems" @bind-Value="EditModel.CompanyId" Placeholder="Select company">
-                                    <DropDownListFieldSettings Text="Name" Value="Id" />
-                                </SfDropDownList>
-                            </div>
-                            <div class="pf-col-4">
-                                <label class="pf-field-label">Operational Area</label>
-                                <SfDropDownList TValue="int?" TItem="OperationalArea" DataSource="@AreaItems" @bind-Value="EditModel.PrimaryAreaId" Placeholder="Select area">
-                                    <DropDownListFieldSettings Text="Name" Value="Id" />
-                                </SfDropDownList>
-                            </div>
-                            <div class="pf-col-4">
-                                <label class="pf-field-label">Vessel</label>
-                                <SfDropDownList TValue="int?" TItem="Vessel" DataSource="@VesselItems" @bind-Value="EditModel.VesselId" Placeholder="Select vessel">
-                                    <DropDownListFieldSettings Text="Name" Value="Id" />
-                                </SfDropDownList>
-                            </div>
                             <div class="pf-col-4 auth-inline-checkbox">
                                 <label class="pf-field-label">Status</label>
                                 <SfCheckBox Label="Active" @bind-Checked="EditModel.IsActive" />
@@ -374,9 +350,6 @@
 @code {
     private List<ApplicationUser> UserItems = new();
     private Dictionary<string, IReadOnlyList<string>> UserRoles = new();
-    private List<OperationalArea> AreaItems = new();
-    private List<BunkeringCompany> CompanyItems = new();
-    private List<Vessel> VesselItems = new();
     private List<RoleOption> RoleOptions = new();
     private UserAdministrationModel EditModel = new();
     private EditContext DialogEditContext = default!;
@@ -419,9 +392,6 @@
 
     private async Task LoadLookupsAsync()
     {
-        AreaItems = await AreaService.GetAreasAsync();
-        CompanyItems = await CompanyService.GetCompaniesAsync();
-        VesselItems = await VesselService.GetVesselsAsync();
         RoleOptions = (await UserManagementService.GetAvailableRolesAsync())
             .Select(role => new RoleOption { Value = role, Text = role.Replace("_", " ") })
             .ToList();

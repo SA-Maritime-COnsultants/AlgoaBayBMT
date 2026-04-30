@@ -48,6 +48,10 @@
     <Content Remove="wwwroot\uploads\**\*" />
     <None Include="wwwroot\uploads\**\*" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Components\Home\" />
+  </ItemGroup>
   
   
 

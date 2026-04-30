@@ -1101,11 +1101,6 @@ public sealed class LearnerTrainingService(
         }
 
         var roles = await userManager.GetRolesAsync(identityUser);
-        var onboardRole = await dbContext.CrewDeployments.AsNoTracking()
-            .Where(x => x.UserId == userId && x.Status == DeploymentStatus.Active)
-            .OrderByDescending(x => x.StartedOnUtc)
-            .Select(x => x.OnboardRoleName)
-            .FirstOrDefaultAsync(cancellationToken);
 
         return new LearnerContext
         {
@@ -1114,7 +1109,7 @@ public sealed class LearnerTrainingService(
             IsCrew = user.IsCrew,
             Roles = roles.ToHashSet(StringComparer.OrdinalIgnoreCase),
             Qualification = user.Qualification.GetDisplayName(),
-            OnboardRole = !string.IsNullOrWhiteSpace(onboardRole) ? onboardRole : user.CrewRank.GetDisplayName(),
+            OnboardRole = user.CrewRank.GetDisplayName(),
             HasFullAccess = roles.Any(role => FullAccessRoles.Contains(role, StringComparer.OrdinalIgnoreCase))
         };
     }

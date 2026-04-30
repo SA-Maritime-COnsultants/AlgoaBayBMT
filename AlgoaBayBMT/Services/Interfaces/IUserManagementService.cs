@@ -19,8 +19,6 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<List<string>> GetUserRolesAsync(string userId, CancellationToken cancellationToken = default);
         Task<OperationResult> UpdateUserRolesAsync(string userId, IReadOnlyCollection<string> roleNames, CancellationToken cancellationToken = default);
         Task<OperationResult> DeleteUserAsync(string userId, CancellationToken cancellationToken = default);
-        Task<OperationResult> UpdateUserAssignmentsAsync(string userId, int? companyId, int? primaryAreaId, int? vesselId, CancellationToken cancellationToken = default);
         Task<Dictionary<string, IReadOnlyList<string>>> GetUserRolesBulkAsync(IReadOnlyList<string> userIds, CancellationToken cancellationToken = default);
-        Task<OperationResult<ApplicationUser>> CreateCrewMemberAsync(AddCrewMemberViewModel model, int? companyId, int? vesselId, string approvedByUserId, CancellationToken cancellationToken = default);
     }
 }

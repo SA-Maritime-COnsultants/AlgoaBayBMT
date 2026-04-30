@@ -58,11 +58,6 @@ namespace AlgoaBayBMT.Services
                 return OperationResult<ApplicationUser>.Failure("A user with this email already exists.");
             }
 
-            if (request.CompanyId.HasValue && !await dbContext.BunkeringCompanies.AnyAsync(x => x.Id == request.CompanyId.Value, cancellationToken))
-            {
-                return OperationResult<ApplicationUser>.Failure("Selected company was not found.");
-            }
-
             var user = new ApplicationUser
             {
                 UserName = request.Email,
@@ -81,7 +76,6 @@ namespace AlgoaBayBMT.Services
                 SidExpiryDate = request.IsCrew ? request.SidExpiryDate : null,
                 ApprovalStatus = ApprovalStatus.PendingEmailConfirmation,
                 IsAccountApproved = false,
-                CompanyId = request.CompanyId,
                 IsActive = true,
                 RegisteredOnUtc = DateTime.UtcNow,
                 EmailConfirmed = false

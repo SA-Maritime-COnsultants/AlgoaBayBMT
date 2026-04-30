@@ -81,15 +81,6 @@ namespace AlgoaBayBMT.Services.Models
         [Display(Name = "SID Expiry Date")]
         public DateTime? SidExpiryDate { get; set; }
 
-        [Display(Name = "Company")]
-        public int? CompanyId { get; set; }
-
-        [Display(Name = "Operational area")]
-        public int? PrimaryAreaId { get; set; }
-
-        [Display(Name = "Vessel")]
-        public int? VesselId { get; set; }
-
         [Display(Name = "Active")]
         public bool IsActive { get; set; } = true;
 

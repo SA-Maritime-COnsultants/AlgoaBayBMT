@@ -24,21 +24,9 @@ namespace AlgoaBayBMT.Data
         public string? ApprovedByUserId { get; set; }
         public DateTime? ApprovedOnUtc { get; set; }
         public string? ApprovalNotes { get; set; }
-        public int? CompanyId { get; set; }
-        public int? PrimaryAreaId { get; set; }
-        public int? VesselId { get; set; }
         public byte[]? ProfilePicture { get; set; }
         public string? ProfilePictureContentType { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime RegisteredOnUtc { get; set; } = DateTime.UtcNow;
-
-        public BunkeringCompany? Company { get; set; }
-        public OperationalArea? PrimaryArea { get; set; }
-        public Vessel? Vessel { get; set; }
-        public CrewMemberDetails? CrewMemberDetails { get; set; }
-        public ICollection<UserAreaAssignment> UserAreaAssignments { get; set; } = new List<UserAreaAssignment>();
-        public ICollection<VesselRoleAssignment> VesselRoleAssignments { get; set; } = new List<VesselRoleAssignment>();
-        public ICollection<CrewDeployment> CrewDeployments { get; set; } = new List<CrewDeployment>();
-        public ICollection<VesselCrewListEntry> VesselCrewListEntries { get; set; } = new List<VesselCrewListEntry>();
     }
 }
