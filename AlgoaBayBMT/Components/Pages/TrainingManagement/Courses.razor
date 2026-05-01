@@ -40,8 +40,8 @@
                         This action removes training courses, modules, lessons, lesson blocks, assessments, question bank items, training progress, attempts, completions, certificates, training audit entries, and training-only uploaded media. Users, roles, vessels, crew assignments, and unrelated operational data remain unchanged.
                     </div>
                     <div class="pf-dialog-actions pf-dialog-actions--split pf-training-dialog-actions">
-                        <SfButton CssClass="abmt-btn-gray-3d abmt-dialog-action-btn" IconCss="e-icons e-close" type="button" OnClick="CancelResetPrompt">Cancel</SfButton>
-                        <SfButton CssClass="abmt-btn-red-3d abmt-dialog-action-btn" IconCss="e-icons e-refresh" type="button" OnClick="ResetTrainingDataAsync">Confirm Reset</SfButton>
+                        <SfButton CssClass="ab-btn ab-btn-gray" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CancelResetPrompt">Cancel</SfButton>
+                        <SfButton CssClass="ab-btn ab-btn-red" IconCss="e-icons e-refresh" IconPosition="IconPosition.Left" type="button" OnClick="ResetTrainingDataAsync">Confirm Reset</SfButton>
                     </div>
                 </div>
             </Content>
@@ -94,7 +94,7 @@
                         <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
                         <GridColumns>
                             <GridColumn Field="@nameof(TrainingCourseListItemModel.Code)" HeaderText="Code" Width="130" />
-                            <GridColumn HeaderText="Title" Width="220">
+                            <GridColumn HeaderText="Title" Width="260">
                                 <Template>
                                     @{ var course = context as TrainingCourseListItemModel; }
                                     @if (course is not null)
@@ -103,7 +103,6 @@
                                     }
                                 </Template>
                             </GridColumn>
-                            <GridColumn Field="@nameof(TrainingCourseListItemModel.Summary)" HeaderText="Summary" Width="240" />
                             <GridColumn HeaderText="Current Version" Width="150">
                                 <Template>
                                     @{ var course = context as TrainingCourseListItemModel; }
@@ -132,7 +131,7 @@
                             <GridColumn HeaderText="Status" Width="110" TextAlign="TextAlign.Center">
                                 <Template>
                                     @{ var course = context as TrainingCourseListItemModel; }
-                                    <span class="e-badge @(course?.IsActive == true ? "e-badge-success" : "e-badge-warning")">@(course?.IsActive == true ? "Active" : "Inactive")</span>
+                                    <span class="ab-badge @(course?.IsActive == true ? "ab-badge-active" : "ab-badge-inactive")">@(course?.IsActive == true ? "Active" : "Inactive")</span>
                                 </Template>
                             </GridColumn>
                             <GridColumn HeaderText="Actions" Width="210" TextAlign="TextAlign.Center">

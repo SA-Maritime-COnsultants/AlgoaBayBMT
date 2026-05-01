@@ -5,8 +5,8 @@
 
 /* ── CSS variables ────────────────────────────────────────── */
 :root {
-    --tp-panel-header-bg:      #eef5f7;
-    --tp-panel-header-text:    #173845;
+    --tp-panel-header-bg:      linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    --tp-panel-header-text:    #1a3a4a;
     --tp-panel-header-fw:      600;
     --tp-panel-header-pad:     14px 16px;
     --tp-panel-border:         1px solid rgba(31, 79, 91, 0.12);
@@ -207,12 +207,12 @@
 }
 
 .training-panel-header .tp-header-badge {
-    background: rgba(47, 124, 137, 0.12);
+    background: rgba(15, 87, 96, 0.12);
     border-radius: 999px;
     font-size: 0.72rem;
     padding: 0.25rem 0.7rem;
     font-weight: 700;
-    color: #285f69;
+    color: #1a3a4a;
 }
 
 .tp-panel-header-soft {

@@ -84,25 +84,36 @@ p,
 }
 
 .pf-training-hero,
-.bmt-surface-header,
-.e-card .e-card-header,
-.e-dialog .e-dlg-header-content {
+.bmt-surface-header {
     background:
         linear-gradient(135deg, rgba(11, 31, 51, 0.98) 0%, rgba(18, 48, 77, 0.95) 55%, rgba(18, 181, 203, 0.58) 100%) !important;
     color: #f8fbff !important;
     box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 8px 22px rgba(11, 31, 51, 0.16);
 }
 
+.e-card .e-card-header,
+.e-dialog:not(.pf-course-create-dialog):not(.pf-training-reset-dialog):not(.abmt-dialog) .e-dlg-header-content {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    color: #1a3a4a !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset;
+}
+
 .pf-training-hero h1,
 .pf-training-hero h2,
 .pf-training-hero h3,
 .pf-training-hero .page-title,
-.bmt-surface-header-title,
+.bmt-surface-header-title {
+    color: #f8fbff !important;
+}
+
 .e-card .e-card-header-title,
-.e-card .e-card-sub-title,
-.e-dialog .e-dlg-header,
-.e-dialog .e-dlg-header-content,
-.e-dialog .e-dlg-closeicon-btn {
+.e-card .e-card-sub-title {
+    color: #1a3a4a !important;
+}
+
+.e-dialog:not(.pf-course-create-dialog):not(.pf-training-reset-dialog):not(.abmt-dialog) .e-dlg-header,
+.e-dialog:not(.pf-course-create-dialog):not(.pf-training-reset-dialog):not(.abmt-dialog) .e-dlg-header-content,
+.e-dialog:not(.pf-course-create-dialog):not(.pf-training-reset-dialog):not(.abmt-dialog) .e-dlg-closeicon-btn {
     color: #f8fbff !important;
 }
 

@@ -74,19 +74,19 @@
             <!-- Actions -->
             <div class="pf-dialog-actions pf-dialog-actions--split" style="margin-top:16px;">
                 <div class="pf-grid-actions pf-grid-actions--compact">
-                    <SfButton type="button" CssClass="cb-btn-up" OnClick="MoveUpAsync">&#8593; Up</SfButton>
-                    <SfButton type="button" CssClass="cb-btn-down" OnClick="MoveDownAsync">&#8595; Down</SfButton>
+                    <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-up" IconCss="e-icons e-chevron-up" IconPosition="IconPosition.Left" OnClick="MoveUpAsync">Up</SfButton>
+                    <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-down" IconCss="e-icons e-chevron-down" IconPosition="IconPosition.Left" OnClick="MoveDownAsync">Down</SfButton>
                     @if (Model.ModuleId.HasValue)
                     {
-                        <SfButton type="button" CssClass="e-danger" OnClick="DeleteAsync">Delete</SfButton>
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-delete" IconCss="e-icons e-delete" IconPosition="IconPosition.Left" OnClick="DeleteAsync">Delete</SfButton>
                     }
                 </div>
                 <div class="pf-grid-actions pf-grid-actions--compact">
                     @if (Model.ModuleId.HasValue)
                     {
-                        <SfButton type="button" CssClass="e-primary" OnClick="CreateLessonAsync">+ New Lesson</SfButton>
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-new-lesson" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="CreateLessonAsync">New Lesson</SfButton>
                     }
-                    <SfButton CssClass="e-primary" IsPrimary="true" type="submit">Save Module</SfButton>
+                    <SfButton CssClass="pf-training-page-action-btn cb-btn-save-module" IsPrimary="true" IconCss="e-icons e-save" IconPosition="IconPosition.Left" type="submit">Save Module</SfButton>
                 </div>
             </div>
         </EditForm>
@@ -110,22 +110,29 @@
         new() { Command = ToolbarCommand.Bold },
         new() { Command = ToolbarCommand.Italic },
         new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.StrikeThrough },
         new() { Command = ToolbarCommand.Separator },
-        new() { Command = ToolbarCommand.Formats },
         new() { Command = ToolbarCommand.FontName },
         new() { Command = ToolbarCommand.FontSize },
         new() { Command = ToolbarCommand.FontColor },
         new() { Command = ToolbarCommand.BackgroundColor },
         new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Formats },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Indent },
+        new() { Command = ToolbarCommand.Outdent },
+        new() { Command = ToolbarCommand.Separator },
         new() { Command = ToolbarCommand.OrderedList },
         new() { Command = ToolbarCommand.UnorderedList },
-        new() { Command = ToolbarCommand.Alignments },
         new() { Command = ToolbarCommand.Separator },
         new() { Command = ToolbarCommand.CreateLink },
         new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.CreateTable },
+        new() { Command = ToolbarCommand.HorizontalLine },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.ClearFormat },
         new() { Command = ToolbarCommand.Undo },
-        new() { Command = ToolbarCommand.Redo },
-        new() { Command = ToolbarCommand.ClearFormat }
+        new() { Command = ToolbarCommand.Redo }
     ];
 
     private string GetFormName() => Model.ModuleId.HasValue

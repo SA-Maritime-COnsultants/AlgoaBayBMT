@@ -156,19 +156,19 @@
 
     private string DialogCssClass => IsCreateDialog
         ? "pf-training-dialog pf-training-dialog--subtle pf-course-create-dialog abmt-dialog"
-        : "pf-training-dialog pf-training-dialog--subtle abmt-dialog";
+        : "pf-training-dialog pf-training-dialog--subtle pf-course-edit-dialog abmt-dialog";
 
     private string DialogActionsCssClass => IsCreateDialog
         ? "pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions"
         : "pf-dialog-actions pf-training-dialog-actions";
 
     private string CancelButtonCssClass => IsCreateDialog
-        ? "pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel"
-        : "abmt-btn-cancel";
+        ? "ab-btn ab-btn-gray pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel"
+        : "ab-btn ab-btn-gray";
 
     private string SaveButtonCssClass => IsCreateDialog
-        ? "pf-course-create-dialog-btn pf-course-create-dialog-btn--save"
-        : "abmt-btn-save";
+        ? "ab-btn ab-btn-green pf-course-create-dialog-btn pf-course-create-dialog-btn--save"
+        : "ab-btn ab-btn-green";
 
     protected override void OnParametersSet()
     {

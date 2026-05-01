@@ -49,9 +49,11 @@
             <div class="page-subtitle">Build the module, lesson, and content-block structure for the active training course version.</div>
         </div>
         <div class="pf-grid-actions pf-grid-actions--compact">
-            <a class="e-btn" href="/training-management/courses">Back to Courses</a>
-            <SfButton OnClick="CreateNewVersionAsync">Create Next Version</SfButton>
-            <SfButton CssClass="e-primary" OnClick="PublishCurrentVersionAsync">Publish Current Version</SfButton>
+            <a class="e-btn pf-training-page-action-btn cb-btn-back-courses" href="/training-management/courses">
+                <span class="e-btn-icon e-icons e-arrow-left e-icon-left"></span>Back to Courses
+            </a>
+            <SfButton CssClass="pf-training-page-action-btn cb-btn-create-version" IconCss="e-icons e-copy" IconPosition="IconPosition.Left" OnClick="CreateNewVersionAsync">Create Next Version</SfButton>
+            <SfButton CssClass="pf-training-page-action-btn cb-btn-publish-version" IconCss="e-icons e-upload" IconPosition="IconPosition.Left" OnClick="PublishCurrentVersionAsync">Publish Current Version</SfButton>
         </div>
     </div>
 
@@ -66,14 +68,16 @@
     }
     else
     {
-        <div class="cb-course-summary-bar">
-            <div class="cb-course-summary-title">@Builder.Title</div>
-            <div class="cb-course-summary-badges">
-                <span class="e-badge pf-role-badge">@Builder.Code</span>
-                <span class="e-badge pf-role-badge">@Builder.CurrentVersionStatus</span>
-                <span class="e-badge pf-role-badge">Pass mark @Builder.PassMarkPercent%</span>
-                <span class="e-badge pf-role-badge">@Builder.Modules.Count module(s)</span>
-                <span class="e-badge pf-role-badge">@Builder.Modules.Sum(x => x.Lessons.Count) lesson(s)</span>
+        <div class="pf-header-container">
+            <div class="pf-header-row-primary">
+                <h1>@Builder.Title</h1>
+            </div>
+            <div class="pf-header-row-secondary">
+                <span class="e-badge pf-role-badge cb-summary-badge">@Builder.Code</span>
+                <span class="e-badge pf-role-badge cb-summary-badge cb-summary-badge--status">@Builder.CurrentVersionStatus</span>
+                <span class="e-badge pf-role-badge cb-summary-badge">Pass mark @Builder.PassMarkPercent%</span>
+                <span class="e-badge pf-role-badge cb-summary-badge">@Builder.Modules.Count module(s)</span>
+                <span class="e-badge pf-role-badge cb-summary-badge">@Builder.Modules.Sum(x => x.Lessons.Count) lesson(s)</span>
             </div>
         </div>
 
@@ -87,7 +91,7 @@
                     <section class="training-panel cb-dashboard-panel cb-dashboard-panel--structure mb-2">
                         <div class="training-panel-header cb-dashboard-header-content">
                             <span>Modules &amp; Lessons</span>
-                            <SfButton CssClass="e-primary e-small" OnClick="StartNewModule">+ Module</SfButton>
+                            <SfButton CssClass="pf-training-page-action-btn cb-btn-add-module" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="StartNewModule">+ Module</SfButton>
                         </div>
                         <div class="training-panel-body cb-dashboard-panel-body cb-dashboard-panel-body--tree">
                             <div class="cb-context-card">
@@ -148,7 +152,7 @@
                                                     }
                                                     @if (modId.HasValue)
                                                     {
-                                                        <SfButton CssClass="e-flat e-small cb-tree-add-lesson-btn" OnClick="() => StartNewLesson(modId.Value)">+ Add Lesson</SfButton>
+                                                        <SfButton CssClass="cb-tree-add-lesson-btn cb-btn-add-lesson-3d" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="() => StartNewLesson(modId.Value)">+ Add Lesson</SfButton>
                                                     }
                                                 </div>
                                             }
@@ -161,7 +165,7 @@
 
                     <!-- Student Preview panel -->
                     <section class="training-panel cb-dashboard-panel cb-dashboard-panel--preview">
-                        <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
+                        <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only cb-preview-panel-header">
                             <span>Student Preview</span>
                         </div>
                         <div class="training-panel-body cb-dashboard-panel-body cb-dashboard-panel-body--preview">
@@ -355,7 +359,7 @@
                                                                 CssClass="cb-add-block-ddl">
                                                     <DropDownListFieldSettings Text="Label" Value="Value" />
                                                 </SfDropDownList>
-                                                <SfButton CssClass="e-primary" OnClick="AddBlockFromDropdown">+ Add Block</SfButton>
+                                                <SfButton CssClass="e-primary cb-btn-add-block" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="AddBlockFromDropdown">+ Add Block</SfButton>
                                             </div>
                                         </div>
                                     </section>

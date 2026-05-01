@@ -20,8 +20,8 @@ main.app-content {
     --abmt-panel-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.60) inset, 0 4px 10px rgba(15, 35, 56, 0.12), 0 18px 32px rgba(15, 35, 56, 0.12);
     --abmt-panel-border: 1px solid rgba(15, 87, 96, 0.18);
     --abmt-panel-bg: #ffffff;
-    --abmt-header-text: #ffffff;
-    --abmt-header-gradient: linear-gradient(180deg, #0f5f64 0%, #0a4c52 52%, #073a40 100%);
+    --abmt-header-text: #1a3a4a;
+    --abmt-header-gradient: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
     --abmt-section-gap: 1rem;
 }
 
@@ -69,9 +69,9 @@ main.app-content .e-card .e-card-header,
 main.app-content .abmt-panel-3d .e-card-header {
     background: var(--abmt-header-gradient) !important;
     color: var(--abmt-header-text) !important;
-    border-bottom: 1px solid rgba(3, 45, 49, 0.55) !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18) !important;
     padding: 0.55rem 1rem !important;
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.10) inset !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
 }
 
 main.app-content .e-card .e-card-header .e-card-header-caption,
