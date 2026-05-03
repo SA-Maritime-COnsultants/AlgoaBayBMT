@@ -1,0 +1,103 @@
+@page "/crewing/compliance"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IVesselService VesselService
+@inject IComplianceService ComplianceService
+@inject IRegulatoryReportingService Reporting
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Compliance Dashboard</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Compliance Dashboard</h1>
+            <div class="page-subtitle">Vessel-level compliance snapshots and audit trail.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-refresh" OnClick="RevalidateAllAsync">Revalidate All Vessels</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Vessel Compliance (last 90 days)" />
+        <CardContent>
+            <div class="pf-training-responsive-grid">
+            <SfGrid DataSource="@Rows" TValue="VesselComplianceReportRow" AllowPaging="true" AllowSorting="true" AllowFiltering="true" CssClass="pf-grid--compact pf-courses-grid">
+                <GridPageSettings PageSize="15" />
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                <GridColumns>
+                    <GridColumn Field="@nameof(VesselComplianceReportRow.VesselName)" HeaderText="Vessel" Width="220" />
+                    <GridColumn HeaderText="Evaluated" Width="180"><Template>@FormatUtc((context as VesselComplianceReportRow)?.EvaluatedOnUtc)</Template></GridColumn>
+                    <GridColumn HeaderText="State" Width="160">
+                        <Template>
+                            @{ var r = context as VesselComplianceReportRow; }
+                            <span class="ab-badge @StateBadge(r?.State)">@r?.State</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(VesselComplianceReportRow.CompliantCrewCount)" HeaderText="Compliant" Width="120" TextAlign="TextAlign.Right" />
+                    <GridColumn Field="@nameof(VesselComplianceReportRow.NonCompliantCrewCount)" HeaderText="Non-Compliant" Width="140" TextAlign="TextAlign.Right" />
+                    <GridColumn Field="@nameof(VesselComplianceReportRow.ExpiringSoonCount)" HeaderText="Expiring Soon" Width="140" TextAlign="TextAlign.Right" />
+                    <GridColumn Field="@nameof(VesselComplianceReportRow.TotalCrewCount)" HeaderText="Total Crew" Width="120" TextAlign="TextAlign.Right" />
+                </GridColumns>
+            </SfGrid>
+            </div>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private List<VesselComplianceReportRow> Rows { get; set; } = [];
+    private string? Message;
+    private bool IsError;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        var to = DateTime.UtcNow;
+        var from = to.AddDays(-90);
+        Rows = await Reporting.GetVesselComplianceReportAsync(from, to);
+    }
+
+    private async Task<string?> CurrentUserIdAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        return auth.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
+
+    private async Task RevalidateAllAsync()
+    {
+        try
+        {
+            var userId = await CurrentUserIdAsync();
+            var vessels = await VesselService.GetAllAsync();
+            int processed = 0;
+            foreach (var v in vessels)
+            {
+                await ComplianceService.EvaluateVesselAsync(v.Id, userId);
+                processed++;
+            }
+            Message = $"Re-evaluated {processed} vessels.";
+            IsError = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    private static string FormatUtc(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy - HH:mm") : "—";
+
+    private static string StateBadge(VesselComplianceState? s) => s switch
+    {
+        VesselComplianceState.FullyCompliant => "ab-badge-active",
+        VesselComplianceState.PartiallyCompliant => "ab-badge-warning",
+        VesselComplianceState.NonCompliant => "ab-badge-inactive",
+        _ => ""
+    };
+}

@@ -57,6 +57,36 @@ namespace AlgoaBayBMT.Services
             return SendHtmlEmailAsync(user.Email ?? string.Empty, "Welcome to Algoa Bay BMT", "Welcome to Algoa Bay BMT", "Your registration was successful.", body, "Open portal", portalLink, portalBaseUrl);
         }
 
+        public Task<OperationResult> SendCrewWelcomeEmailAsync(ApplicationUser user, string generatedPassword, string portalBaseUrl, CancellationToken cancellationToken = default)
+        {
+            var greetingName = !string.IsNullOrWhiteSpace(user.FullName) ? user.FullName : user.Email ?? "there";
+            var portalLink = ResolvePortalLink(portalBaseUrl);
+            var rankText = user.IsCrew && user.CrewRank.HasValue
+                ? $"<p style='margin:0 0 12px;'>Crew rank on file: <strong>{WebUtility.HtmlEncode(user.CrewRank.Value.GetDisplayName())}</strong>.</p>"
+                : string.Empty;
+            var body = $"""
+                <p style='margin:0 0 12px;'>Hello {WebUtility.HtmlEncode(greetingName)},</p>
+                <p style='margin:0 0 12px;'>A crew account has been created for you on the <strong>{WebUtility.HtmlEncode(GetCompanyName())}</strong> training platform.</p>
+                <p style='margin:0 0 12px;'>Your account is ready to use. You can sign in with the credentials below:</p>
+                <table style='border-collapse:collapse;margin-bottom:16px;'>
+                  <tr><td style='padding:4px 12px 4px 0;font-weight:600;'>Login (email):</td><td style='padding:4px 0;'>{WebUtility.HtmlEncode(user.Email ?? string.Empty)}</td></tr>
+                  <tr><td style='padding:4px 12px 4px 0;font-weight:600;'>Temporary password:</td><td style='padding:4px 0;letter-spacing:2px;'><strong>{WebUtility.HtmlEncode(generatedPassword)}</strong></td></tr>
+                </table>
+                <p style='margin:0 0 12px;'><strong>Please change your password after your first login.</strong></p>
+                {rankText}
+                <p style='margin:0;'>If you have any questions, please contact your Master or the administrator.</p>
+            """;
+            return SendHtmlEmailAsync(
+                user.Email ?? string.Empty,
+                "Your Algoa Bay BMT crew account",
+                "Your crew training account is ready",
+                "You have been registered as a crew member.",
+                body,
+                "Sign in now",
+                portalLink,
+                portalBaseUrl);
+        }
+
         private async Task<OperationResult> SendHtmlEmailAsync(string toEmail, string subject, string heading, string intro, string bodyHtml, string? callToActionText, string? callToActionUrl, string? portalBaseUrl)
         {
             if (string.IsNullOrWhiteSpace(toEmail))

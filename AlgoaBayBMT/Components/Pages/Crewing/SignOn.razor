@@ -1,0 +1,166 @@
+@page "/crewing/sign-on"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IVesselService VesselService
+@inject ICrewService CrewService
+@inject ICrewAssignmentService AssignmentService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Sign On / Off</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Sign-On Workflow</h1>
+            <div class="page-subtitle">Compliance-gated sign-on / sign-off for vessel crew.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="New Sign-On" SubTitle="Compliance is evaluated before the assignment is recorded." />
+        <CardContent>
+            <div class="pf-form-grid">
+                <div class="pf-col-4">
+                    <label class="pf-field-label">Vessel</label>
+                    <SfDropDownList TValue="int" TItem="Vessel" DataSource="@Vessels" @bind-Value="SelectedVesselId" Placeholder="Select vessel" PopupHeight="280px">
+                        <DropDownListEvents TValue="int" TItem="Vessel" ValueChange="OnVesselChanged" />
+                        <DropDownListFieldSettings Value="Id" Text="Name" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-4">
+                    <label class="pf-field-label">Crew Member</label>
+                    <SfDropDownList TValue="int" TItem="CrewOption" DataSource="@CrewList" @bind-Value="SelectedCrewId" Placeholder="Select crew" AllowFiltering="true" PopupHeight="280px">
+                        <DropDownListFieldSettings Value="Id" Text="DisplayName" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-4">
+                    <label class="pf-field-label">Rank On Assignment</label>
+                    <SfDropDownList TValue="CrewRank" TItem="CrewRankOption" DataSource="@RankOptions" @bind-Value="SelectedRank" Placeholder="Select rank">
+                        <DropDownListFieldSettings Value="Value" Text="Text" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-6"><label class="pf-field-label">Port of Sign-On</label><SfTextBox @bind-Value="PortOfSignOn" /></div>
+                <div class="pf-col-6 pf-grid-actions pf-grid-actions--compact" style="align-items:flex-end;">
+                    <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-check-circled" OnClick="SignOnAsync">Sign On</SfButton>
+                </div>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="@($"Active Crew on {SelectedVesselName}")" SubTitle="Currently signed-on crew members." />
+        <CardContent>
+            <div class="pf-training-responsive-grid">
+            <SfGrid DataSource="@ActiveAssignments" TValue="CrewAssignment" AllowPaging="true" CssClass="pf-grid--compact pf-courses-grid">
+                <GridPageSettings PageSize="10" />
+                <GridColumns>
+                    <GridColumn HeaderText="Crew Member" Width="220"><Template>@((context as CrewAssignment)?.CrewMember?.LastName), @((context as CrewAssignment)?.CrewMember?.FirstName)</Template></GridColumn>
+                    <GridColumn HeaderText="Rank" Width="180"><Template>@((context as CrewAssignment)?.RankOnAssignment.GetDisplayName())</Template></GridColumn>
+                    <GridColumn HeaderText="Sign On" Width="180"><Template>@FormatUtc((context as CrewAssignment)?.SignOnDateUtc)</Template></GridColumn>
+                    <GridColumn Field="@nameof(CrewAssignment.PortOfSignOn)" HeaderText="Port" Width="160" />
+                    <GridColumn HeaderText="Actions" Width="200" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var a = context as CrewAssignment; }
+                            @if (a is not null)
+                            {
+                                <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                    <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-toggle" IconCss="e-icons e-export" OnClick="@(() => SignOffAsync(a.Id))" />
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+            </div>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public int? VesselId { get; set; }
+
+    private List<Vessel> Vessels { get; set; } = [];
+    private List<CrewOption> CrewList { get; set; } = [];
+    private List<CrewAssignment> ActiveAssignments { get; set; } = [];
+    private List<CrewRankOption> RankOptions { get; set; } = [];
+
+    public class CrewOption { public int Id { get; set; } public string DisplayName { get; set; } = ""; }
+
+    private int SelectedVesselId { get; set; }
+    private int SelectedCrewId { get; set; }
+    private CrewRank SelectedRank { get; set; }
+    private string? PortOfSignOn { get; set; }
+    private string SelectedVesselName => Vessels.FirstOrDefault(v => v.Id == SelectedVesselId)?.Name ?? "(no vessel selected)";
+
+    private string? Message;
+    private bool IsError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Vessels = await VesselService.GetAllAsync();
+        var crews = await CrewService.GetAllAsync();
+        CrewList = crews.Select(c => new CrewOption
+        {
+            Id = c.Id,
+            DisplayName = $"{c.LastName}, {c.FirstName}" + (c.Rank.HasValue ? $" ({c.Rank.Value.GetDisplayName()})" : string.Empty)
+        }).ToList();
+        RankOptions = CrewRankExtensions.All.ToList();
+
+        if (VesselId.HasValue) SelectedVesselId = VesselId.Value;
+        else SelectedVesselId = Vessels.FirstOrDefault()?.Id ?? 0;
+        await ReloadActiveAsync();
+    }
+
+    private async Task OnVesselChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int, Vessel> args)
+    {
+        SelectedVesselId = args.Value;
+        await ReloadActiveAsync();
+    }
+
+    private async Task ReloadActiveAsync()
+    {
+        if (SelectedVesselId == 0) { ActiveAssignments = []; return; }
+        ActiveAssignments = await AssignmentService.GetActiveByVesselAsync(SelectedVesselId);
+    }
+
+    private async Task<string?> CurrentUserIdAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        return auth.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
+
+    private async Task SignOnAsync()
+    {
+        try
+        {
+            if (SelectedVesselId == 0 || SelectedCrewId == 0) { Message = "Select a vessel and crew member."; IsError = true; return; }
+            var userId = await CurrentUserIdAsync();
+            var result = await AssignmentService.SignOnAsync(SelectedCrewId, SelectedVesselId, SelectedRank, PortOfSignOn, userId);
+            Message = result.Succeeded ? "Crew member signed on." : $"Sign-on blocked: {result.Message}";
+            IsError = !result.Succeeded;
+            if (result.Succeeded) await ReloadActiveAsync();
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    private async Task SignOffAsync(int assignmentId)
+    {
+        try
+        {
+            var userId = await CurrentUserIdAsync();
+            await AssignmentService.SignOffAsync(assignmentId, PortOfSignOn, userId);
+            Message = "Crew member signed off.";
+            IsError = false;
+            await ReloadActiveAsync();
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    private static string FormatUtc(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy - HH:mm") : "—";
+}

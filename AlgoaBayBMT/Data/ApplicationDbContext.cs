@@ -42,6 +42,23 @@ namespace AlgoaBayBMT.Data
         public DbSet<BargeDeployment> BargeDeployments => Set<BargeDeployment>();
         public DbSet<BargeDeploymentAudit> BargeDeploymentAudits => Set<BargeDeploymentAudit>();
 
+        // Crewing module
+        public DbSet<Vessel> Vessels => Set<Vessel>();
+        public DbSet<CrewMember> CrewMembers => Set<CrewMember>();
+        public DbSet<CrewDocument> CrewDocuments => Set<CrewDocument>();
+        public DbSet<CrewAssignment> CrewAssignments => Set<CrewAssignment>();
+        public DbSet<VesselComplianceSnapshot> VesselComplianceSnapshots => Set<VesselComplianceSnapshot>();
+        public DbSet<ComplianceRule> ComplianceRules => Set<ComplianceRule>();
+        public DbSet<ComplianceResult> ComplianceResults => Set<ComplianceResult>();
+        public DbSet<CertificateExpiryEvent> CertificateExpiryEvents => Set<CertificateExpiryEvent>();
+        public DbSet<ComplianceAuditEntry> ComplianceAuditEntries => Set<ComplianceAuditEntry>();
+
+        // Billing & notifications
+        public DbSet<OperatorBillingAccount> OperatorBillingAccounts => Set<OperatorBillingAccount>();
+        public DbSet<Invoice> Invoices => Set<Invoice>();
+        public DbSet<InvoiceLineItem> InvoiceLineItems => Set<InvoiceLineItem>();
+        public DbSet<NotificationMessage> NotificationMessages => Set<NotificationMessage>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -101,6 +118,8 @@ namespace AlgoaBayBMT.Data
 
             ConfigureTrainingEntities(builder);
             ConfigureBunkerOperationEntities(builder);
+            ConfigureCrewingEntities(builder);
+            ConfigureBillingEntities(builder);
         }
 
         private static void ConfigureBunkerOperationEntities(ModelBuilder builder)
@@ -634,6 +653,266 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ActionType).HasMaxLength(50).IsRequired();
                 entity.Property(x => x.ChangedByUserId).HasMaxLength(450);
                 entity.Property(x => x.Notes).HasMaxLength(500);
+            });
+        }
+
+        private static void ConfigureCrewingEntities(ModelBuilder builder)
+        {
+            builder.Entity<Vessel>(entity =>
+            {
+                entity.ToTable("Vessels");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.IMO).IsUnique().HasFilter("[IMO] IS NOT NULL");
+                entity.HasIndex(x => x.Name);
+                entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.HasOne(x => x.OwningOperator)
+                    .WithMany()
+                    .HasForeignKey(x => x.OwningOperatorId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.IsDeleted);
+            });
+
+            builder.Entity<CrewMember>(entity =>
+            {
+                entity.ToTable("CrewMembers");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.ApplicationUserId);
+                entity.HasIndex(x => new { x.LastName, x.FirstName });
+                entity.HasIndex(x => x.SidNumber);
+                entity.HasIndex(x => x.PassportNumber);
+                entity.Property(x => x.Rank)
+                    .HasConversion(
+                        value => value.HasValue ? value.Value.GetDisplayName() : null,
+                        value => CrewRankExtensions.ParseDisplayName(value))
+                    .HasMaxLength(50);
+                entity.Property(x => x.PrimaryQualification)
+                    .HasConversion<string>()
+                    .HasMaxLength(80);
+                entity.HasOne<ApplicationUser>()
+                    .WithMany()
+                    .HasForeignKey(x => x.ApplicationUserId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.EmployerOperator)
+                    .WithMany()
+                    .HasForeignKey(x => x.EmployerOperatorId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.IsDeleted);
+            });
+
+            builder.Entity<CrewDocument>(entity =>
+            {
+                entity.ToTable("CrewDocuments");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.CrewMemberId, x.DocumentType });
+                entity.HasIndex(x => x.ExpiryDate);
+                entity.Property(x => x.DocumentType).HasConversion<string>().HasMaxLength(50);
+                entity.HasOne(x => x.CrewMember)
+                    .WithMany(x => x.Documents)
+                    .HasForeignKey(x => x.CrewMemberId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasQueryFilter(x => !x.IsDeleted);
+            });
+
+            builder.Entity<CrewAssignment>(entity =>
+            {
+                entity.ToTable("CrewAssignments");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.VesselId, x.Status });
+                entity.HasIndex(x => new { x.CrewMemberId, x.Status });
+                entity.HasIndex(x => x.SignOnDateUtc);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.RankOnAssignment)
+                    .HasConversion(value => value.GetDisplayName(),
+                                   value => CrewRankExtensions.ParseDisplayName(value) ?? CrewRank.OrdinarySeaman)
+                    .HasMaxLength(50);
+                entity.HasOne(x => x.CrewMember)
+                    .WithMany(x => x.Assignments)
+                    .HasForeignKey(x => x.CrewMemberId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.Vessel)
+                    .WithMany(x => x.CrewAssignments)
+                    .HasForeignKey(x => x.VesselId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.ApprovingComplianceResult)
+                    .WithMany()
+                    .HasForeignKey(x => x.ApprovingComplianceResultId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.IsDeleted);
+            });
+
+            builder.Entity<VesselComplianceSnapshot>(entity =>
+            {
+                entity.ToTable("VesselComplianceSnapshots");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.VesselId, x.EvaluatedOnUtc });
+                entity.Property(x => x.State).HasConversion<string>().HasMaxLength(30);
+                entity.HasOne(x => x.Vessel)
+                    .WithMany(x => x.ComplianceSnapshots)
+                    .HasForeignKey(x => x.VesselId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasQueryFilter(x => !x.Vessel!.IsDeleted);
+            });
+
+            builder.Entity<ComplianceRule>(entity =>
+            {
+                entity.ToTable("ComplianceRules");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.Scope, x.IsActive });
+                entity.Property(x => x.Scope).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.RequiredDocumentType).HasConversion<string>().HasMaxLength(50);
+                entity.Property(x => x.RequiredForRank)
+                    .HasConversion(
+                        value => value.HasValue ? value.Value.GetDisplayName() : null,
+                        value => CrewRankExtensions.ParseDisplayName(value))
+                    .HasMaxLength(50);
+                entity.HasOne(x => x.RequiredForOperator)
+                    .WithMany()
+                    .HasForeignKey(x => x.RequiredForOperatorId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.RequiredCourse)
+                    .WithMany()
+                    .HasForeignKey(x => x.RequiredCourseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+
+            builder.Entity<ComplianceResult>(entity =>
+            {
+                entity.ToTable("ComplianceResults");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.CrewMemberId, x.EvaluatedOnUtc });
+                entity.HasIndex(x => x.VesselId);
+                entity.Property(x => x.State).HasConversion<string>().HasMaxLength(30);
+                entity.HasOne(x => x.CrewMember)
+                    .WithMany(x => x.ComplianceResults)
+                    .HasForeignKey(x => x.CrewMemberId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                entity.HasOne(x => x.Vessel)
+                    .WithMany()
+                    .HasForeignKey(x => x.VesselId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.GeneratedInvoice)
+                    .WithMany()
+                    .HasForeignKey(x => x.GeneratedInvoiceId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.CrewMember!.IsDeleted);
+            });
+
+            builder.Entity<CertificateExpiryEvent>(entity =>
+            {
+                entity.ToTable("CertificateExpiryEvents");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.Status, x.ExpiryDateUtc });
+                entity.HasIndex(x => x.CrewMemberId);
+                entity.Property(x => x.Source).HasConversion<string>().HasMaxLength(40);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.HasOne(x => x.CrewMember)
+                    .WithMany()
+                    .HasForeignKey(x => x.CrewMemberId)
+                    .OnDelete(DeleteBehavior.NoAction);
+                entity.HasOne(x => x.TrainingCertificate)
+                    .WithMany()
+                    .HasForeignKey(x => x.TrainingCertificateId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.CrewDocument)
+                    .WithMany()
+                    .HasForeignKey(x => x.CrewDocumentId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.CrewMember!.IsDeleted);
+            });
+
+            builder.Entity<ComplianceAuditEntry>(entity =>
+            {
+                entity.ToTable("ComplianceAuditEntries");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.Action, x.OccurredOnUtc });
+                entity.HasIndex(x => x.CrewMemberId);
+                entity.HasIndex(x => x.VesselId);
+                entity.Property(x => x.Action).HasConversion<string>().HasMaxLength(50);
+                entity.HasOne(x => x.CrewMember)
+                    .WithMany()
+                    .HasForeignKey(x => x.CrewMemberId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.Vessel)
+                    .WithMany()
+                    .HasForeignKey(x => x.VesselId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.ComplianceResult)
+                    .WithMany()
+                    .HasForeignKey(x => x.ComplianceResultId)
+                    .OnDelete(DeleteBehavior.SetNull);
+            });
+        }
+
+        private static void ConfigureBillingEntities(ModelBuilder builder)
+        {
+            builder.Entity<OperatorBillingAccount>(entity =>
+            {
+                entity.ToTable("OperatorBillingAccounts");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.BunkerOperatorId).IsUnique();
+                entity.HasOne(x => x.BunkerOperator)
+                    .WithMany()
+                    .HasForeignKey(x => x.BunkerOperatorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<Invoice>(entity =>
+            {
+                entity.ToTable("Invoices");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.InvoiceNumber).IsUnique();
+                entity.HasIndex(x => new { x.BunkerOperatorId, x.Status });
+                entity.Property(x => x.InvoiceNumber).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(30);
+                entity.Property(x => x.SubTotal).HasPrecision(18, 2);
+                entity.Property(x => x.TaxAmount).HasPrecision(18, 2);
+                entity.Property(x => x.TotalAmount).HasPrecision(18, 2);
+                entity.HasOne(x => x.OperatorBillingAccount)
+                    .WithMany()
+                    .HasForeignKey(x => x.OperatorBillingAccountId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.BunkerOperator)
+                    .WithMany()
+                    .HasForeignKey(x => x.BunkerOperatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.CrewMember)
+                    .WithMany()
+                    .HasForeignKey(x => x.CrewMemberId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasOne(x => x.Vessel)
+                    .WithMany()
+                    .HasForeignKey(x => x.VesselId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.IsDeleted);
+            });
+
+            builder.Entity<InvoiceLineItem>(entity =>
+            {
+                entity.ToTable("InvoiceLineItems");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Quantity).HasPrecision(18, 2);
+                entity.Property(x => x.UnitPrice).HasPrecision(18, 2);
+                entity.Property(x => x.LineTotal).HasPrecision(18, 2);
+                entity.HasOne(x => x.Invoice)
+                    .WithMany(x => x.LineItems)
+                    .HasForeignKey(x => x.InvoiceId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.RelatedCourse)
+                    .WithMany()
+                    .HasForeignKey(x => x.RelatedCourseId)
+                    .OnDelete(DeleteBehavior.SetNull);
+                entity.HasQueryFilter(x => !x.Invoice!.IsDeleted);
+            });
+
+            builder.Entity<NotificationMessage>(entity =>
+            {
+                entity.ToTable("NotificationMessages");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.RecipientUserId, x.Status });
+                entity.HasIndex(x => x.CreatedOnUtc);
+                entity.Property(x => x.Channel).HasConversion<string>().HasMaxLength(20);
+                entity.Property(x => x.Category).HasConversion<string>().HasMaxLength(40);
+                entity.Property(x => x.Status).HasConversion<string>().HasMaxLength(20);
             });
         }
     }

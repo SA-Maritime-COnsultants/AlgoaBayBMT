@@ -68,6 +68,19 @@ builder.Services.AddScoped<IPortService, PortService>();
 builder.Services.AddScoped<IOperatorService, OperatorService>();
 builder.Services.AddScoped<IBargeService, BargeService>();
 builder.Services.AddScoped<IBargeDeploymentService, BargeDeploymentService>();
+
+// Crewing module
+builder.Services.AddScoped<IVesselService, VesselService>();
+builder.Services.AddScoped<ICrewService, CrewService>();
+builder.Services.AddScoped<IComplianceService, ComplianceService>();
+builder.Services.AddScoped<ICrewAssignmentService, CrewAssignmentService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<IBillingService, BillingService>();
+builder.Services.AddScoped<IRegulatoryReportingService, RegulatoryReportingService>();
+builder.Services.AddHostedService<AlgoaBayBMT.Services.Background.CertificateExpiryWatcher>();
+builder.Services.AddHostedService<AlgoaBayBMT.Services.Background.NotificationDispatcher>();
+builder.Services.AddHostedService<AlgoaBayBMT.Services.Background.ComplianceRevalidator>();
+
 builder.Services.Configure<AlgoaBayBMT.Services.Models.EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 builder.Services.AddSingleton<IEmailTemplateRenderer, EmailTemplateRenderer>();
 builder.Services.AddSingleton<ApplicationEmailService>();

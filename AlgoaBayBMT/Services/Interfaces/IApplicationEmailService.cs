@@ -8,5 +8,6 @@ namespace AlgoaBayBMT.Services.Interfaces
     {
         Task SendWelcomeEmailAsync(ApplicationUser user, string portalBaseUrl, CancellationToken cancellationToken = default);
         Task<OperationResult> SendWelcomeEmailWithResultAsync(ApplicationUser user, string portalBaseUrl, CancellationToken cancellationToken = default);
+        Task<OperationResult> SendCrewWelcomeEmailAsync(ApplicationUser user, string generatedPassword, string portalBaseUrl, CancellationToken cancellationToken = default);
     }
 }
