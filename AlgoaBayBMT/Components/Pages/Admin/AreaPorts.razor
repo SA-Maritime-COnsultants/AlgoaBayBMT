@@ -1,0 +1,175 @@
+@page "/admin/areas/{AreaId:int}/ports"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IAreaService AreaService
+@inject IPortService PortService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Ports and Anchorages</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Ports / Anchorages</h1>
+            <div class="page-subtitle">@AreaTitle</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-arrow-left" IconPosition="IconPosition.Left" OnClick="@(() => NavigationManager.NavigateTo("/admin/areas"))">Back</SfButton>
+            <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="OpenCreateDialog">Add Port/Anchorage</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Configured Ports and Anchorages" SubTitle="Maintain navigational and bunkering permission metadata for this area." />
+        <CardContent>
+            <SfGrid DataSource="@Ports" TValue="Port" AllowPaging="true" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact">
+                <GridPageSettings PageSize="12" />
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                <GridColumns>
+                    <GridColumn Field="@nameof(Port.Name)" HeaderText="Name" Width="220" />
+                    <GridColumn Field="@nameof(Port.Type)" HeaderText="Type" Width="130" />
+                    <GridColumn HeaderText="Anchorage" Width="120" TextAlign="TextAlign.Center">
+                        <Template>@(((context as Port)?.IsAnchorage == true) ? "Yes" : "No")</Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Bunkering" Width="120" TextAlign="TextAlign.Center">
+                        <Template>@(((context as Port)?.IsBunkeringAllowed == true) ? "Allowed" : "No")</Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Active" Width="110" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var port = context as Port; }
+                            <span class="ab-badge @(port?.IsActive == true ? "ab-badge-active" : "ab-badge-inactive")">@(port?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var port = context as Port; }
+                            @if (port is not null)
+                            {
+                                <span class="pf-icon-action" title="Edit Port/Anchorage">
+                                    <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" IconCss="e-icons e-edit" OnClick="@(() => OpenEditDialog(port))" />
+                                </span>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="760px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+    <DialogTemplates>
+        <Header>@(EditModel.Id == 0 ? "Add Port/Anchorage" : "Edit Port/Anchorage")</Header>
+        <Content>
+            <EditForm Model="EditModel" OnValidSubmit="SaveAsync" FormName="port-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Name</label>
+                        <SfTextBox @bind-Value="EditModel.Name" Placeholder="Port or anchorage name" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Max Vessel Size</label>
+                        <SfTextBox @bind-Value="EditModel.MaxVesselSize" Placeholder="Optional" />
+                    </div>
+                    <div class="pf-col-4"><label class="pf-field-label">Latitude</label><SfNumericTextBox TValue="double?" @bind-Value="EditModel.Latitude" /></div>
+                    <div class="pf-col-4"><label class="pf-field-label">Longitude</label><SfNumericTextBox TValue="double?" @bind-Value="EditModel.Longitude" /></div>
+                    <div class="pf-col-4"><label class="pf-field-label">Depth</label><SfNumericTextBox TValue="double?" @bind-Value="EditModel.Depth" /></div>
+                    <div class="pf-col-4"><SfCheckBox @bind-Checked="EditModel.IsAnchorage" Label="Anchorage" /></div>
+                    <div class="pf-col-4"><SfCheckBox @bind-Checked="EditModel.IsBunkeringAllowed" Label="Bunkering Allowed" /></div>
+                    <div class="pf-col-4"><SfCheckBox @bind-Checked="EditModel.IsActive" Label="Active" /></div>
+                </div>
+
+                <div class="pf-dialog-actions pf-training-dialog-actions">
+                    <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseDialog">Cancel</SfButton>
+                    <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" IsPrimary="true" type="submit">Save</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter] public int AreaId { get; set; }
+
+    private List<Port> Ports { get; set; } = [];
+    private Port EditModel { get; set; } = new();
+    private string AreaTitle { get; set; } = "Loading area...";
+    private string? Message { get; set; }
+    private bool IsError { get; set; }
+    private bool IsDialogVisible { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var area = await AreaService.GetByIdAsync(AreaId);
+        AreaTitle = area is null ? "Area not found." : $"Manage ports and anchorages for {area.Name}.";
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        Ports = await PortService.GetByAreaAsync(AreaId);
+    }
+
+    private void OpenCreateDialog()
+    {
+        Message = null;
+        EditModel = new Port { AreaOfOperationId = AreaId, Type = "Port", IsActive = true, IsBunkeringAllowed = true };
+        IsDialogVisible = true;
+    }
+
+    private void OpenEditDialog(Port port)
+    {
+        Message = null;
+        EditModel = new Port
+        {
+            Id = port.Id,
+            AreaOfOperationId = port.AreaOfOperationId,
+            Name = port.Name,
+            Type = port.Type,
+            Latitude = port.Latitude,
+            Longitude = port.Longitude,
+            Depth = port.Depth,
+            MaxVesselSize = port.MaxVesselSize,
+            IsAnchorage = port.IsAnchorage,
+            IsBunkeringAllowed = port.IsBunkeringAllowed,
+            IsActive = port.IsActive
+        };
+        IsDialogVisible = true;
+    }
+
+    private void CloseDialog() => IsDialogVisible = false;
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (EditModel.Id == 0)
+            {
+                await PortService.CreateAsync(EditModel);
+            }
+            else
+            {
+                await PortService.UpdateAsync(EditModel);
+            }
+
+            Message = "Port/Anchorage saved successfully.";
+            IsError = false;
+            IsDialogVisible = false;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+}

@@ -1,0 +1,49 @@
+@page "/admin/deployments/{DeploymentId:int}/history"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IBargeDeploymentService DeploymentService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Deployment Audit Trail</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Deployment Audit Trail</h1>
+            <div class="page-subtitle">Review all recorded deployment actions for this barge deployment.</div>
+        </div>
+        <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-arrow-left" IconPosition="IconPosition.Left" OnClick="GoBack">Back</SfButton>
+    </div>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Audit Entries" SubTitle="Deployment audit records are ordered newest first." />
+        <CardContent>
+            <SfGrid DataSource="@AuditEntries" TValue="BargeDeploymentAudit" AllowPaging="true" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
+                <GridPageSettings PageSize="12" />
+                <GridColumns>
+                    <GridColumn Field="@nameof(BargeDeploymentAudit.Timestamp)" HeaderText="Timestamp" Width="180" Format="yyyy-MM-dd HH:mm:ss" />
+                    <GridColumn Field="@nameof(BargeDeploymentAudit.Action)" HeaderText="Action" Width="130" />
+                    <GridColumn Field="@nameof(BargeDeploymentAudit.PerformedBy)" HeaderText="Performed By" Width="220" />
+                    <GridColumn Field="@nameof(BargeDeploymentAudit.Details)" HeaderText="Details" Width="420" />
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    [Parameter] public int DeploymentId { get; set; }
+
+    private List<BargeDeploymentAudit> AuditEntries { get; set; } = [];
+
+    protected override async Task OnParametersSetAsync()
+    {
+        AuditEntries = await DeploymentService.GetAuditTrailAsync(DeploymentId);
+    }
+
+    private void GoBack()
+    {
+        NavigationManager.NavigateTo("/admin/barges");
+    }
+}

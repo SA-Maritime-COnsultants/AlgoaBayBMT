@@ -63,6 +63,45 @@
             </section>
         </AuthorizeView>
 
+        <AuthorizeView Roles="@RoleNames.Admin">
+            <section class="side-nav-group" aria-labelledby="admin-nav-heading">
+                <button id="admin-nav-heading" type="button" class="side-nav-group-toggle"
+                        @onclick="ToggleAdminAsync"
+                        aria-expanded="@_adminExpanded.ToString().ToLower()">
+                    <span class="side-nav-group-label">Admin</span>
+                    <span class="side-nav-chevron @(_adminExpanded ? "side-nav-chevron--open" : "")" aria-hidden="true">@((MarkupString)ChevronIcon)</span>
+                </button>
+                <div class="side-nav-collapsible @(_adminExpanded ? "side-nav-collapsible--open" : "")">
+                    <ul class="side-nav-items">
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="admin/areas" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)OperationsIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Areas of Operation</span><span class="side-nav-meta">Areas, regions, sensitivity</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="admin/areas/create" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)DashboardIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Create Area</span><span class="side-nav-meta">Add new operational area</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="admin/operators" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)RoleEditorIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Bunker Operators</span><span class="side-nav-meta">Operators and assignments</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="admin/barges" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Bunker Barges</span><span class="side-nav-meta">Barges and deployments</span></span>
+                            </NavLink>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </AuthorizeView>
+
         <AuthorizeView>
             <section class="side-nav-group" aria-labelledby="my-training-nav-heading">
                 <h2 id="my-training-nav-heading" class="side-nav-group-title">My Training</h2>

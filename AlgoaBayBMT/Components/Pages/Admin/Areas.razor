@@ -1,0 +1,174 @@
+@page "/admin/areas"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IAreaService AreaService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Areas of Operation</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Areas of Operation</h1>
+            <div class="page-subtitle">Manage operational areas, regions, sensitivity ratings, ports, anchorages, and deployment visibility.</div>
+        </div>
+        <SfButton CssClass="ab-btn ab-btn-success pf-training-page-action-btn" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="OpenCreateDialog">Create Area</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Operational Areas" SubTitle="Configure areas where operators and bunker barges may be assigned or deployed." />
+        <CardContent>
+            <SfGrid DataSource="@AreaItems" TValue="AreaOfOperation" AllowPaging="true" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact">
+                <GridPageSettings PageSize="12" />
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                <GridColumns>
+                    <GridColumn Field="@nameof(AreaOfOperation.Name)" HeaderText="Name" Width="220" />
+                    <GridColumn Field="@nameof(AreaOfOperation.RegionCode)" HeaderText="Region" Width="130" />
+                    <GridColumn Field="@nameof(AreaOfOperation.EnvironmentalSensitivityRating)" HeaderText="Sensitivity" Width="170" />
+                    <GridColumn HeaderText="Active" Width="110" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var area = context as AreaOfOperation; }
+                            <span class="ab-badge @(area?.IsActive == true ? "ab-badge-active" : "ab-badge-inactive")">@(area?.IsActive == true ? "Active" : "Inactive")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="220" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var area = context as AreaOfOperation; }
+                            @if (area is not null)
+                            {
+                                <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                    <span class="pf-icon-action" title="Edit Area">
+                                        <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" IconCss="e-icons e-edit" OnClick="@(() => OpenEditDialog(area))" />
+                                    </span>
+                                    <span class="pf-icon-action" title="Manage Ports / Anchorages">
+                                        <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-location" OnClick="@(() => NavigationManager.NavigateTo($"/admin/areas/{area.Id}/ports"))" />
+                                    </span>
+                                    <span class="pf-icon-action" title="View Deployments">
+                                        <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square abmt-grid-action-question-bank" IconCss="e-icons e-clock" OnClick="@(() => NavigationManager.NavigateTo("/admin/barges"))" />
+                                    </span>
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="720px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+    <DialogTemplates>
+        <Header>@(EditModel.Id == 0 ? "Create Area" : "Edit Area")</Header>
+        <Content>
+            <EditForm Model="EditModel" OnValidSubmit="SaveAsync" FormName="area-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Name</label>
+                        <SfTextBox @bind-Value="EditModel.Name" Placeholder="Area name" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Region Code</label>
+                        <SfTextBox @bind-Value="EditModel.RegionCode" Placeholder="Region code" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Environmental Sensitivity</label>
+                        <SfTextBox @bind-Value="EditModel.EnvironmentalSensitivityRating" Placeholder="Low / Medium / High" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Active</label>
+                        <SfCheckBox @bind-Checked="EditModel.IsActive" Label="Area is active" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Description</label>
+                        <SfTextBox Multiline="true" @bind-Value="EditModel.Description" Placeholder="Operational notes" />
+                    </div>
+                </div>
+
+                <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseDialog">Cancel</SfButton>
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" type="submit">Save Area</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<AreaOfOperation> AreaItems { get; set; } = [];
+    private AreaOfOperation EditModel { get; set; } = new();
+    private bool IsDialogVisible { get; set; }
+    private string? Message { get; set; }
+    private bool IsError { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        AreaItems = await AreaService.GetAllAsync();
+    }
+
+    private void OpenCreateDialog()
+    {
+        Message = null;
+        EditModel = new AreaOfOperation { IsActive = true };
+        IsDialogVisible = true;
+    }
+
+    private void OpenEditDialog(AreaOfOperation area)
+    {
+        Message = null;
+        EditModel = new AreaOfOperation
+        {
+            Id = area.Id,
+            Name = area.Name,
+            Description = area.Description,
+            RegionCode = area.RegionCode,
+            EnvironmentalSensitivityRating = area.EnvironmentalSensitivityRating,
+            IsActive = area.IsActive
+        };
+        IsDialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        IsDialogVisible = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (EditModel.Id == 0)
+            {
+                await AreaService.CreateAsync(EditModel);
+                Message = "Area of Operation created successfully.";
+            }
+            else
+            {
+                await AreaService.UpdateAsync(EditModel);
+                Message = "Area of Operation updated successfully.";
+            }
+
+            IsError = false;
+            IsDialogVisible = false;
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+}

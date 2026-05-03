@@ -34,6 +34,13 @@ namespace AlgoaBayBMT.Data
         public DbSet<UserAssessmentResponse> UserAssessmentResponses => Set<UserAssessmentResponse>();
         public DbSet<Lesson> AuthoringLessons => Set<Lesson>();
         public DbSet<LessonContentItem> LessonContentItems => Set<LessonContentItem>();
+        public DbSet<AreaOfOperation> AreasOfOperation => Set<AreaOfOperation>();
+        public DbSet<Port> Ports => Set<Port>();
+        public DbSet<BunkerOperator> BunkerOperators => Set<BunkerOperator>();
+        public DbSet<OperatorAreaAssignment> OperatorAreaAssignments => Set<OperatorAreaAssignment>();
+        public DbSet<BunkerBarge> BunkerBarges => Set<BunkerBarge>();
+        public DbSet<BargeDeployment> BargeDeployments => Set<BargeDeployment>();
+        public DbSet<BargeDeploymentAudit> BargeDeploymentAudits => Set<BargeDeploymentAudit>();
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -93,6 +100,118 @@ namespace AlgoaBayBMT.Data
             });
 
             ConfigureTrainingEntities(builder);
+            ConfigureBunkerOperationEntities(builder);
+        }
+
+        private static void ConfigureBunkerOperationEntities(ModelBuilder builder)
+        {
+            builder.Entity<AreaOfOperation>(entity =>
+            {
+                entity.ToTable("BunkerAreasOfOperation");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.Name).IsUnique();
+                entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Description).HasMaxLength(1000);
+                entity.Property(x => x.RegionCode).HasMaxLength(50);
+                entity.Property(x => x.EnvironmentalSensitivityRating).HasMaxLength(100);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+            });
+
+            builder.Entity<Port>(entity =>
+            {
+                entity.ToTable("BunkerPorts");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.AreaOfOperationId);
+                entity.HasIndex(x => new { x.AreaOfOperationId, x.Name });
+                entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Type).HasMaxLength(20).IsRequired();
+                entity.Property(x => x.MaxVesselSize).HasMaxLength(100);
+                entity.Property(x => x.IsBunkeringAllowed).HasDefaultValue(true);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasOne(x => x.AreaOfOperation)
+                    .WithMany(x => x.Ports)
+                    .HasForeignKey(x => x.AreaOfOperationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<BunkerOperator>(entity =>
+            {
+                entity.ToTable("BunkerOperators");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.Name).IsUnique();
+                entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.CompanyRegistrationNumber).HasMaxLength(100);
+                entity.Property(x => x.PhysicalAddress).HasMaxLength(500);
+                entity.Property(x => x.ContactPerson).HasMaxLength(150);
+                entity.Property(x => x.Email).HasMaxLength(254);
+                entity.Property(x => x.Phone).HasMaxLength(50);
+                entity.Property(x => x.EmergencyContactNumber).HasMaxLength(50);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+            });
+
+            builder.Entity<OperatorAreaAssignment>(entity =>
+            {
+                entity.ToTable("BunkerOperatorAreaAssignments");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.BunkerOperatorId, x.AreaOfOperationId, x.AssignedFrom, x.AssignedTo });
+                entity.HasOne(x => x.BunkerOperator)
+                    .WithMany(x => x.AreaAssignments)
+                    .HasForeignKey(x => x.BunkerOperatorId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.AreaOfOperation)
+                    .WithMany(x => x.OperatorAssignments)
+                    .HasForeignKey(x => x.AreaOfOperationId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<BunkerBarge>(entity =>
+            {
+                entity.ToTable("BunkerBarges");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.BunkerOperatorId);
+                entity.HasIndex(x => x.Name);
+                entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.IMO).HasMaxLength(20);
+                entity.Property(x => x.MMSI).HasMaxLength(20);
+                entity.Property(x => x.CallSign).HasMaxLength(30);
+                entity.Property(x => x.FuelTypesSupported).HasMaxLength(300);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasOne(x => x.BunkerOperator)
+                    .WithMany(x => x.Barges)
+                    .HasForeignKey(x => x.BunkerOperatorId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<BargeDeployment>(entity =>
+            {
+                entity.ToTable("BunkerBargeDeployments");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.BunkerBargeId, x.DeployedFrom, x.DeployedTo });
+                entity.HasIndex(x => new { x.AreaOfOperationId, x.DeployedFrom, x.DeployedTo });
+                entity.Property(x => x.Notes).HasMaxLength(1000);
+                entity.HasOne(x => x.BunkerBarge)
+                    .WithMany(x => x.Deployments)
+                    .HasForeignKey(x => x.BunkerBargeId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.AreaOfOperation)
+                    .WithMany(x => x.BargeDeployments)
+                    .HasForeignKey(x => x.AreaOfOperationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<BargeDeploymentAudit>(entity =>
+            {
+                entity.ToTable("BunkerBargeDeploymentAudits");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.BargeDeploymentId, x.Timestamp });
+                entity.Property(x => x.Action).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.PerformedBy).HasMaxLength(256).IsRequired();
+                entity.Property(x => x.Details).HasMaxLength(1000).IsRequired();
+                entity.HasOne(x => x.Deployment)
+                    .WithMany(x => x.AuditEntries)
+                    .HasForeignKey(x => x.BargeDeploymentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
 
         private static void ConfigureTrainingEntities(ModelBuilder builder)

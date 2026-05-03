@@ -1,0 +1,229 @@
+﻿/* ═══════════════════════════════════════════════════════════════════
+   AlgoaBay Global Reusable UI Classes
+   Loaded LAST — plain href (not @Assets) so no fingerprint miss.
+   ═══════════════════════════════════════════════════════════════════
+
+   SPECIFICITY MAP
+   ───────────────────────────────────────────────────────────────────
+   Syncfusion fluent2.css worst-case selector inside a dialog:
+       .e-dialog .e-dlg-content .e-btn   →  0,3,0  (also !important)
+
+   We use the dialog's own CssClass "abmt-dialog" to build:
+       .abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn
+       →  0,5,0  (also !important) — always wins.
+
+   Top-of-page buttons (outside any dialog) still use the lighter
+   2-class selector; they are not under .e-dialog so no conflict.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────
+   1.  BASE BUTTON — geometry/typography (page + dialog)
+   ────────────────────────────────────────────────────────────────── */
+.ab-btn.e-btn,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn.e-btn {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    background-image: none !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+    transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important;
+    transform: none !important;
+    text-decoration: none !important;
+}
+
+.ab-btn.e-btn::before,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn.e-btn::before {
+    display: none !important;
+}
+
+/* Icon glyph */
+.ab-btn.e-btn .e-btn-icon,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn.e-btn .e-btn-icon {
+    font-family: "e-icons" !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    font-weight: normal !important;
+    speak: none !important;
+    -webkit-font-smoothing: antialiased;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   2.  PASTEL GREEN — Create / Save buttons
+   ────────────────────────────────────────────────────────────────── */
+
+/* default + focus + active */
+.ab-btn-success.e-btn,
+.ab-btn-success.e-btn:focus,
+.ab-btn-success.e-btn:active,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:focus,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset,
+                0 2px 5px rgba(10,80,20,0.18) !important;
+}
+
+/* hover */
+.ab-btn-success.e-btn:hover,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset,
+                0 4px 10px rgba(10,80,20,0.22) !important;
+}
+
+/* icon colour */
+.ab-btn-success.e-btn .e-btn-icon,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn .e-btn-icon {
+    color: #0f3319 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   3.  PASTEL GRAY — Cancel buttons
+   ────────────────────────────────────────────────────────────────── */
+
+/* default + focus + active */
+.ab-btn-neutral.e-btn,
+.ab-btn-neutral.e-btn:focus,
+.ab-btn-neutral.e-btn:active,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-neutral.e-btn,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-neutral.e-btn:focus,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-neutral.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 2px 5px rgba(0,0,0,0.14) !important;
+}
+
+/* hover */
+.ab-btn-neutral.e-btn:hover,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-neutral.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* icon colour */
+.ab-btn-neutral.e-btn .e-btn-icon,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-neutral.e-btn .e-btn-icon {
+    color: #2d3748 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   4.  .ab-btn-icon  inline icon+text helper
+   ────────────────────────────────────────────────────────────────── */
+.ab-btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   5.  DIALOG HEADER  (.ab-dialog on SfDialog CssClass)
+       Matches Create Course header: #ddecf0 background, black text,
+       X icon aligned right.
+   ────────────────────────────────────────────────────────────────── */
+.ab-dialog.e-dialog .e-dlg-header-content,
+.abmt-dialog.e-dialog .e-dlg-header-content {
+    min-height: 52px !important;
+    padding: 0.6rem 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #ddecf0 !important;
+    border-bottom: 1px solid #b8d8e0 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset !important;
+}
+
+.ab-dialog.e-dialog .e-dlg-header,
+.abmt-dialog.e-dialog .e-dlg-header {
+    min-height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: transparent !important;
+    color: #000000 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    flex: 1 !important;
+    order: 1 !important;
+}
+
+/* X close icon — right-aligned */
+.ab-dialog.e-dialog .e-dlg-closeicon-btn,
+.abmt-dialog.e-dialog .e-dlg-closeicon-btn {
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-top: 0 !important;
+    color: #2d3748 !important;
+    order: 2 !important;
+    flex-shrink: 0 !important;
+}
+
+.ab-dialog.e-dialog .e-dlg-content,
+.abmt-dialog.e-dialog .e-dlg-content {
+    margin-top: 10px !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   6.  DIALOG FOOTER ROW
+   ────────────────────────────────────────────────────────────────── */
+.ab-dialog-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   7.  RESPONSIVE
+   ────────────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+    .ab-btn.e-btn,
+    .abmt-dialog.e-dialog .e-dlg-content .ab-btn.e-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .ab-dialog-footer {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,142 @@
+@page "/admin/operators/{OperatorId:int}/assign-areas"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IOperatorService OperatorService
+@inject IAreaService AreaService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Operator Area Assignments</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Assign Areas</h1>
+            <div class="page-subtitle">@OperatorTitle</div>
+        </div>
+        <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-arrow-left" IconPosition="IconPosition.Left" OnClick="@(() => NavigationManager.NavigateTo("/admin/operators"))">Back</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Area Assignment" SubTitle="Assign this operator to one or more active areas of operation." />
+        <CardContent>
+            <EditForm Model="AssignmentModel" OnValidSubmit="AssignAsync" FormName="operator-area-assignment-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Area of Operation</label>
+                        <SfDropDownList TValue="int" TItem="AreaOfOperation" DataSource="@Areas" @bind-Value="AssignmentModel.AreaId" Placeholder="Select area">
+                            <DropDownListFieldSettings Value="Id" Text="Name" />
+                        </SfDropDownList>
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Assigned From</label>
+                        <SfDateTimePicker TValue="DateTime" @bind-Value="AssignmentModel.AssignedFrom" />
+                    </div>
+                </div>
+                <div class="pf-dialog-actions pf-training-dialog-actions">
+                    <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-add" IconPosition="IconPosition.Left" IsPrimary="true" type="submit">Assign Area</SfButton>
+                </div>
+            </EditForm>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Assignment History" SubTitle="Current and historical area authorisations for this bunker operator." />
+        <CardContent>
+            <SfGrid DataSource="@Assignments" TValue="OperatorAreaAssignment" AllowPaging="true" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
+                <GridPageSettings PageSize="12" />
+                <GridColumns>
+                    <GridColumn HeaderText="Area" Width="220"><Template>@((context as OperatorAreaAssignment)?.AreaOfOperation?.Name)</Template></GridColumn>
+                    <GridColumn Field="@nameof(OperatorAreaAssignment.AssignedFrom)" HeaderText="Assigned From" Width="170" Format="yyyy-MM-dd HH:mm" />
+                    <GridColumn Field="@nameof(OperatorAreaAssignment.AssignedTo)" HeaderText="Assigned To" Width="170" Format="yyyy-MM-dd HH:mm" />
+                    <GridColumn HeaderText="Status" Width="110" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var assignment = context as OperatorAreaAssignment; }
+                            <span class="ab-badge @(assignment?.AssignedTo == null ? "ab-badge-active" : "ab-badge-inactive")">@(assignment?.AssignedTo == null ? "Active" : "Ended")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var assignment = context as OperatorAreaAssignment; }
+                            @if (assignment is not null && assignment.AssignedTo is null)
+                            {
+                                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" OnClick="@(() => EndAssignmentAsync(assignment.Id))">End</SfButton>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    [Parameter] public int OperatorId { get; set; }
+
+    private BunkerOperator? Operator { get; set; }
+    private List<AreaOfOperation> Areas { get; set; } = [];
+    private List<OperatorAreaAssignment> Assignments { get; set; } = [];
+    private AreaAssignmentInput AssignmentModel { get; set; } = new() { AssignedFrom = DateTime.UtcNow };
+    private string OperatorTitle { get; set; } = "Loading operator...";
+    private string? Message { get; set; }
+    private bool IsError { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Areas = (await AreaService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        await LoadOperatorAsync();
+    }
+
+    private async Task LoadOperatorAsync()
+    {
+        Operator = await OperatorService.GetByIdAsync(OperatorId);
+        OperatorTitle = Operator is null ? "Operator not found." : $"Manage area assignments for {Operator.Name}.";
+        Assignments = Operator?.AreaAssignments.OrderByDescending(x => x.AssignedFrom).ToList() ?? [];
+        AssignmentModel = new AreaAssignmentInput { AssignedFrom = DateTime.UtcNow, AreaId = Areas.FirstOrDefault()?.Id ?? 0 };
+    }
+
+    private async Task AssignAsync()
+    {
+        try
+        {
+            await OperatorService.AssignToAreaAsync(OperatorId, AssignmentModel.AreaId, AssignmentModel.AssignedFrom);
+            Message = "Area assigned successfully.";
+            IsError = false;
+            await LoadOperatorAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+
+    private async Task EndAssignmentAsync(int assignmentId)
+    {
+        try
+        {
+            await OperatorService.EndAreaAssignmentAsync(assignmentId, DateTime.UtcNow);
+            Message = "Area assignment ended successfully.";
+            IsError = false;
+            await LoadOperatorAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+
+    private sealed class AreaAssignmentInput
+    {
+        public int AreaId { get; set; }
+        public DateTime AssignedFrom { get; set; } = DateTime.UtcNow;
+    }
+}

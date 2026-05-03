@@ -1,0 +1,182 @@
+@page "/admin/barges/{BargeId:int}/deployments"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IBargeService BargeService
+@inject IBargeDeploymentService DeploymentService
+@inject IAreaService AreaService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Barge Deployments</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Barge Deployments</h1>
+            <div class="page-subtitle">@BargeTitle</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-arrow-left" IconPosition="IconPosition.Left" OnClick="@(() => NavigationManager.NavigateTo("/admin/barges"))">Back</SfButton>
+            <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="OpenDeployDialog">Deploy Barge</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Deployment History" SubTitle="Track where this barge was deployed and the relevant deployment windows." />
+        <CardContent>
+            <SfGrid DataSource="@Deployments" TValue="BargeDeployment" AllowPaging="true" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact">
+                <GridPageSettings PageSize="12" />
+                <GridColumns>
+                    <GridColumn HeaderText="Area" Width="220"><Template>@((context as BargeDeployment)?.AreaOfOperation?.Name)</Template></GridColumn>
+                    <GridColumn Field="@nameof(BargeDeployment.DeployedFrom)" HeaderText="Deployed From" Width="170" Format="yyyy-MM-dd HH:mm" />
+                    <GridColumn Field="@nameof(BargeDeployment.DeployedTo)" HeaderText="Deployed To" Width="170" Format="yyyy-MM-dd HH:mm" />
+                    <GridColumn Field="@nameof(BargeDeployment.Notes)" HeaderText="Notes" Width="260" />
+                    <GridColumn HeaderText="Actions" Width="190" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var deployment = context as BargeDeployment; }
+                            @if (deployment is not null)
+                            {
+                                <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                    @if (deployment.DeployedTo is null)
+                                    {
+                                        <span class="pf-icon-action" title="End Deployment">
+                                            <SfButton CssClass="e-flat pf-btn-deactivate pf-btn-icon pf-btn-square abmt-grid-action-toggle" IconCss="e-icons e-close" OnClick="@(() => EndDeploymentAsync(deployment.Id))" />
+                                        </span>
+                                    }
+                                    <span class="pf-icon-action" title="View Audit Trail">
+                                        <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-clock" OnClick="@(() => NavigationManager.NavigateTo($"/admin/deployments/{deployment.Id}/history"))" />
+                                    </span>
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="760px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeployDialogVisible">
+    <DialogTemplates>
+        <Header>Deploy Barge</Header>
+        <Content>
+            <EditForm Model="DeployModel" OnValidSubmit="DeployAsync" FormName="barge-deploy-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Area of Operation</label>
+                        <SfDropDownList TValue="int" TItem="AreaOfOperation" DataSource="@Areas" @bind-Value="DeployModel.AreaId" Placeholder="Select area">
+                            <DropDownListFieldSettings Value="Id" Text="Name" />
+                        </SfDropDownList>
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Deployed From</label>
+                        <SfDateTimePicker TValue="DateTime" @bind-Value="DeployModel.DeployedFrom" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Notes</label>
+                        <SfTextBox Multiline="true" @bind-Value="DeployModel.Notes" Placeholder="Deployment notes" />
+                    </div>
+                </div>
+                <div class="pf-dialog-actions pf-training-dialog-actions">
+                    <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseDeployDialog">Cancel</SfButton>
+                    <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" IsPrimary="true" type="submit">Save Deployment</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    [Parameter] public int BargeId { get; set; }
+
+    private BunkerBarge? Barge { get; set; }
+    private List<BargeDeployment> Deployments { get; set; } = [];
+    private List<AreaOfOperation> Areas { get; set; } = [];
+    private DeployInput DeployModel { get; set; } = new();
+    private string BargeTitle { get; set; } = "Loading barge...";
+    private string? Message { get; set; }
+    private bool IsError { get; set; }
+    private bool IsDeployDialogVisible { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        Barge = await BargeService.GetByIdAsync(BargeId);
+        BargeTitle = Barge is null ? "Barge not found." : $"Deployment records for {Barge.Name}.";
+        Areas = (await AreaService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        await LoadDeploymentsAsync();
+    }
+
+    private async Task LoadDeploymentsAsync()
+    {
+        Deployments = await DeploymentService.GetByBargeAsync(BargeId);
+    }
+
+    private void OpenDeployDialog()
+    {
+        Message = null;
+        DeployModel = new DeployInput
+        {
+            AreaId = Areas.FirstOrDefault()?.Id ?? 0,
+            DeployedFrom = DateTime.UtcNow
+        };
+        IsDeployDialogVisible = true;
+    }
+
+    private void CloseDeployDialog() => IsDeployDialogVisible = false;
+
+    private async Task DeployAsync()
+    {
+        try
+        {
+            var performedBy = await GetPerformedByAsync();
+            await DeploymentService.DeployAsync(BargeId, DeployModel.AreaId, DeployModel.DeployedFrom, DeployModel.Notes, performedBy);
+            Message = "Barge deployed successfully.";
+            IsError = false;
+            IsDeployDialogVisible = false;
+            await LoadDeploymentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+
+    private async Task EndDeploymentAsync(int deploymentId)
+    {
+        try
+        {
+            var performedBy = await GetPerformedByAsync();
+            await DeploymentService.EndDeploymentAsync(deploymentId, DateTime.UtcNow, performedBy);
+            Message = "Deployment ended successfully.";
+            IsError = false;
+            await LoadDeploymentsAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+
+    private async Task<string> GetPerformedByAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return authState.User.Identity?.Name ?? "System";
+    }
+
+    private sealed class DeployInput
+    {
+        public int AreaId { get; set; }
+        public DateTime DeployedFrom { get; set; } = DateTime.UtcNow;
+        public string? Notes { get; set; }
+    }
+}

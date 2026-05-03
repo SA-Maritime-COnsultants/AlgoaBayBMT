@@ -1,0 +1,117 @@
+@page "/admin/areas/create"
+@page "/admin/areas/{Id:int}/edit"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IAreaService AreaService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(Id.HasValue ? "Edit Area" : "Create Area")</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">@(Id.HasValue ? "Edit Area" : "Create Area")</h1>
+            <div class="page-subtitle">Maintain core operational area information used for operator assignments and barge deployments.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Area Details" SubTitle="Complete all required fields before saving." />
+        <CardContent>
+            <EditForm Model="Model" OnValidSubmit="SaveAsync" FormName="area-edit-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Name</label>
+                        <SfTextBox @bind-Value="Model.Name" Placeholder="Area name" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Region Code</label>
+                        <SfTextBox @bind-Value="Model.RegionCode" Placeholder="Region code" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Environmental Sensitivity</label>
+                        <SfTextBox @bind-Value="Model.EnvironmentalSensitivityRating" Placeholder="Low / Medium / High" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Active</label>
+                        <SfCheckBox @bind-Checked="Model.IsActive" Label="Area is active" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Description</label>
+                        <SfTextBox Multiline="true" @bind-Value="Model.Description" Placeholder="Operational notes" />
+                    </div>
+                </div>
+
+                <div class="pf-dialog-actions pf-training-dialog-actions">
+                    <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="Cancel">Cancel</SfButton>
+                    <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" IsPrimary="true" type="submit">Save Area</SfButton>
+                </div>
+            </EditForm>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    [Parameter] public int? Id { get; set; }
+
+    private AreaOfOperation Model { get; set; } = new() { IsActive = true };
+    private string? Message { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id.HasValue)
+        {
+            var area = await AreaService.GetByIdAsync(Id.Value);
+            if (area is null)
+            {
+                Message = "Area of Operation was not found.";
+                return;
+            }
+
+            Model = new AreaOfOperation
+            {
+                Id = area.Id,
+                Name = area.Name,
+                Description = area.Description,
+                RegionCode = area.RegionCode,
+                EnvironmentalSensitivityRating = area.EnvironmentalSensitivityRating,
+                IsActive = area.IsActive
+            };
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            if (Model.Id == 0)
+            {
+                await AreaService.CreateAsync(Model);
+            }
+            else
+            {
+                await AreaService.UpdateAsync(Model);
+            }
+
+            NavigationManager.NavigateTo("/admin/areas");
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+        }
+    }
+
+    private void Cancel()
+    {
+        NavigationManager.NavigateTo("/admin/areas");
+    }
+}
