@@ -91,6 +91,10 @@
                     <div class="pf-col-12 pf-col-xl-4">
                         <div class="pf-training-course-meta-panel">
                             <div>
+                                <label class="pf-field-label">Training Cost</label>
+                                <SfNumericTextBox @bind-Value="Model.Cost" Format="N2" Placeholder="0.00" FloatLabelType="FloatLabelType.Never" Min="0" />
+                            </div>
+                            <div>
                                 <label class="pf-field-label">Regulatory Reference</label>
                                 <SfTextBox @bind-Value="Model.RegulatoryReference" Placeholder="Reference or standard" FloatLabelType="FloatLabelType.Never" />
                             </div>

@@ -39,6 +39,7 @@ namespace AlgoaBayBMT.Services.Models
         public int? CurrentVersionNumber { get; set; }
         public string? CurrentVersionLabel { get; set; }
         public CourseVersionStatus? CurrentVersionStatus { get; set; }
+        public decimal Cost { get; set; }
         public int ModuleCount { get; set; }
         public int LessonCount { get; set; }
         public int EnrolledLearnerCount { get; set; }
@@ -137,6 +138,9 @@ namespace AlgoaBayBMT.Services.Models
         public bool IsMandatory { get; set; } = true;
 
         public bool IsActive { get; set; } = true;
+
+        [Range(0, 9999999)]
+        public decimal Cost { get; set; }
     }
 
     public sealed class TrainingCourseBuilderModel
@@ -409,5 +413,15 @@ namespace AlgoaBayBMT.Services.Models
     {
         public Guid ModuleId { get; set; }
         public string Name { get; set; } = string.Empty;
+    }
+
+    public sealed class TrainingRequirementRowModel
+    {
+        public Guid CourseId { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public bool RequiredForAllCrew { get; set; }
+        public List<CrewRank> RequiredForRanks { get; set; } = [];
     }
 }

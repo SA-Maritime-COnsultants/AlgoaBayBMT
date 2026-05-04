@@ -31,6 +31,17 @@ public sealed class CrewComplianceWorkflowService(
         return snapshot;
     }
 
+    public async Task<CrewComplianceDashboardModel?> GetCrewDashboardByUserIdAsync(string applicationUserId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(applicationUserId)) return null;
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+        var crew = await dbContext.CrewMembers.AsNoTracking()
+            .Include(x => x.EmployerOperator)
+            .FirstOrDefaultAsync(x => x.ApplicationUserId == applicationUserId, cancellationToken);
+        if (crew is null) return null;
+        return await BuildCrewDashboardAsync(dbContext, crew, vesselId: null, cancellationToken);
+    }
+
     public async Task<List<CrewComplianceDashboardModel>> GetCrewRegisterDashboardAsync(CancellationToken cancellationToken = default)
     {
         await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -48,6 +59,32 @@ public sealed class CrewComplianceWorkflowService(
         }
 
         return results;
+    }
+
+    public async Task<Dictionary<int, CrewComplianceOverallStatus>> GetCrewComplianceSummaryAsync(IEnumerable<int> crewMemberIds, CancellationToken cancellationToken = default)
+    {
+        var idList = crewMemberIds.Distinct().ToList();
+        if (idList.Count == 0) return [];
+
+        await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var crews = await dbContext.CrewMembers.AsNoTracking()
+            .Include(x => x.EmployerOperator)
+            .Where(x => idList.Contains(x.Id))
+            .ToListAsync(cancellationToken);
+
+        var result = new Dictionary<int, CrewComplianceOverallStatus>(idList.Count);
+        foreach (var crew in crews)
+        {
+            var dashboard = await BuildCrewDashboardAsync(dbContext, crew, vesselId: null, cancellationToken);
+            result[crew.Id] = dashboard.OverallStatus;
+        }
+
+        // Any requested IDs not found in DB get Unknown
+        foreach (var id in idList.Where(id => !result.ContainsKey(id)))
+            result[id] = CrewComplianceOverallStatus.Unknown;
+
+        return result;
     }
 
     public async Task<List<TrainingApprovalQueueItemModel>> GetPendingApprovalsAsync(int? operatorId = null, CancellationToken cancellationToken = default)
@@ -416,22 +453,33 @@ public sealed class CrewComplianceWorkflowService(
 
     private async Task<CrewComplianceDashboardModel> BuildCrewDashboardAsync(ApplicationDbContext dbContext, CrewMember crew, int? vesselId, CancellationToken cancellationToken)
     {
-        var courseQuery = dbContext.Courses.AsNoTracking().Where(x => x.IsActive && x.CurrentVersionId.HasValue);
-        var courses = await courseQuery.Select(x => new CourseProjection
-        {
-            CourseId = x.CourseId,
-            Code = x.Code,
-            Title = x.Title,
-            Summary = x.Summary,
-            AudienceSummary = x.TargetAudienceSummary,
-            PassMarkPercent = x.PassMarkPercent,
-            IsMandatory = x.IsMandatory,
-            Cost = x.Cost,
-            ValidityMonths = x.ValidityMonths
-        }).ToListAsync(cancellationToken);
+        // Load mandatory audience rules first so we can include courses that have
+        // been flagged mandatory even if they are currently inactive.
+        var mandatoryCourseIds = await dbContext.CourseAudienceRules.AsNoTracking()
+            .Where(x => x.IsMandatory)
+            .Select(x => x.CourseId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+
+        var courses = await dbContext.Courses.AsNoTracking()
+            .Where(x => (x.IsActive && x.CurrentVersionId.HasValue) || mandatoryCourseIds.Contains(x.CourseId))
+            .Select(x => new CourseProjection
+            {
+                CourseId = x.CourseId,
+                Code = x.Code,
+                Title = x.Title,
+                Summary = x.Summary,
+                AudienceSummary = x.TargetAudienceSummary,
+                PassMarkPercent = x.PassMarkPercent,
+                IsMandatory = x.IsMandatory,
+                Cost = x.Cost,
+                ValidityMonths = x.ValidityMonths
+            }).ToListAsync(cancellationToken);
+
+        var courseIds = courses.Select(c => c.CourseId).ToList();
 
         var rules = await dbContext.CourseAudienceRules.AsNoTracking()
-            .Where(x => courses.Select(c => c.CourseId).Contains(x.CourseId))
+            .Where(x => courseIds.Contains(x.CourseId))
             .ToListAsync(cancellationToken);
 
         var assignments = string.IsNullOrWhiteSpace(crew.ApplicationUserId)
@@ -526,6 +574,7 @@ public sealed class CrewComplianceWorkflowService(
                 CrewComplianceOverallStatus.PendingApproval => "Pending Approval",
                 CrewComplianceOverallStatus.PendingPayment => "Pending Payment",
                 CrewComplianceOverallStatus.Expired => "Expired",
+                CrewComplianceOverallStatus.Unknown => "Unknown",
                 _ => "Unknown"
             },
             Summary = BuildSummary(items),
@@ -544,7 +593,7 @@ public sealed class CrewComplianceWorkflowService(
     {
         if (items.Count == 0)
         {
-            return CrewComplianceOverallStatus.FullyCompliant;
+            return CrewComplianceOverallStatus.Unknown;
         }
 
         if (items.Any(x => x.IsExpired))
@@ -574,7 +623,7 @@ public sealed class CrewComplianceWorkflowService(
     {
         if (items.Count == 0)
         {
-            return "No mandatory training courses are currently required for this crew member.";
+            return "No applicable mandatory training courses were found. Compliance status is unknown — ensure position and audience rules are configured.";
         }
 
         if (items.Any(x => x.IsExpired))

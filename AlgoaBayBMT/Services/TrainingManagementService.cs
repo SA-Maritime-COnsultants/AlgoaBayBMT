@@ -12,7 +12,8 @@ namespace AlgoaBayBMT.Services
     public class TrainingManagementService(
         IDbContextFactory<ApplicationDbContext> dbContextFactory,
         RoleManager<IdentityRole> roleManager,
-        ITrainingAssetStorageService trainingAssetStorageService) : ITrainingManagementService
+        ITrainingAssetStorageService trainingAssetStorageService,
+        ILogger<TrainingManagementService> logger) : ITrainingManagementService
     {
         public async Task<TrainingDashboardModel> GetDashboardAsync(CancellationToken cancellationToken = default)
         {
@@ -144,7 +145,8 @@ namespace AlgoaBayBMT.Services
                     IsActive = x.IsActive,
                     ThumbnailUrl = x.ThumbnailUrl,
                     CurrentVersionId = x.CurrentVersionId,
-                    CreatedOnUtc = x.CreatedOnUtc
+                    CreatedOnUtc = x.CreatedOnUtc,
+                    Cost = x.Cost
                 })
                 .ToListAsync(cancellationToken);
 
@@ -388,7 +390,8 @@ namespace AlgoaBayBMT.Services
                     DurationMinutes = x.EstimatedDurationMinutes,
                     EstimatedDurationMinutes = x.EstimatedDurationMinutes,
                     IsMandatory = x.IsMandatory,
-                    IsActive = x.IsActive
+                    IsActive = x.IsActive,
+                    Cost = x.Cost
                 })
                 .FirstOrDefaultAsync(cancellationToken);
 
@@ -439,7 +442,7 @@ namespace AlgoaBayBMT.Services
             }
 
             course.Code = normalizedCode;
-            var normalizedTitle = string.IsNullOrWhiteSpace(model.Name) ? model.Title.Trim() : model.Name.Trim();
+            var normalizedTitle = string.IsNullOrWhiteSpace(model.Title) ? model.Name.Trim() : model.Title.Trim();
             course.Title = normalizedTitle;
             course.Summary = model.Summary?.Trim();
             course.Description = model.Description?.Trim();
@@ -452,6 +455,7 @@ namespace AlgoaBayBMT.Services
             course.EstimatedDurationMinutes = model.DurationMinutes ?? model.EstimatedDurationMinutes;
             course.IsMandatory = model.IsMandatory;
             course.IsActive = model.IsActive;
+            course.Cost = model.Cost;
 
             var existingAudienceRules = await dbContext.CourseAudienceRules
                 .Where(x => x.CourseId == course.CourseId)
@@ -1559,6 +1563,135 @@ namespace AlgoaBayBMT.Services
             }
 
             return trimmed;
+        }
+
+        // ── Training Requirements ──────────────────────────────────────────────
+
+        public async Task<List<TrainingRequirementRowModel>> GetTrainingRequirementsAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+                // Load courses with their audience rules in two separate queries to avoid
+                // EF Core translation issues with .ToList() inside a Select projection.
+                var courses = await ctx.Courses
+                    .AsNoTracking()
+                    .OrderBy(c => c.Title)
+                    .ToListAsync(cancellationToken);
+
+                var courseIds = courses.Select(c => c.CourseId).ToList();
+
+                var rules = await ctx.CourseAudienceRules
+                    .AsNoTracking()
+                    .Where(r => courseIds.Contains(r.CourseId) && r.IsMandatory)
+                    .ToListAsync(cancellationToken);
+
+                var rulesByCourse = rules.GroupBy(r => r.CourseId)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var allRankOptions = Enum.GetValues<CrewRank>().ToList();
+
+                return courses.Select(c =>
+                {
+                    var courseRules = rulesByCourse.TryGetValue(c.CourseId, out var r) ? r : [];
+
+                    var requiredRanks = courseRules
+                        .Where(r => r.RuleType == CourseAudienceRuleType.OnBoardRole && r.OnBoardRole != null)
+                        .Select(r => allRankOptions.Cast<CrewRank?>()
+                            .FirstOrDefault(rank => string.Equals(rank!.Value.GetDisplayName(), r.OnBoardRole, StringComparison.OrdinalIgnoreCase)))
+                        .Where(rank => rank.HasValue)
+                        .Select(rank => rank!.Value)
+                        .ToList();
+
+                    return new TrainingRequirementRowModel
+                    {
+                        CourseId = c.CourseId,
+                        Code = c.Code,
+                        Title = c.Title,
+                        IsActive = c.IsActive,
+                        RequiredForAllCrew = courseRules.Any(r => r.RuleType == CourseAudienceRuleType.AllCrew),
+                        RequiredForRanks = requiredRanks
+                    };
+                }).ToList();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error loading training requirements");
+                return [];
+            }
+        }
+
+        public async Task<OperationResult> SetCourseAllCrewRequirementAsync(Guid courseId, bool required, string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+                var existing = await ctx.CourseAudienceRules
+                    .Where(r => r.CourseId == courseId && r.RuleType == CourseAudienceRuleType.AllCrew && r.IsMandatory)
+                    .FirstOrDefaultAsync(cancellationToken);
+
+                if (required && existing == null)
+                {
+                    ctx.CourseAudienceRules.Add(new CourseAudienceRule
+                    {
+                        CourseAudienceRuleId = Guid.NewGuid(),
+                        CourseId = courseId,
+                        RuleType = CourseAudienceRuleType.AllCrew,
+                        IsMandatory = true,
+                        Notes = $"Set by admin on {DateTime.UtcNow:dd MMM yyyy}"
+                    });
+                    await ctx.SaveChangesAsync(cancellationToken);
+                }
+                else if (!required && existing != null)
+                {
+                    ctx.CourseAudienceRules.Remove(existing);
+                    await ctx.SaveChangesAsync(cancellationToken);
+                }
+
+                return OperationResult.Success();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error setting all-crew requirement for course {CourseId}", courseId);
+                return OperationResult.Failure(ex.Message);
+            }
+        }
+
+        public async Task<OperationResult> SetCourseRankRequirementsAsync(Guid courseId, IEnumerable<CrewRank>? ranks, string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                await using var ctx = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+                var existing = await ctx.CourseAudienceRules
+                    .Where(r => r.CourseId == courseId && r.RuleType == CourseAudienceRuleType.OnBoardRole && r.IsMandatory)
+                    .ToListAsync(cancellationToken);
+
+                ctx.CourseAudienceRules.RemoveRange(existing);
+
+                foreach (var rank in ranks ?? [])
+                {
+                    ctx.CourseAudienceRules.Add(new CourseAudienceRule
+                    {
+                        CourseAudienceRuleId = Guid.NewGuid(),
+                        CourseId = courseId,
+                        RuleType = CourseAudienceRuleType.OnBoardRole,
+                        OnBoardRole = rank.GetDisplayName(),
+                        IsMandatory = true,
+                        Notes = $"Set by admin on {DateTime.UtcNow:dd MMM yyyy}"
+                    });
+                }
+
+                await ctx.SaveChangesAsync(cancellationToken);
+                return OperationResult.Success();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error setting rank requirements for course {CourseId}", courseId);
+                return OperationResult.Failure(ex.Message);
+            }
         }
     }
 }

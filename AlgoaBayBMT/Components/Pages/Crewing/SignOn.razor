@@ -5,6 +5,7 @@
 @inject IVesselService VesselService
 @inject ICrewService CrewService
 @inject ICrewAssignmentService AssignmentService
+@inject ICrewComplianceWorkflowService ComplianceWorkflowService
 @inject AuthenticationStateProvider AuthState
 
 <PageTitle>Sign On / Off</PageTitle>
@@ -56,14 +57,35 @@
     <SfCard CssClass="pf-card-shell abmt-panel-3d">
         <CardHeader Title="@($"Active Crew on {SelectedVesselName}")" SubTitle="Currently signed-on crew members." />
         <CardContent>
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <button class="btn btn-sm @(SignOnComplianceFilter == null ? "btn-primary" : "btn-outline-secondary")" @onclick='() => { SignOnComplianceFilter = null; }'>All</button>
+                <button class="btn btn-sm @(SignOnComplianceFilter == CrewComplianceOverallStatus.FullyCompliant ? "btn-success" : "btn-outline-success")" @onclick='() => { SignOnComplianceFilter = CrewComplianceOverallStatus.FullyCompliant; }'>✅ Compliant</button>
+                <button class="btn btn-sm @(SignOnComplianceFilter == CrewComplianceOverallStatus.PendingTraining ? "btn-warning" : "btn-outline-warning")" @onclick='() => { SignOnComplianceFilter = CrewComplianceOverallStatus.PendingTraining; }'>⚠️ Non-Compliant</button>
+                <button class="btn btn-sm @(SignOnComplianceFilter == CrewComplianceOverallStatus.Expired ? "btn-danger" : "btn-outline-danger")" @onclick='() => { SignOnComplianceFilter = CrewComplianceOverallStatus.Expired; }'>🔴 Expired</button>
+            </div>
             <div class="pf-training-responsive-grid">
-            <SfGrid DataSource="@ActiveAssignments" TValue="CrewAssignment" AllowPaging="true" CssClass="pf-grid--compact pf-courses-grid">
+            <SfGrid DataSource="@FilteredAssignments" TValue="CrewAssignment" AllowPaging="true" CssClass="pf-grid--compact pf-courses-grid">
                 <GridPageSettings PageSize="10" />
                 <GridColumns>
                     <GridColumn HeaderText="Crew Member" Width="220"><Template>@((context as CrewAssignment)?.CrewMember?.LastName), @((context as CrewAssignment)?.CrewMember?.FirstName)</Template></GridColumn>
                     <GridColumn HeaderText="Rank" Width="180"><Template>@((context as CrewAssignment)?.RankOnAssignment.GetDisplayName())</Template></GridColumn>
                     <GridColumn HeaderText="Sign On" Width="180"><Template>@FormatUtc((context as CrewAssignment)?.SignOnDateUtc)</Template></GridColumn>
                     <GridColumn Field="@nameof(CrewAssignment.PortOfSignOn)" HeaderText="Port" Width="160" />
+                    <GridColumn HeaderText="Compliance" Width="160" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var a = context as CrewAssignment; }
+                            @if (a is not null && SignOnComplianceStatuses.TryGetValue(a.CrewMemberId, out var cs))
+                            {
+                                <a href="/crewing/crew/@a.CrewMemberId" style="text-decoration:none;" title="@SignOnComplianceTooltip(a.CrewMemberId)">
+                                    <span class="badge @SignOnComplianceBadgeCss(cs)">@SignOnComplianceText(cs)</span>
+                                </a>
+                            }
+                            else if (a is not null)
+                            {
+                                <span class="badge bg-secondary">—</span>
+                            }
+                        </Template>
+                    </GridColumn>
                     <GridColumn HeaderText="Actions" Width="200" TextAlign="TextAlign.Center">
                         <Template>
                             @{ var a = context as CrewAssignment; }
@@ -88,6 +110,12 @@
     private List<Vessel> Vessels { get; set; } = [];
     private List<CrewOption> CrewList { get; set; } = [];
     private List<CrewAssignment> ActiveAssignments { get; set; } = [];
+    private Dictionary<int, CrewComplianceOverallStatus> SignOnComplianceStatuses { get; set; } = [];
+    private CrewComplianceOverallStatus? SignOnComplianceFilter { get; set; }
+
+    private List<CrewAssignment> FilteredAssignments => SignOnComplianceFilter is null
+        ? ActiveAssignments
+        : ActiveAssignments.Where(a => SignOnComplianceStatuses.TryGetValue(a.CrewMemberId, out var s) && s == SignOnComplianceFilter).ToList();
     private List<CrewRankOption> RankOptions { get; set; } = [];
 
     public class CrewOption { public int Id { get; set; } public string DisplayName { get; set; } = ""; }
@@ -125,8 +153,37 @@
 
     private async Task ReloadActiveAsync()
     {
-        if (SelectedVesselId == 0) { ActiveAssignments = []; return; }
+        if (SelectedVesselId == 0) { ActiveAssignments = []; SignOnComplianceStatuses = []; return; }
         ActiveAssignments = await AssignmentService.GetActiveByVesselAsync(SelectedVesselId);
+        var ids = ActiveAssignments.Select(a => a.CrewMemberId);
+        SignOnComplianceStatuses = await ComplianceWorkflowService.GetCrewComplianceSummaryAsync(ids);
+    }
+
+    private static string SignOnComplianceBadgeCss(CrewComplianceOverallStatus s) => s switch
+    {
+        CrewComplianceOverallStatus.FullyCompliant => "bg-success",
+        CrewComplianceOverallStatus.PendingTraining => "bg-warning text-dark",
+        CrewComplianceOverallStatus.PendingApproval => "bg-warning text-dark",
+        CrewComplianceOverallStatus.PendingPayment => "bg-warning text-dark",
+        CrewComplianceOverallStatus.Expired => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private static string SignOnComplianceText(CrewComplianceOverallStatus s) => s switch
+    {
+        CrewComplianceOverallStatus.FullyCompliant => "✅ Compliant",
+        CrewComplianceOverallStatus.PendingTraining => "⚠️ Non-Compliant",
+        CrewComplianceOverallStatus.PendingApproval => "⚠️ Pending",
+        CrewComplianceOverallStatus.PendingPayment => "⚠️ Pending",
+        CrewComplianceOverallStatus.Expired => "🔴 Expired",
+        _ => "❓ Unknown"
+    };
+
+    private string SignOnComplianceTooltip(int crewId)
+    {
+        if (SignOnComplianceStatuses.TryGetValue(crewId, out var s))
+            return s == CrewComplianceOverallStatus.FullyCompliant ? "Fully compliant" : "Non-compliant — click to view details";
+        return string.Empty;
     }
 
     private async Task<string?> CurrentUserIdAsync()

@@ -6,7 +6,9 @@ namespace AlgoaBayBMT.Services.Interfaces;
 public interface ICrewComplianceWorkflowService
 {
     Task<CrewComplianceDashboardModel?> GetCrewDashboardAsync(int crewMemberId, int? vesselId = null, CancellationToken cancellationToken = default);
+    Task<CrewComplianceDashboardModel?> GetCrewDashboardByUserIdAsync(string applicationUserId, CancellationToken cancellationToken = default);
     Task<List<CrewComplianceDashboardModel>> GetCrewRegisterDashboardAsync(CancellationToken cancellationToken = default);
+    Task<Dictionary<int, CrewComplianceOverallStatus>> GetCrewComplianceSummaryAsync(IEnumerable<int> crewMemberIds, CancellationToken cancellationToken = default);
     Task<List<TrainingApprovalQueueItemModel>> GetPendingApprovalsAsync(int? operatorId = null, CancellationToken cancellationToken = default);
     Task<OperationResult<TrainingRegistrationSubmissionResultModel>> SubmitTrainingRegistrationAsync(TrainingRegistrationSelectionModel request, string? performedByUserId, CancellationToken cancellationToken = default);
     Task<OperationResult<TrainingApprovalResultModel>> ApproveRegistrationsAsync(IEnumerable<Guid> assignmentIds, string? performedByUserId, string portalBaseUrl, CancellationToken cancellationToken = default);

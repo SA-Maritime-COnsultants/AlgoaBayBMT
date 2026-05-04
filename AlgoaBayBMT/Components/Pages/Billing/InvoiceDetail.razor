@@ -41,6 +41,14 @@
                     <div class="pf-col-3"><label class="pf-field-label">Date</label><div>@Invoice.InvoiceDateUtc.ToString("dd MMM yyyy")</div></div>
                     <div class="pf-col-3"><label class="pf-field-label">Due</label><div>@(Invoice.DueDateUtc?.ToString("dd MMM yyyy") ?? "—")</div></div>
                     <div class="pf-col-3"><label class="pf-field-label">Currency</label><div>@Invoice.Currency</div></div>
+                    @if (Invoice.CrewMember is not null)
+                    {
+                        <div class="pf-col-3"><label class="pf-field-label">Student</label><div>@($"{Invoice.CrewMember.FirstName} {Invoice.CrewMember.LastName}".Trim())</div></div>
+                        @if (!string.IsNullOrWhiteSpace(Invoice.CrewMember.SidNumber))
+                        {
+                            <div class="pf-col-3"><label class="pf-field-label">Student No.</label><div>@Invoice.CrewMember.SidNumber</div></div>
+                        }
+                    }
                     <div class="pf-col-3"><label class="pf-field-label">Sub Total</label><div>@Invoice.SubTotal.ToString("N2")</div></div>
                     <div class="pf-col-3"><label class="pf-field-label">Tax</label><div>@Invoice.TaxAmount.ToString("N2")</div></div>
                     <div class="pf-col-3"><label class="pf-field-label">Total</label><div><strong>@Invoice.TotalAmount.ToString("N2")</strong></div></div>

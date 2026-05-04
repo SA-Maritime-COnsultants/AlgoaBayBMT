@@ -102,6 +102,15 @@ namespace AlgoaBayBMT.Services
                 var courseList = courseIds.Distinct().ToList();
                 var courses = await db.Courses.AsNoTracking().Where(c => courseList.Contains(c.CourseId)).ToListAsync(cancellationToken);
 
+                CrewMember? crewMember = null;
+                if (crewMemberId.HasValue)
+                {
+                    crewMember = await db.CrewMembers.AsNoTracking().FirstOrDefaultAsync(c => c.Id == crewMemberId.Value, cancellationToken);
+                }
+                var studentLabel = crewMember is not null
+                    ? $"{crewMember.FirstName} {crewMember.LastName}".Trim() + (!string.IsNullOrWhiteSpace(crewMember.SidNumber) ? $" ({crewMember.SidNumber})" : string.Empty)
+                    : null;
+
                 var nowUtc = DateTime.UtcNow;
                 var invoice = new Invoice
                 {
@@ -122,16 +131,19 @@ namespace AlgoaBayBMT.Services
                 foreach (var courseId in courseList)
                 {
                     var course = courses.FirstOrDefault(c => c.CourseId == courseId);
+                    var courseCost = course?.Cost ?? unitPrice;
+                    var courseTitle = course is null ? $"Compliance remediation course {courseId}" : $"Compliance remediation: {course.Title}";
+                    var description = studentLabel is not null ? $"{courseTitle} — {studentLabel}" : courseTitle;
                     var line = new InvoiceLineItem
                     {
-                        Description = course is null ? $"Compliance remediation course {courseId}" : $"Compliance remediation: {course.Title}",
+                        Description = description,
                         Quantity = 1m,
-                        UnitPrice = unitPrice,
-                        LineTotal = unitPrice,
+                        UnitPrice = courseCost,
+                        LineTotal = courseCost,
                         RelatedCourseId = courseId
                     };
                     invoice.LineItems.Add(line);
-                    subtotal += unitPrice;
+                    subtotal += courseCost;
                 }
 
                 invoice.SubTotal = subtotal;

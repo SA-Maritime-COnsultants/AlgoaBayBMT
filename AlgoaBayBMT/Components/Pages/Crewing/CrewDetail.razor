@@ -33,6 +33,20 @@
 
         @if (WorkflowDashboard is not null)
         {
+            @if (WorkflowDashboard.OverallStatus is CrewComplianceOverallStatus.PendingTraining or CrewComplianceOverallStatus.Expired)
+            {
+                <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                    <strong>NON-COMPLIANT</strong> — This crew member has not completed all mandatory training for their position.
+                </div>
+            }
+            else if (WorkflowDashboard.OverallStatus == CrewComplianceOverallStatus.Unknown)
+            {
+                <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3" role="alert">
+                    <i class="bi bi-question-circle-fill fs-5"></i>
+                    <strong>UNKNOWN</strong> — No applicable training courses found for this crew member. Ensure audience rules are configured.
+                </div>
+            }
             <SfCard CssClass="pf-card-shell abmt-panel-3d">
                 <CardHeader Title="Compliance Overview" SubTitle="Training compliance, approval and payment status for this crew member." />
                 <CardContent>
@@ -535,6 +549,7 @@
         CrewComplianceOverallStatus.PendingApproval => "ab-badge-warning",
         CrewComplianceOverallStatus.PendingPayment => "ab-badge-warning",
         CrewComplianceOverallStatus.Expired => "ab-badge-inactive",
+        CrewComplianceOverallStatus.Unknown => "ab-badge-ops",
         _ => "ab-badge-inactive"
     };
 

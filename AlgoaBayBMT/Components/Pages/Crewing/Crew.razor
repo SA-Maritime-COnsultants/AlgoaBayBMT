@@ -4,6 +4,7 @@
 
 @inject ICrewService CrewService
 @inject IOperatorService OperatorService
+@inject ICrewComplianceWorkflowService ComplianceWorkflowService
 @inject AuthenticationStateProvider AuthState
 @inject NavigationManager NavigationManager
 
@@ -28,8 +29,15 @@
     <SfCard CssClass="pf-card-shell abmt-panel-3d">
         <CardHeader Title="Crew Members" SubTitle="Click a row to manage documents and assignments." />
         <CardContent>
+            <div class="d-flex gap-2 mb-3 flex-wrap">
+                <button class="btn btn-sm @(ComplianceFilter == null ? "btn-primary" : "btn-outline-secondary")" @onclick='() => SetFilter(null)'>All</button>
+                <button class="btn btn-sm @(ComplianceFilter == CrewComplianceOverallStatus.FullyCompliant ? "btn-success" : "btn-outline-success")" @onclick='() => SetFilter(CrewComplianceOverallStatus.FullyCompliant)'>✅ Compliant</button>
+                <button class="btn btn-sm @(ComplianceFilter == CrewComplianceOverallStatus.PendingTraining ? "btn-warning" : "btn-outline-warning")" @onclick='() => SetFilter(CrewComplianceOverallStatus.PendingTraining)'>⚠️ Non-Compliant</button>
+                <button class="btn btn-sm @(ComplianceFilter == CrewComplianceOverallStatus.Expired ? "btn-danger" : "btn-outline-danger")" @onclick='() => SetFilter(CrewComplianceOverallStatus.Expired)'>🔴 Expired</button>
+                <button class="btn btn-sm @(ComplianceFilter == CrewComplianceOverallStatus.Unknown ? "btn-secondary" : "btn-outline-secondary")" @onclick='() => SetFilter(CrewComplianceOverallStatus.Unknown)'>❓ Unknown</button>
+            </div>
             <div class="pf-training-responsive-grid">
-            <SfGrid DataSource="@Items" TValue="CrewMember" AllowPaging="true" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
+            <SfGrid DataSource="@FilteredItems" TValue="CrewMember" AllowPaging="true" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
                 <GridPageSettings PageSize="15" />
                 <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
                 <GridColumns>
@@ -60,6 +68,21 @@
                             else
                             {
                                 <span class="ab-badge ab-badge-inactive" title="No Identity account">—</span>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Compliance" Width="160" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var c = context as CrewMember; }
+                            @if (c is not null && ComplianceStatuses.TryGetValue(c.Id, out var cs))
+                            {
+                                <a href="/crewing/crew/@c.Id" style="text-decoration:none;">
+                                    <span class="badge @ComplianceBadgeCss(cs)">@ComplianceStatusText(cs)</span>
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">—</span>
                             }
                         </Template>
                     </GridColumn>
@@ -140,9 +163,12 @@
 
 @code {
     private List<CrewMember> Items { get; set; } = [];
+    private List<CrewMember> FilteredItems { get; set; } = [];
     private List<BunkerOperator> Operators { get; set; } = [];
     private List<CrewRankOption> RankOptions { get; set; } = [];
     private CrewMember EditModel { get; set; } = new();
+    private Dictionary<int, CrewComplianceOverallStatus> ComplianceStatuses { get; set; } = [];
+    private CrewComplianceOverallStatus? ComplianceFilter { get; set; }
     private bool IsDialogVisible { get; set; }
     private string? Message { get; set; }
     private bool IsError { get; set; }
@@ -157,7 +183,43 @@
     {
         Items = await CrewService.GetAllAsync();
         Operators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        var ids = Items.Select(x => x.Id);
+        ComplianceStatuses = await ComplianceWorkflowService.GetCrewComplianceSummaryAsync(ids);
+        ApplyFilter();
     }
+
+    private void SetFilter(CrewComplianceOverallStatus? status)
+    {
+        ComplianceFilter = status;
+        ApplyFilter();
+    }
+
+    private void ApplyFilter()
+    {
+        FilteredItems = ComplianceFilter is null
+            ? Items
+            : Items.Where(c => ComplianceStatuses.TryGetValue(c.Id, out var s) && s == ComplianceFilter).ToList();
+    }
+
+    private static string ComplianceBadgeCss(CrewComplianceOverallStatus s) => s switch
+    {
+        CrewComplianceOverallStatus.FullyCompliant => "bg-success",
+        CrewComplianceOverallStatus.PendingTraining => "bg-warning text-dark",
+        CrewComplianceOverallStatus.PendingApproval => "bg-warning text-dark",
+        CrewComplianceOverallStatus.PendingPayment => "bg-warning text-dark",
+        CrewComplianceOverallStatus.Expired => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    private static string ComplianceStatusText(CrewComplianceOverallStatus s) => s switch
+    {
+        CrewComplianceOverallStatus.FullyCompliant => "Compliant",
+        CrewComplianceOverallStatus.PendingTraining => "Non-Compliant",
+        CrewComplianceOverallStatus.PendingApproval => "Pending Approval",
+        CrewComplianceOverallStatus.PendingPayment => "Pending Payment",
+        CrewComplianceOverallStatus.Expired => "Expired",
+        _ => "Unknown"
+    };
 
     private async Task<string?> CurrentUserIdAsync()
     {

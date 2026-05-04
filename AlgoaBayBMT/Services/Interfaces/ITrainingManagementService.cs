@@ -28,5 +28,10 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<OperationResult<TrainingQuestionBankQuestionEditModel>> SaveQuestionBankQuestionAsync(TrainingQuestionBankQuestionEditModel model, string? changedByUserId, CancellationToken cancellationToken = default);
         Task<OperationResult> DeleteQuestionBankQuestionAsync(Guid trainingQuestionBankQuestionId, string? changedByUserId, CancellationToken cancellationToken = default);
         Task<TrainingCourseStudentStatusPageModel?> GetCourseStudentStatusPageAsync(Guid courseId, CancellationToken cancellationToken = default);
+
+        // Training Requirements (audience rules)
+        Task<List<TrainingRequirementRowModel>> GetTrainingRequirementsAsync(CancellationToken cancellationToken = default);
+        Task<OperationResult> SetCourseAllCrewRequirementAsync(Guid courseId, bool required, string? changedByUserId, CancellationToken cancellationToken = default);
+        Task<OperationResult> SetCourseRankRequirementsAsync(Guid courseId, IEnumerable<CrewRank>? ranks, string? changedByUserId, CancellationToken cancellationToken = default);
     }
 }

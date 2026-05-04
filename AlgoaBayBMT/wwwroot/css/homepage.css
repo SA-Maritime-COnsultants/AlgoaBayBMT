@@ -70,7 +70,22 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0;
     max-width: 1600px;
     margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-bottom: 2rem;
 }
+
+/* Two-column row: training (wider) + snapshot (narrower) */
+.home-two-col {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.home-two-col__main { min-width: 0; }
+.home-two-col__side  { min-width: 0; }
 
 /* --- Dashboard Layout Overrides --- */
 .e-dashboardlayout.e-control .e-panel {
@@ -872,6 +887,8 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 1200px) {
     .quick-access-grid { grid-template-columns: repeat(3, 1fr); }
+    .home-two-col       { grid-template-columns: 1fr; }
+    .home-two-col__side { order: -1; }
 }
 
 @media (max-width: 1024px) {

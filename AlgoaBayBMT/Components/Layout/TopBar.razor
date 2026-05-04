@@ -46,6 +46,12 @@
                     </svg>
                     <span>@(authState.User.Identity?.Name ?? "Operations User")</span>
                 </button>
+                @if (CrewComplianceStatus is CrewComplianceOverallStatus.PendingTraining or CrewComplianceOverallStatus.Expired)
+                {
+                    <a href="@CrewComplianceLink" class="badge bg-warning text-dark ms-2 text-decoration-none" style="font-size:0.75rem;padding:0.35em 0.65em;" title="Training non-compliant — click to view">
+                        <i class="bi bi-exclamation-triangle"></i> Training Non-Compliant
+                    </a>
+                }
             </Authorized>
             <NotAuthorized>
                 <button type="button" class="profile-button" aria-label="Guest access status">
@@ -78,4 +84,10 @@
 
     [Parameter]
     public string CurrentStatusLabel { get; set; } = string.Empty;
+
+    [Parameter]
+    public CrewComplianceOverallStatus? CrewComplianceStatus { get; set; }
+
+    [Parameter]
+    public string CrewComplianceLink { get; set; } = "/crewing/crew";
 }

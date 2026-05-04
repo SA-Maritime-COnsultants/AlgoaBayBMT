@@ -1,6 +1,8 @@
 ﻿@inherits LayoutComponentBase
 @implements IDisposable
 @inject NavigationManager NavigationManager
+@inject ICrewComplianceWorkflowService ComplianceWorkflowService
+@inject AuthenticationStateProvider AuthState
 
 <div class="app-shell @(isSidebarOpen ? "sidebar-open" : string.Empty)">
     <Sidebar Id="app-sidebar" OnNavigate="CloseSidebar" />
@@ -11,7 +13,9 @@
                 CurrentSection="@CurrentSection"
                 CurrentPageTitle="@CurrentPageTitle"
                 CurrentStatusClass="@CurrentStatusClass"
-                CurrentStatusLabel="@CurrentStatusLabel" />
+                CurrentStatusLabel="@CurrentStatusLabel"
+                CrewComplianceStatus="@_crewComplianceStatus"
+                CrewComplianceLink="@_crewComplianceLink" />
 
         <div class="app-overlay" @onclick="CloseSidebar"></div>
 
@@ -30,11 +34,44 @@
 @code {
     private bool isSidebarOpen;
     private string currentPath = string.Empty;
+    private CrewComplianceOverallStatus? _crewComplianceStatus;
+    private string _crewComplianceLink = "/crewing/crew";
+    private bool _complianceLoaded;
 
     protected override void OnInitialized()
     {
         currentPath = GetCurrentPath(NavigationManager.Uri);
         NavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_complianceLoaded)
+        {
+            _complianceLoaded = true;
+            await LoadCrewComplianceAsync();
+        }
+    }
+
+    private async Task LoadCrewComplianceAsync()
+    {
+        try
+        {
+            var auth = await AuthState.GetAuthenticationStateAsync();
+            var userId = auth.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId)) return;
+
+            var dashboard = await ComplianceWorkflowService.GetCrewDashboardByUserIdAsync(userId);
+            if (dashboard is null) return;
+
+            _crewComplianceStatus = dashboard.OverallStatus;
+            _crewComplianceLink = $"/crewing/crew/{dashboard.CrewMemberId}";
+            await InvokeAsync(StateHasChanged);
+        }
+        catch
+        {
+            // Non-critical — suppress errors so layout never blocks
+        }
     }
 
     private string CurrentPageTitle => currentPath switch

@@ -109,6 +109,12 @@
                                     <span>@GetVersionText(course)</span>
                                 </Template>
                             </GridColumn>
+                            <GridColumn HeaderText="Cost" Width="110" TextAlign="TextAlign.Right">
+                                <Template>
+                                    @{ var course = context as TrainingCourseListItemModel; }
+                                    <span>@((course?.Cost ?? 0).ToString("N2"))</span>
+                                </Template>
+                            </GridColumn>
                             <GridColumn HeaderText="Pass Mark" Width="120" TextAlign="TextAlign.Center">
                                 <Template>
                                     @{ var course = context as TrainingCourseListItemModel; }

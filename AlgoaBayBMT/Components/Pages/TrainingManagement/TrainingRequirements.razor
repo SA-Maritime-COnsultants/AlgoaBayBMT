@@ -1,0 +1,249 @@
+@page "/training-management/requirements"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using AlgoaBayBMT.Shared.Security
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Popups
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Microsoft.AspNetCore.Authorization
+
+@inject ITrainingManagementService TrainingManagementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Training Requirements</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    @if (!string.IsNullOrEmpty(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible d-flex align-items-center gap-2 mt-2" role="alert">
+            <i class="bi bi-check-circle-fill"></i> @_successMessage
+            <button type="button" class="btn-close ms-auto" @onclick="() => _successMessage = null"></button>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible d-flex align-items-center gap-2 mt-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> @_errorMessage
+            <button type="button" class="btn-close ms-auto" @onclick="() => _errorMessage = null"></button>
+        </div>
+    }
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">
+                <i class="bi bi-shield-check me-2"></i>Training Requirements
+            </h1>
+            <div class="page-subtitle">Configure which courses are mandatory for all crew or specific ranks. These requirements drive compliance evaluation across the Crewing module.</div>
+        </div>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="d-flex align-items-center gap-2 py-4 text-muted">
+            <div class="spinner-border spinner-border-sm" role="status"></div>
+            <span>Loading requirements&hellip;</span>
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 mt-3">
+            <div class="card-body p-0">
+                <SfGrid DataSource="_rows" AllowSorting="true" AllowPaging="true" CssClass="abmt-grid">
+                    <GridPageSettings PageSize="20" />
+                    <GridColumns>
+                        <GridColumn Field="@nameof(TrainingRequirementRowModel.Code)" HeaderText="Code" Width="110" />
+                        <GridColumn Field="@nameof(TrainingRequirementRowModel.Title)" HeaderText="Course Title" />
+                        <GridColumn HeaderText="Required: All Crew" Width="160" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{
+                                    var row = (TrainingRequirementRowModel)context;
+                                }
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@row.RequiredForAllCrew"
+                                       @onchange="@(async e => await OnAllCrewToggled(row, (bool)(e.Value ?? false)))" />
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Required Ranks" MinWidth="200">
+                            <Template>
+                                @{
+                                    var row = (TrainingRequirementRowModel)context;
+                                }
+                                @if (row.RequiredForAllCrew)
+                                {
+                                    <span class="badge bg-success">All crew</span>
+                                }
+                                else if (row.RequiredForRanks.Count > 0)
+                                {
+                                    @foreach (var rank in row.RequiredForRanks)
+                                    {
+                                        <span class="badge bg-primary me-1">@rank.GetDisplayName()</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted small fst-italic">None assigned</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Actions" Width="110" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{
+                                    var row = (TrainingRequirementRowModel)context;
+                                }
+                                <button class="btn btn-sm btn-outline-primary pf-btn-3d"
+                                        title="Edit rank requirements"
+                                        @onclick="() => OpenEditDialog(row)">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Edit ranks dialog -->
+<SfDialog Width="580px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="_showEditDialog">
+    <DialogTemplates>
+        <Header>
+            <i class="bi bi-person-gear me-2"></i>Edit Rank Requirements — @_editRow?.Title
+        </Header>
+        <Content>
+            @if (_editRow != null)
+            {
+                <p class="text-muted mb-3 small">Tick each crew rank that must complete this course.</p>
+                <div class="row g-2">
+                    @foreach (var option in CrewRankExtensions.All)
+                    {
+                        var rankVal = option.Value;
+                        var isChecked = _editSelectedRankSet.Contains(rankVal);
+                        <div class="col-6">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox"
+                                       id="rank_@rankVal"
+                                       checked="@isChecked"
+                                       @onchange="@(e => ToggleRank(rankVal, (bool)(e.Value ?? false)))" />
+                                <label class="form-check-label" for="rank_@rankVal">@option.Text</label>
+                            </div>
+                        </div>
+                    }
+                </div>
+                @if (_saving)
+                {
+                    <div class="d-flex align-items-center gap-2 text-muted mt-3">
+                        <div class="spinner-border spinner-border-sm"></div>
+                        <span>Saving&hellip;</span>
+                    </div>
+                }
+            }
+        </Content>
+        <FooterTemplate>
+            <button class="btn btn-secondary pf-btn-3d me-2" @onclick="CloseEditDialog">Cancel</button>
+            <button class="btn btn-primary pf-btn-3d" @onclick="SaveRankRequirements" disabled="@_saving">
+                <i class="bi bi-floppy me-1"></i>Save
+            </button>
+        </FooterTemplate>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private string? _successMessage;
+    private string? _errorMessage;
+    private List<TrainingRequirementRowModel> _rows = [];
+    private bool _loading = true;
+
+    private bool _showEditDialog;
+    private bool _saving;
+    private TrainingRequirementRowModel? _editRow;
+    private HashSet<CrewRank> _editSelectedRankSet = [];
+
+    private string? _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        StateHasChanged();
+        _rows = await TrainingManagementService.GetTrainingRequirementsAsync();
+        _loading = false;
+    }
+
+    private async Task OnAllCrewToggled(TrainingRequirementRowModel row, bool @checked)
+    {
+        var result = await TrainingManagementService.SetCourseAllCrewRequirementAsync(row.CourseId, @checked, _currentUserId);
+        if (result.Succeeded)
+        {
+            _successMessage = $"'{row.Title}' updated.";
+            _errorMessage = null;
+            await LoadAsync();  // reload from DB so checkbox reflects actual persisted state
+        }
+        else
+        {
+            _errorMessage = result.Message ?? "Save failed.";
+            _successMessage = null;
+        }
+        StateHasChanged();
+    }
+
+    private void OpenEditDialog(TrainingRequirementRowModel row)
+    {
+        _editRow = row;
+        _editSelectedRankSet = [.. row.RequiredForRanks];
+        _showEditDialog = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        _showEditDialog = false;
+        _editRow = null;
+        _editSelectedRankSet = [];
+    }
+
+    private void ToggleRank(CrewRank rank, bool isChecked)
+    {
+        if (isChecked)
+            _editSelectedRankSet.Add(rank);
+        else
+            _editSelectedRankSet.Remove(rank);
+    }
+
+    private async Task SaveRankRequirements()
+    {
+        if (_editRow == null) return;
+        _saving = true;
+        StateHasChanged();
+
+        var result = await TrainingManagementService.SetCourseRankRequirementsAsync(
+            _editRow.CourseId, _editSelectedRankSet, _currentUserId);
+
+        _saving = false;
+
+        if (result.Succeeded)
+        {
+            CloseEditDialog();
+            _successMessage = "Rank requirements saved.";
+            _errorMessage = null;
+            await LoadAsync();
+        }
+        else
+        {
+            _errorMessage = result.Message ?? "Save failed.";
+            _successMessage = null;
+        }
+        StateHasChanged();
+    }
+}
