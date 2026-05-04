@@ -4,6 +4,9 @@ namespace AlgoaBayBMT.Shared.Security
     {
         public const string AdminOnly = nameof(AdminOnly);
         public const string AdminOrCompanyManager = nameof(AdminOrCompanyManager);
+        public const string CrewComplianceManagement = nameof(CrewComplianceManagement);
+        public const string TrainingApproval = nameof(TrainingApproval);
+        public const string BillingManagement = nameof(BillingManagement);
         public const string VesselCommand = nameof(VesselCommand);
         public const string AuditAuthorities = nameof(AuditAuthorities);
         public const string AreaScopedAccess = nameof(AreaScopedAccess);

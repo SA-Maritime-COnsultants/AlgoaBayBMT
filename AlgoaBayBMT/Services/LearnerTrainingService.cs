@@ -1253,6 +1253,7 @@ public sealed class LearnerTrainingService(
 
         return new MyTrainingCourseListItemModel
         {
+            RegistrationId = assignment?.UserTrainingAssignmentId ?? course.CourseId,
             CourseId = course.CourseId,
             Code = course.Code,
             Title = course.Title,

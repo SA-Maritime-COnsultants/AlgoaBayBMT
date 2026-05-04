@@ -68,6 +68,22 @@ namespace AlgoaBayBMT.Services
                 .FirstOrDefaultAsync(i => i.Id == invoiceId, cancellationToken);
         }
 
+        public async Task<List<Invoice>> GetInvoicesByIdsAsync(IEnumerable<int> invoiceIds, CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(invoiceIds);
+            var ids = invoiceIds.Distinct().ToList();
+            if (ids.Count == 0)
+            {
+                return [];
+            }
+
+            await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            return await db.Invoices.AsNoTracking()
+                .Include(i => i.LineItems)
+                .Where(i => ids.Contains(i.Id))
+                .ToListAsync(cancellationToken);
+        }
+
         public async Task<Invoice> GenerateRemediationInvoiceAsync(
             int bunkerOperatorId,
             int? crewMemberId,

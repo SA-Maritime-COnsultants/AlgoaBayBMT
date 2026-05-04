@@ -248,6 +248,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ThumbnailUrl).HasMaxLength(500);
                 entity.Property(x => x.TargetAudienceSummary).HasMaxLength(500);
                 entity.Property(x => x.RegulatoryReference).HasMaxLength(250);
+                entity.Property(x => x.Cost).HasPrecision(18, 2).HasDefaultValue(0m);
                 entity.Property(x => x.ValidityMonths).HasDefaultValue(12);
                 entity.Property(x => x.IsMandatory).HasDefaultValue(true);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
@@ -479,13 +480,26 @@ namespace AlgoaBayBMT.Data
                 entity.ToTable("UserTrainingAssignments");
                 entity.HasKey(x => x.UserTrainingAssignmentId);
                 entity.HasIndex(x => new { x.UserId, x.CourseId }).IsUnique();
+                entity.HasIndex(x => x.Status);
+                entity.HasIndex(x => new { x.UserId, x.Status });
+                entity.HasIndex(x => x.InvoiceId);
+                entity.HasIndex(x => x.ApprovedOnUtc);
                 entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
                 entity.Property(x => x.AssignedByUserId).HasMaxLength(450);
                 entity.Property(x => x.Reason).HasMaxLength(500);
+                entity.Property(x => x.RegisteredByUserId).HasMaxLength(450);
+                entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
+                entity.Property(x => x.ApprovalNotes).HasMaxLength(1000);
+                entity.Property(x => x.CompletionScorePercent).HasPrecision(5, 2);
+                entity.Property(x => x.PaidByUserId).HasMaxLength(450);
                 entity.HasOne(x => x.Course)
                     .WithMany(x => x.UserTrainingAssignments)
                     .HasForeignKey(x => x.CourseId)
                     .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne(x => x.Invoice)
+                    .WithMany()
+                    .HasForeignKey(x => x.InvoiceId)
+                    .OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(x => x.UserId)

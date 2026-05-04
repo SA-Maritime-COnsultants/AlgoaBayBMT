@@ -13,8 +13,19 @@ namespace AlgoaBayBMT.Shared.Models
         public DateTime? DueDateUtc { get; set; }
         public string? Reason { get; set; }
         public AssignmentStatus Status { get; set; } = AssignmentStatus.Assigned;
+        public string? RegisteredByUserId { get; set; }
+        public DateTime? RegisteredOnUtc { get; set; }
+        public string? ApprovedByUserId { get; set; }
+        public DateTime? ApprovedOnUtc { get; set; }
+        public string? ApprovalNotes { get; set; }
+        public int? InvoiceId { get; set; }
+        public DateTime? CompletedOnUtc { get; set; }
+        public decimal? CompletionScorePercent { get; set; }
+        public DateTime? PaidOnUtc { get; set; }
+        public string? PaidByUserId { get; set; }
 
         public Course? Course { get; set; }
+        public Invoice? Invoice { get; set; }
     }
 
     public class UserLessonProgress

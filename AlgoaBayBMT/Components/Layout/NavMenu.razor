@@ -36,7 +36,7 @@
             </div>
         </section>
 
-        <AuthorizeView Roles="@RoleNames.Admin">
+        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager}")">
             <section class="side-nav-group" aria-labelledby="training-management-nav-heading">
                 <button id="training-management-nav-heading" type="button" class="side-nav-group-toggle"
                         @onclick="ToggleTrainingManagementAsync"
@@ -56,6 +56,12 @@
                             <NavLink class="side-nav-link" href="training-management/courses" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
                                 <span class="side-nav-copy"><span class="side-nav-label">Courses</span><span class="side-nav-meta">Create and edit courses</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management/approvals" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)ComplianceIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Training Approvals</span><span class="side-nav-meta">Approve crew registrations</span></span>
                             </NavLink>
                         </li>
                     </ul>

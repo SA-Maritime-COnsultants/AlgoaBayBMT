@@ -456,19 +456,28 @@ namespace AlgoaBayBMT.Shared.Models
 
     public enum AssignmentStatus
     {
+        [Display(Name = "Pending Approval")]
+        PendingApproval = 0,
+
+        [Display(Name = "Approved")]
+        Approved = 1,
+
         [Display(Name = "Assigned")]
-        Assigned = 0,
+        Assigned = 2,
 
         [Display(Name = "Started")]
-        Started = 1,
+        Started = 3,
+
+        [Display(Name = "Completed - Pending Payment")]
+        CompletedPendingPayment = 4,
 
         [Display(Name = "Completed")]
-        Completed = 2,
+        Completed = 5,
 
         [Display(Name = "Expired")]
-        Expired = 3,
+        Expired = 6,
 
         [Display(Name = "Cancelled")]
-        Cancelled = 4
+        Cancelled = 7
     }
 }

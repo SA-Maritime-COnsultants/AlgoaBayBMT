@@ -4,6 +4,8 @@
 
 @inject IOperatorService OperatorService
 @inject IBillingService BillingService
+@inject ICrewComplianceWorkflowService CrewComplianceWorkflowService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
 <PageTitle>Invoices</PageTitle>
@@ -113,7 +115,18 @@
 
     private async Task MarkPaidAsync(int id)
     {
-        try { await BillingService.MarkPaidAsync(id, null); Message = "Invoice marked paid."; IsError = false; await LoadInvoicesAsync(); }
+        try
+        {
+            var userId = await CurrentUserIdAsync();
+            await BillingService.MarkPaidAsync(id, userId);
+
+            var syncResult = await CrewComplianceWorkflowService.SynchronizeInvoicePaymentAsync(id, userId);
+            Message = syncResult.Succeeded
+                ? "Invoice marked paid and training workflow updated."
+                : syncResult.Message ?? "Invoice marked paid, but training workflow synchronization reported an issue.";
+            IsError = !syncResult.Succeeded;
+            await LoadInvoicesAsync();
+        }
         catch (Exception ex) { Message = ex.Message; IsError = true; }
     }
 
@@ -124,6 +137,12 @@
     }
 
     private static string FormatUtc(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy") : "—";
+
+    private async Task<string?> CurrentUserIdAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return auth.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
 
     private static string StatusBadge(InvoiceStatus? s) => s switch
     {

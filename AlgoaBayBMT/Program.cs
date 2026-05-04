@@ -49,6 +49,9 @@ builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy(PolicyNames.AdminOnly, policy => policy.RequireRole(RoleNames.Admin));
     options.AddPolicy(PolicyNames.AdminOrCompanyManager, policy => policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager));
+    options.AddPolicy(PolicyNames.CrewComplianceManagement, policy => policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager, RoleNames.Captain, RoleNames.Co));
+    options.AddPolicy(PolicyNames.TrainingApproval, policy => policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager));
+    options.AddPolicy(PolicyNames.BillingManagement, policy => policy.RequireRole(RoleNames.Admin, RoleNames.CompanyManager));
 });
 
 builder.Services.AddScoped<IUserRegistrationService, UserRegistrationService>();
@@ -74,6 +77,7 @@ builder.Services.AddScoped<IVesselService, VesselService>();
 builder.Services.AddScoped<ICrewService, CrewService>();
 builder.Services.AddScoped<IComplianceService, ComplianceService>();
 builder.Services.AddScoped<ICrewAssignmentService, CrewAssignmentService>();
+builder.Services.AddScoped<ICrewComplianceWorkflowService, CrewComplianceWorkflowService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddScoped<IRegulatoryReportingService, RegulatoryReportingService>();

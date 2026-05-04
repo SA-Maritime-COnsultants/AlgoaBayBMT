@@ -19,6 +19,7 @@ namespace AlgoaBayBMT.Shared.Models
         public bool IsMandatory { get; set; } = true;
         public bool IsActive { get; set; } = true;
         public int? EstimatedDurationMinutes { get; set; }
+        public decimal Cost { get; set; }
         public Guid? CurrentVersionId { get; set; }
         public string? CreatedByUserId { get; set; }
         public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;

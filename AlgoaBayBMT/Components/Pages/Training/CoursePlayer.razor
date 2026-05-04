@@ -1,17 +1,20 @@
-@page "/my-training/course/{CourseId:guid}"
+@page "/my-training/course/{RegistrationId:guid}"
 @rendermode InteractiveServer
 @attribute [Authorize]
 
+@using AlgoaBayBMT.Data
 @using AlgoaBayBMT.Services.Interfaces
 @using AlgoaBayBMT.Services.Models
 @using AlgoaBayBMT.Shared.Models
 @using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
 @using Microsoft.JSInterop
 @using Syncfusion.Blazor.Notifications
 @using Syncfusion.Blazor.Popups
 
 @implements IAsyncDisposable
 
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject ILearnerTrainingService LearnerTrainingService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
@@ -124,7 +127,7 @@
                 <CourseJourneyPanel Modules="Player.Modules"
                                     CompletedLessons="Player.CompletedLessons"
                                     TotalLessons="Player.TotalLessons"
-                                    OnLessonSelected="NavigateToLesson" />
+                                    OnLessonSelected="NavigateToLessonAsync" />
 
                 @* ── CENTER: Player ───────────────────────────────────── *@
                 <div class="training-panel tp-content-panel" id="@_fullscreenElementId" style="min-height:0;">
@@ -290,7 +293,7 @@
 </div>
 
 @code {
-    [Parameter] public Guid CourseId { get; set; }
+    [Parameter] public Guid RegistrationId { get; set; }
 
     [SupplyParameterFromQuery] public Guid? LessonId { get; set; }
     [SupplyParameterFromQuery] public Guid? BlockId { get; set; }
@@ -310,6 +313,8 @@
     private bool IsFullscreenSupported { get; set; } = true;
     private bool IsResetDialogVisible { get; set; }
     private bool ShowCompletionSlide { get; set; }
+    private Guid? ResolvedCourseId { get; set; }
+    private bool IsRegistrationRoute { get; set; }
 
     private bool CanAdvance =>
         Player is not null
@@ -379,6 +384,8 @@
 
         _activeLessonId = LessonId;
         _activeBlockId = BlockId;
+        ResolvedCourseId = null;
+        IsRegistrationRoute = false;
 
         if (string.IsNullOrWhiteSpace(CurrentUserId))
         {
@@ -406,7 +413,15 @@
 
     private async Task LoadPlayerAsync()
     {
-        Player = await LearnerTrainingService.GetCoursePlayerAsync(CurrentUserId!, CourseId, _activeLessonId, _activeBlockId);
+        ResolvedCourseId = await ResolveCourseIdAsync();
+        if (!ResolvedCourseId.HasValue)
+        {
+            Player = null;
+            ErrorMessage = "This training registration could not be loaded or is not available.";
+            return;
+        }
+
+        Player = await LearnerTrainingService.GetCoursePlayerAsync(CurrentUserId!, ResolvedCourseId.Value, _activeLessonId, _activeBlockId);
         if (Player is null)
         {
             ErrorMessage = "This course could not be loaded or is not available.";
@@ -420,13 +435,38 @@
             _activeBlockId = Player.CurrentBlockId;
         }
         _blockRenderKey = Player.CurrentBlock is null
-            ? $"empty-{CourseId}"
+            ? $"empty-{RegistrationId}"
             : $"{Player.CurrentLessonId}-{Player.CurrentBlock.BlockId}-{Player.CurrentBlock.BlockType}";
     }
 
-    private void NavigateToLesson(Guid lessonId)
+    private async Task<Guid?> ResolveCourseIdAsync()
+    {
+        if (string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            return null;
+        }
+
+        await using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+        var assignmentCourseId = await dbContext.UserTrainingAssignments
+            .AsNoTracking()
+            .Where(x => x.UserId == CurrentUserId && x.UserTrainingAssignmentId == RegistrationId)
+            .Select(x => (Guid?)x.CourseId)
+            .FirstOrDefaultAsync();
+
+        if (assignmentCourseId.HasValue)
+        {
+            IsRegistrationRoute = true;
+            return assignmentCourseId.Value;
+        }
+
+        return RegistrationId;
+    }
+
+    private async Task NavigateToLessonAsync(Guid lessonId)
     {
         if (_disposed) return;
+        await ExitFullscreenForNavigationAsync();
         _activeLessonId = lessonId;
         _activeBlockId = null;
         ShowCompletionSlide = false;
@@ -434,9 +474,10 @@
             new Dictionary<string, object?> { [nameof(LessonId)] = lessonId, [nameof(BlockId)] = null }));
     }
 
-    private void NavigateToBlock(Guid blockId)
+    private async Task NavigateToBlockAsync(Guid blockId)
     {
         if (_disposed) return;
+        await ExitFullscreenForNavigationAsync();
         _activeLessonId = Player?.CurrentLessonId;
         _activeBlockId = blockId;
         ShowCompletionSlide = false;
@@ -444,11 +485,11 @@
             new Dictionary<string, object?> { [nameof(LessonId)] = Player?.CurrentLessonId, [nameof(BlockId)] = blockId }));
     }
 
-    private void GoPrevious()
+    private async Task GoPrevious()
     {
         if (Player?.CurrentLesson?.Blocks is null || Player.CurrentBlock is null) return;
         var idx = Player.CurrentLesson.Blocks.FindIndex(x => x.BlockId == Player.CurrentBlock.BlockId);
-        if (idx > 0) NavigateToBlock(Player.CurrentLesson.Blocks[idx - 1].BlockId);
+        if (idx > 0) await NavigateToBlockAsync(Player.CurrentLesson.Blocks[idx - 1].BlockId);
     }
 
     private async Task GoNextAsync()
@@ -466,13 +507,13 @@
 
         if (TryGetNextBlockId(out var nextBlockId))
         {
-            NavigateToBlock(nextBlockId);
+            await NavigateToBlockAsync(nextBlockId);
             return;
         }
 
         if (TryGetNextLessonId(out var nextLessonId))
         {
-            NavigateToLesson(nextLessonId);
+            await NavigateToLessonAsync(nextLessonId);
             return;
         }
     }
@@ -590,7 +631,7 @@
         }
 
         await LoadPlayerAsync();
-        NavigationManager.NavigateTo($"/my-training/course/{Player.CourseId}", forceLoad: false);
+        NavigationManager.NavigateTo($"/my-training/course/{RegistrationId}", forceLoad: false);
         await ShowToastAsync("Training reset", result.Message ?? "Training has been reset.", "e-toast-success");
         if (!_disposed)
         {
@@ -615,6 +656,7 @@
             return;
         }
 
+        await ExitFullscreenForNavigationAsync();
         ShowCompletionSlide = true;
         if (!_disposed)
         {
@@ -661,11 +703,27 @@
 
         if (nextBlockId.HasValue)
         {
-            NavigateToBlock(nextBlockId.Value);
+            await NavigateToBlockAsync(nextBlockId.Value);
             return;
         }
 
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ExitFullscreenForNavigationAsync()
+    {
+        if (_disposed || _fullscreenModule is null || !IsPlayerFullscreen)
+        {
+            return;
+        }
+
+        try
+        {
+            await _fullscreenModule.InvokeAsync<bool>("exitCoursePlayerFullscreen", _fullscreenElementId);
+        }
+        catch
+        {
+        }
     }
 
     private async Task ExitFullscreenAsync()
@@ -713,6 +771,10 @@
         {
             try
             {
+                if (IsPlayerFullscreen)
+                {
+                    await _fullscreenModule.InvokeAsync<bool>("exitCoursePlayerFullscreen", _fullscreenElementId);
+                }
                 await _fullscreenModule.InvokeVoidAsync("unregisterFullscreenChange", _fullscreenElementId);
                 await _fullscreenModule.DisposeAsync();
             }

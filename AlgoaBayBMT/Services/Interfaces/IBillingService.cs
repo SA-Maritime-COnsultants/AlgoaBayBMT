@@ -19,5 +19,6 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<Invoice> IssueAsync(int invoiceId, string? performedByUserId, CancellationToken cancellationToken = default);
         Task<Invoice> MarkPaidAsync(int invoiceId, string? performedByUserId, CancellationToken cancellationToken = default);
         Task<Invoice> CancelAsync(int invoiceId, string? performedByUserId, CancellationToken cancellationToken = default);
+        Task<List<Invoice>> GetInvoicesByIdsAsync(IEnumerable<int> invoiceIds, CancellationToken cancellationToken = default);
     }
 }

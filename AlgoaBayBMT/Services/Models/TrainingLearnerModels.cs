@@ -27,6 +27,7 @@ public sealed class MyTrainingDashboardModel
 
 public sealed class MyTrainingCourseListItemModel
 {
+    public Guid RegistrationId { get; set; }
     public Guid CourseId { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
