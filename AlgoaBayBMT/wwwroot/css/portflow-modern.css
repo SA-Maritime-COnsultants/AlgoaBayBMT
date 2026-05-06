@@ -316,14 +316,14 @@ label {
 .e-btn,
 button.e-btn,
 a.e-btn,
-.btn,
-button.btn,
-a.btn,
+.btn:not(.btn-bmt),
+button.btn:not(.btn-bmt),
+a.btn:not(.btn-bmt),
 input[type="button"],
 input[type="submit"],
 input[type="reset"],
 .bmt-btn-3d,
-button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret),
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):not(.btn-bmt),
 a.button {
     position: relative;
     display: inline-flex;
@@ -347,9 +347,9 @@ a.button {
 }
 
 .e-btn::before,
-.btn::before,
+.btn:not(.btn-bmt)::before,
 .bmt-btn-3d::before,
-button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret)::before,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):not(.btn-bmt)::before,
 a.button::before {
     content: "";
     position: absolute;
@@ -360,9 +360,9 @@ a.button::before {
 }
 
 .e-btn:hover,
-.btn:hover,
+.btn:not(.btn-bmt):hover,
 .bmt-btn-3d:hover,
-button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):hover,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):not(.btn-bmt):hover,
 a.button:hover {
     filter: brightness(1.04);
     box-shadow: var(--pf-modern-shadow-3d-hover) !important;
@@ -370,9 +370,9 @@ a.button:hover {
 }
 
 .e-btn:active,
-.btn:active,
+.btn:not(.btn-bmt):active,
 .bmt-btn-3d:active,
-button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):active,
+button:not(.side-nav-group-toggle):not(.side-nav-button):not(.e-dlg-closeicon-btn):not(.e-clear-icon):not(.e-control):not(.e-icons):not(.e-icon-btn):not(.e-close):not(.e-caret):not(.btn-bmt):active,
 a.button:active {
     transform: translateY(2px) !important;
     box-shadow: var(--pf-modern-shadow-3d-pressed) !important;

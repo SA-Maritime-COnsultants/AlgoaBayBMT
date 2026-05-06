@@ -40,12 +40,11 @@
 <div class="training-player-page">
     <div class="tp-shell @(IsPlayerFullscreen ? "course-player-fullscreen" : string.Empty)">
         @* ── Top hero ─────────────────────────────────────────────── *@
-        <section class="tp-hero">
+        <section class="tp-hero panel-header-bmt">
             <div class="tp-hero-main">
                 <div class="tp-hero-topline">
-                    <a href="/my-training" class="tp-back-btn">
-                        <span aria-hidden="true">&#8592;</span>
-                        <span>My Training</span>
+                    <a href="/my-training" class="btn btn-bmt btn-pastel-blue tp-back-btn">
+                        <i class="bi bi-arrow-left me-2"></i>My Training
                     </a>
                     @if (Player is not null)
                     {
@@ -76,7 +75,8 @@
 
             <div class="tp-hero-side">
                 <div class="tp-control-actions">
-                    <button type="button" class="e-btn tp-control-btn" @onclick="ToggleFullscreenAsync" disabled="@(!IsFullscreenSupported)">
+                    <button type="button" class="btn btn-bmt btn-pastel-grayblue" @onclick="ToggleFullscreenAsync" disabled="@(!IsFullscreenSupported)">
+                        <i class="bi bi-arrows-fullscreen me-2"></i>
                         @if (IsPlayerFullscreen)
                         {
                             <span>Exit Fullscreen</span>
@@ -86,12 +86,14 @@
                             <span>Fullscreen</span>
                         }
                     </button>
-                    <button type="button" class="e-btn tp-control-btn tp-control-btn--danger" @onclick="OpenResetDialog">
-                        <span>Reset Training</span>
+                    <button type="button" class="btn btn-bmt btn-pastel-red" @onclick="OpenResetDialog">
+                        <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Training
                     </button>
                     @if (!string.IsNullOrWhiteSpace(Player?.CertificateUrl))
                     {
-                        <a href="@Player.CertificateUrl" class="e-btn e-primary tp-hero-action">View Certificate</a>
+                        <a href="@Player.CertificateUrl" class="btn btn-bmt btn-pastel-green">
+                            <i class="bi bi-award-fill me-2"></i>View Certificate
+                        </a>
                     }
                 </div>
 
@@ -131,7 +133,7 @@
 
                 @* ── CENTER: Player ───────────────────────────────────── *@
                 <div class="training-panel tp-content-panel" id="@_fullscreenElementId" style="min-height:0;">
-                    <div class="training-panel-header tp-panel-header-soft">
+                    <div class="training-panel-header tp-panel-header-soft panel-header-bmt">
                         <div class="tp-panel-header-copy">
                             <div class="tp-panel-header-kicker">Course player</div>
                             <div class="tp-panel-header-title-row">
@@ -253,11 +255,12 @@
                     @if (!ShowCompletionSlide)
                     {
                         <div class="tp-nav-bar">
-                            <button type="button" class="e-btn" disabled="@(!Player.CanGoPrevious)" @onclick="GoPrevious">
-                                ‹ Previous
+                            <button type="button" class="btn btn-bmt btn-pastel-gray" disabled="@(!Player.CanGoPrevious)" @onclick="GoPrevious">
+                                <i class="bi bi-chevron-left me-2"></i>Previous
                             </button>
 
-                            <button type="button" class="e-btn tp-nav-fullscreen-btn" @onclick="ToggleFullscreenAsync" disabled="@(!IsFullscreenSupported)">
+                            <button type="button" class="btn btn-bmt btn-pastel-grayblue tp-nav-fullscreen-btn" @onclick="ToggleFullscreenAsync" disabled="@(!IsFullscreenSupported)">
+                                <i class="bi bi-arrows-fullscreen me-2"></i>
                                 @if (IsPlayerFullscreen)
                                 {
                                     <span>Exit Fullscreen</span>
@@ -269,7 +272,7 @@
                             </button>
 
                             <button type="button"
-                                    class="e-btn e-primary @(CanFinishCourse ? "tp-finish-btn" : string.Empty) @(!CanExecutePrimaryAction ? "tp-next-locked" : string.Empty)"
+                                    class="btn btn-bmt btn-pastel-gray @(CanFinishCourse ? "tp-finish-btn" : string.Empty) @(!CanExecutePrimaryAction ? "tp-next-locked" : string.Empty)"
                                     disabled="@(!CanExecutePrimaryAction)"
                                     title="@PrimaryActionTitle"
                                     @onclick="HandlePrimaryActionAsync">
@@ -277,7 +280,7 @@
                                 {
                                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:4px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                                 }
-                                @PrimaryActionLabel
+                                @PrimaryActionLabel<i class="bi bi-chevron-right ms-2"></i>
                             </button>
                         </div>
                     }

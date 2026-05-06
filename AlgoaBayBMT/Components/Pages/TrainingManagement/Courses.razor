@@ -25,8 +25,12 @@
             <div class="page-subtitle">Manage online training courses, configure pass marks and validity, and launch the live course builder preview workspace.</div>
         </div>
         <div class="pf-grid-actions pf-grid-actions--compact">
-            <SfButton CssClass="pf-training-page-action-btn pf-training-reset-data-btn" IconCss="e-icons e-refresh" IconPosition="IconPosition.Left" OnClick="PromptResetTrainingData">Reset Training Data</SfButton>
-            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="OpenCreateDialogAsync">Create Course</SfButton>
+            <button class="btn btn-bmt btn-pastel-red" @onclick="PromptResetTrainingData">
+                <i class="bi bi-arrow-counterclockwise me-2"></i>Reset Training Data
+            </button>
+            <button class="btn btn-bmt btn-pastel-green" @onclick="OpenCreateDialogAsync">
+                <i class="bi bi-plus-circle-fill me-2"></i>Create Course
+            </button>
         </div>
     </div>
 
@@ -40,8 +44,12 @@
                         This action removes training courses, modules, lessons, lesson blocks, assessments, question bank items, training progress, attempts, completions, certificates, training audit entries, and training-only uploaded media. Users, roles, vessels, crew assignments, and unrelated operational data remain unchanged.
                     </div>
                     <div class="pf-dialog-actions pf-dialog-actions--split pf-training-dialog-actions">
-                        <SfButton CssClass="ab-btn ab-btn-gray" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CancelResetPrompt">Cancel</SfButton>
-                        <SfButton CssClass="ab-btn ab-btn-red" IconCss="e-icons e-refresh" IconPosition="IconPosition.Left" type="button" OnClick="ResetTrainingDataAsync">Confirm Reset</SfButton>
+                        <button class="btn btn-bmt btn-pastel-gray" @onclick="CancelResetPrompt">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                        <button class="btn btn-bmt btn-pastel-red" @onclick="ResetTrainingDataAsync">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Reset
+                        </button>
                     </div>
                 </div>
             </Content>

@@ -96,11 +96,7 @@
                                 @{
                                     var row = (TrainingRequirementRowModel)context;
                                 }
-                                <button class="btn btn-sm btn-outline-primary pf-btn-3d"
-                                        title="Edit rank requirements"
-                                        @onclick="() => OpenEditDialog(row)">
-                                    <i class="bi bi-pencil-square"></i>
-                                </button>
+                                <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" IconCss="e-icons e-edit" title="Edit rank requirements" OnClick="@(() => OpenEditDialog(row))" />
                             </Template>
                         </GridColumn>
                     </GridColumns>
@@ -111,7 +107,7 @@
 </div>
 
 <!-- Edit ranks dialog -->
-<SfDialog Width="580px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="_showEditDialog">
+<SfDialog Width="580px" CssClass="abmt-dialog modal-header-bmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="_showEditDialog">
     <DialogTemplates>
         <Header>
             <i class="bi bi-person-gear me-2"></i>Edit Rank Requirements — @_editRow?.Title
@@ -120,7 +116,7 @@
             @if (_editRow != null)
             {
                 <p class="text-muted mb-3 small">Tick each crew rank that must complete this course.</p>
-                <div class="row g-2">
+                <div class="row g-2 checklist-normal">
                     @foreach (var option in CrewRankExtensions.All)
                     {
                         var rankVal = option.Value;
@@ -146,9 +142,11 @@
             }
         </Content>
         <FooterTemplate>
-            <button class="btn btn-secondary pf-btn-3d me-2" @onclick="CloseEditDialog">Cancel</button>
-            <button class="btn btn-primary pf-btn-3d" @onclick="SaveRankRequirements" disabled="@_saving">
-                <i class="bi bi-floppy me-1"></i>Save
+            <button class="btn btn-bmt btn-pastel-gray" @onclick="CloseEditDialog">
+                <i class="bi bi-x-circle me-2"></i>Cancel
+            </button>
+            <button class="btn btn-bmt btn-pastel-green" @onclick="SaveRankRequirements" disabled="@_saving">
+                <i class="bi bi-floppy-fill me-2"></i>Save
             </button>
         </FooterTemplate>
     </DialogTemplates>

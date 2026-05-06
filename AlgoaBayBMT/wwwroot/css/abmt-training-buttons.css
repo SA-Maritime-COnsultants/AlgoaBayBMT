@@ -1426,3 +1426,576 @@ a.cb-btn-back-courses.e-btn .e-btn-icon,
 }
 .pf-course-edit-dialog .e-btn.ab-btn-green .e-btn-icon,
 .pf-course-edit-dialog .e-btn.ab-btn-green .e-icons { color: #0f3319 !important; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   PASTEL BUTTON CLASSES — Bootstrap native buttons matching template
+   pf-training-page-action-btn sizing: 155px × 46px, border-radius 8px,
+   font-size 0.72rem, font-weight 600, padding 0 0.6rem
+   ═══════════════════════════════════════════════════════════════════ */
+
+.btn-bmt {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    background-image: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+    transition: box-shadow 140ms ease, filter 120ms ease, transform 120ms ease !important;
+}
+.btn-bmt:hover {
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+.btn-bmt::before { display: none !important; }
+
+/* Pastel colours — 3D gradient matching the course-builder button system */
+.btn.btn-pastel-green,
+.btn.btn-pastel-green:focus,
+.btn.btn-pastel-green:active,
+.btn.btn-bmt.btn-pastel-green,
+a.btn.btn-pastel-green {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    color: #0f3319 !important;
+    border-color: #66c475 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-green:hover,
+a.btn.btn-pastel-green:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    color: #081f0f !important;
+    border-color: #48b05a !important;
+}
+
+.btn.btn-pastel-orange,
+.btn.btn-pastel-orange:focus,
+.btn.btn-pastel-orange:active,
+.btn.btn-bmt.btn-pastel-orange,
+a.btn.btn-pastel-orange {
+    background: linear-gradient(180deg, #fce4c2 0%, #f8d09a 52%, #f3b878 100%) !important;
+    color: #4a2800 !important;
+    border-color: #e89e52 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-orange:hover,
+a.btn.btn-pastel-orange:hover {
+    background: linear-gradient(180deg, #f8d09a 0%, #f3b878 52%, #ea9d4e 100%) !important;
+    color: #2e1800 !important;
+    border-color: #d4872c !important;
+}
+
+.btn.btn-pastel-purple,
+.btn.btn-pastel-purple:focus,
+.btn.btn-pastel-purple:active,
+.btn.btn-bmt.btn-pastel-purple,
+a.btn.btn-pastel-purple {
+    background: linear-gradient(180deg, #e0d4f5 0%, #cdbded 52%, #b8a6e0 100%) !important;
+    color: #2a1456 !important;
+    border-color: #9d87d0 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-purple:hover,
+a.btn.btn-pastel-purple:hover {
+    background: linear-gradient(180deg, #cdbded 0%, #b8a6e0 52%, #a08dd2 100%) !important;
+    color: #1a0b3d !important;
+    border-color: #8370c0 !important;
+}
+
+.btn.btn-pastel-blue,
+.btn.btn-pastel-blue:focus,
+.btn.btn-pastel-blue:active,
+.btn.btn-bmt.btn-pastel-blue,
+a.btn.btn-pastel-blue {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    color: #0f2d4a !important;
+    border-color: #7aabe8 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-blue:hover,
+a.btn.btn-pastel-blue:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    color: #0a1f33 !important;
+    border-color: #5e94c7 !important;
+}
+
+.btn.btn-pastel-red,
+.btn.btn-pastel-red:focus,
+.btn.btn-pastel-red:active,
+.btn.btn-bmt.btn-pastel-red,
+a.btn.btn-pastel-red {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    color: #5c0f0d !important;
+    border-color: #dd6b68 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-red:hover,
+a.btn.btn-pastel-red:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    color: #3d0909 !important;
+    border-color: #c9504d !important;
+}
+
+.btn.btn-pastel-gray,
+.btn.btn-pastel-gray:focus,
+.btn.btn-pastel-gray:active,
+.btn.btn-bmt.btn-pastel-gray,
+a.btn.btn-pastel-gray {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    color: #2d3748 !important;
+    border-color: #adb2ba !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-gray:hover,
+a.btn.btn-pastel-gray:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    color: #1a2433 !important;
+    border-color: #969ca6 !important;
+}
+
+.btn.btn-pastel-grayblue,
+.btn.btn-pastel-grayblue:focus,
+.btn.btn-pastel-grayblue:active,
+.btn.btn-bmt.btn-pastel-grayblue,
+a.btn.btn-pastel-grayblue {
+    background: linear-gradient(180deg, #d8e4f0 0%, #c2d4e8 52%, #accadf 100%) !important;
+    color: #1b2a3b !important;
+    border-color: #92b5d4 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-grayblue:hover,
+a.btn.btn-pastel-grayblue:hover {
+    background: linear-gradient(180deg, #c2d4e8 0%, #accadf 52%, #95bad4 100%) !important;
+    color: #0e1820 !important;
+    border-color: #78a4c8 !important;
+}
+
+/* -- btn-pastel-teal -------------------------------------------- */
+.btn.btn-pastel-teal,
+.btn.btn-pastel-teal:focus,
+.btn.btn-pastel-teal:active,
+.btn.btn-bmt.btn-pastel-teal,
+a.btn.btn-pastel-teal {
+    background: linear-gradient(180deg, #c0eed9 0%, #a2e2c5 52%, #84d4b0 100%) !important;
+    color: #0a3325 !important;
+    border-color: #5cbf98 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-teal:hover,
+a.btn.btn-pastel-teal:hover {
+    background: linear-gradient(180deg, #a2e2c5 0%, #84d4b0 52%, #5cbf98 100%) !important;
+    color: #061f17 !important;
+    border-color: #3daa7e !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHECKLIST — normal weight labels
+   ═══════════════════════════════════════════════════════════════════ */
+
+.checklist-normal label,
+.checklist-normal .form-check-label {
+    font-weight: normal !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DIALOG HEADER — modal-header-bmt-dialog (SfDialog CssClass)
+   Targets the Syncfusion dialog header rendered inside .modal-header-bmt-dialog
+   ═══════════════════════════════════════════════════════════════════ */
+
+.modal-header-bmt-dialog .e-dlg-header-content,
+.modal-header-bmt-dialog .e-dlg-header {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    color: #1a3a4a !important;
+    font-weight: normal !important;
+    font-size: 1rem !important;
+    border-bottom: 1px solid rgba(15,87,96,0.18) !important;
+}
+.modal-header-bmt-dialog .e-dlg-closeicon-btn .e-icon-dlg-close {
+    color: #000000 !important;
+    filter: none !important;
+    opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGE TEMPLATE — exact c
+   font-size 0.65rem, padding 1px 6px, border-radius 4px,
+   font-weight 400, line-height 1.4
+   ═══════════════════════════════════════════════════════════════════ */
+
+.badge-bmt {
+    font-size: 0.65rem !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+    text-align: center !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset, 0 2px 6px rgba(15,35,56,0.08) !important;
+}
+
+.badge-bmt-teal   { background-color: rgba(18,181,203,0.12) !important; color: #0f3247 !important; border-color: rgba(18,181,203,0.28) !important; }
+.badge-bmt-green  { background-color:#d4edda !important; color:#155724 !important; border-color:#b1dfbb !important; }
+.badge-bmt-red    { background-color:#f8d7da !important; color:#721c24 !important; border-color:#f1aeb5 !important; }
+.badge-bmt-orange { background-color:#ffe5cc !important; color:#7a4000 !important; border-color:#ffcc99 !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PANEL HEADER — matches courseBuilder training-panel-header bg
+   ═══════════════════════════════════════════════════════════════════ */
+
+.panel-header-bmt {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    color: #1a3a4a !important;
+    border-bottom: 1px solid rgba(15,87,96,0.18) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   APP-WIDE PASTEL BUTTON OVERRIDE
+   Converts every semantic button class across all pages to the same
+   pastel-gradient palette used by the learner training pages.
+   Loaded last — these !important rules win over all earlier CSS.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* -- Kill ::before shimmer on all app semantic buttons ----------- */
+.abmt-btn-save.e-btn::before,
+.abmt-btn-cancel.e-btn::before,
+.abmt-btn-search.e-btn::before,
+.abmt-btn-manage.e-btn::before,
+.abmt-btn-primary-3d.e-btn::before,
+.abmt-btn-gray-3d.e-btn::before,
+.abmt-btn-red-3d.e-btn::before,
+.ab-btn-success.e-btn::before,
+.ab-btn-neutral.e-btn::before,
+.ab-btn-danger.e-btn::before,
+.ab-btn-blue.e-btn::before,
+.ab-btn-orange.e-btn::before,
+.ab-btn-back.e-btn::before,
+a.ab-btn-success.e-btn::before,
+a.ab-btn-neutral.e-btn::before,
+a.ab-btn-danger.e-btn::before,
+a.ab-btn-blue.e-btn::before,
+a.ab-btn-back.e-btn::before,
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn)::before {
+    display: none !important;
+}
+
+/* -- Per-button icon colour ---------------------------------------- */
+.abmt-btn-save.e-btn .e-btn-icon      { color: #0f3319 !important; }
+.abmt-btn-cancel.e-btn .e-btn-icon    { color: #2d3748 !important; }
+.abmt-btn-search.e-btn .e-btn-icon    { color: #0a2d2b !important; }
+.abmt-btn-manage.e-btn .e-btn-icon    { color: #0f2d4a !important; }
+.abmt-btn-primary-3d.e-btn .e-btn-icon { color: #0f2d4a !important; }
+.abmt-btn-gray-3d.e-btn .e-btn-icon   { color: #2d3748 !important; }
+.abmt-btn-red-3d.e-btn .e-btn-icon    { color: #5c0f0d !important; }
+
+/* -- abmt-btn-save → pastel green --------------------------------- */
+.abmt-btn-save.e-btn,
+.abmt-btn-save.e-btn:focus,
+.abmt-btn-save.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-save.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-cancel → pastel gray -------------------------------- */
+.abmt-btn-cancel.e-btn,
+.abmt-btn-cancel.e-btn:focus,
+.abmt-btn-cancel.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-cancel.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* -- abmt-btn-search → pastel teal -------------------------------- */
+.abmt-btn-search.e-btn,
+.abmt-btn-search.e-btn:focus,
+.abmt-btn-search.e-btn:active {
+    background: linear-gradient(180deg, #b4e8e4 0%, #8fd8d3 52%, #6ac8c2 100%) !important;
+    border-color: #4ab8b2 !important;
+    color: #0a2d2b !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-search.e-btn:hover {
+    background: linear-gradient(180deg, #8fd8d3 0%, #6ac8c2 52%, #46b5af 100%) !important;
+    border-color: #2e9e98 !important;
+    color: #061d1c !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-manage → pastel blue -------------------------------- */
+.abmt-btn-manage.e-btn,
+.abmt-btn-manage.e-btn:focus,
+.abmt-btn-manage.e-btn:active {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-manage.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-primary-3d / ab-btn → pastel blue ------------------- */
+.abmt-btn-primary-3d.e-btn,
+.abmt-btn-primary-3d.e-btn:focus,
+.abmt-btn-primary-3d.e-btn:active,
+a.abmt-btn-primary-3d.e-btn,
+a.abmt-btn-primary-3d.e-btn:visited,
+a.abmt-btn-primary-3d.e-btn:focus {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-primary-3d.e-btn:hover,
+a.abmt-btn-primary-3d.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-gray-3d → pastel gray ------------------------------- */
+.abmt-btn-gray-3d.e-btn,
+.abmt-btn-gray-3d.e-btn:focus,
+.abmt-btn-gray-3d.e-btn:active,
+a.abmt-btn-gray-3d.e-btn {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-gray-3d.e-btn:hover,
+a.abmt-btn-gray-3d.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* -- abmt-btn-red-3d → pastel red --------------------------------- */
+.abmt-btn-red-3d.e-btn,
+.abmt-btn-red-3d.e-btn:focus,
+.abmt-btn-red-3d.e-btn:active,
+a.abmt-btn-red-3d.e-btn {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    border-color: #dd6b68 !important;
+    color: #5c0f0d !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-red-3d.e-btn:hover,
+a.abmt-btn-red-3d.e-btn:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    border-color: #c9504d !important;
+    color: #3d0909 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.18) !important;
+}
+
+/* -- pf-training-page-action-btn (no colour modifier) → pastel blue */
+/* (coloured variants pf-training-create-course-btn / pf-training-reset-data-btn have their own rules above) */
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn),
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):focus,
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):active {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn) .e-btn-icon {
+    color: #0f2d4a !important;
+}
+
+/* -- ab-btn-success (algobay-global) → pastel green (already pastel; re-assert here) */
+.ab-btn-success.e-btn,
+.ab-btn-success.e-btn:focus,
+.ab-btn-success.e-btn:active,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:focus,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+}
+.ab-btn-success.e-btn:hover,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 10px rgba(10,80,20,0.22) !important;
+}
+.ab-btn-success.e-btn .e-btn-icon,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn .e-btn-icon { color: #0f3319 !important; }
+
+/* -- ab-btn-neutral (algobay-global) → pastel gray (already pastel; re-assert here) */
+.ab-btn-neutral.e-btn,
+.ab-btn-neutral.e-btn:focus,
+.ab-btn-neutral.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-neutral.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-neutral.e-btn .e-btn-icon { color: #2d3748 !important; }
+
+/* -- ab-btn-back → pastel gray (back/nav buttons) --------------- */
+.ab-btn-back.e-btn,
+.ab-btn-back.e-btn:focus,
+.ab-btn-back.e-btn:active,
+a.ab-btn-back.e-btn {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-back.e-btn:hover,
+a.ab-btn-back.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-back.e-btn .e-btn-icon { color: #2d3748 !important; }
+
+/* -- ab-btn-blue → pastel blue ----------------------------------- */
+.ab-btn-blue.e-btn,
+.ab-btn-blue.e-btn:focus,
+.ab-btn-blue.e-btn:active,
+a.ab-btn-blue.e-btn {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-blue.e-btn:hover,
+a.ab-btn-blue.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-blue.e-btn .e-btn-icon { color: #0f2d4a !important; }
+
+/* -- ab-btn-orange → pastel orange ------------------------------ */
+.ab-btn-orange.e-btn,
+.ab-btn-orange.e-btn:focus,
+.ab-btn-orange.e-btn:active,
+a.ab-btn-orange.e-btn {
+    background: linear-gradient(180deg, #fce4c2 0%, #f8d09a 52%, #f3b878 100%) !important;
+    border-color: #e89e52 !important;
+    color: #4a2800 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-orange.e-btn:hover,
+a.ab-btn-orange.e-btn:hover {
+    background: linear-gradient(180deg, #f8d09a 0%, #f3b878 52%, #ea9d4e 100%) !important;
+    border-color: #d4872c !important;
+    color: #2e1800 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-orange.e-btn .e-btn-icon { color: #4a2800 !important; }
+
+/* -- ab-btn-danger → pastel red --------------------------------- */
+.ab-btn-danger.e-btn,
+.ab-btn-danger.e-btn:focus,
+.ab-btn-danger.e-btn:active,
+a.ab-btn-danger.e-btn {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    border-color: #dd6b68 !important;
+    color: #5c0f0d !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-danger.e-btn:hover,
+a.ab-btn-danger.e-btn:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    border-color: #c9504d !important;
+    color: #3d0909 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-danger.e-btn .e-btn-icon { color: #5c0f0d !important; }

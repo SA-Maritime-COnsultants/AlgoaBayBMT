@@ -121,8 +121,12 @@
                 </div>
 
                 <div class="@DialogActionsCssClass">
-                    <SfButton CssClass="@CancelButtonCssClass" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseAsync">Cancel</SfButton>
-                    <SfButton CssClass="@SaveButtonCssClass" IconCss="e-icons e-save" IconPosition="IconPosition.Left" IsPrimary="true" type="submit">Save Course</SfButton>
+                    <button class="btn btn-bmt btn-pastel-gray" type="button" @onclick="CloseAsync">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button class="btn btn-bmt btn-pastel-green" type="submit">
+                        <i class="bi bi-floppy-fill me-2"></i>Save Course
+                    </button>
                 </div>
             </EditForm>
         </Content>

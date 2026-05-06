@@ -1,5 +1,6 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
+using System.Xml.Linq;
 
 namespace AlgoaBayBMT.Shared.Models
 {
@@ -86,7 +87,10 @@ namespace AlgoaBayBMT.Shared.Models
         Steward = 11,
 
         [Display(Name = "Master")]
-        Master = 12
+        Master = 12,
+
+        [Display(Name = "POAC")]
+        POAC = 13
     }
 
     public enum SeagoingCommercialQualification
