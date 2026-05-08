@@ -12,6 +12,7 @@
 
 <PageTitle>Crew Detail</PageTitle>
 
+
 <div class="page-shell pf-training-admin-shell">
     @if (Crew is null)
     {
@@ -25,9 +26,11 @@
                 <div class="page-subtitle">@(Crew.Rank?.GetDisplayName() ?? "Unranked") · @(Crew.EmployerOperator?.Name ?? Crew.EmployerName ?? "No employer")</div>
             </div>
             <div class="pf-grid-actions pf-grid-actions--compact">
-                <SfButton CssClass="pf-training-page-action-btn" IconCss="e-icons e-arrow-left" OnClick="@(() => NavigationManager.NavigateTo("/crewing/crew"))">Back</SfButton>
-                <SfButton CssClass="pf-training-page-action-btn" IconCss="e-icons e-check-circled" OnClick="EvaluateAsync">Evaluate Compliance</SfButton>
-                <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-add" OnClick="OpenCreateDoc">Add Document</SfButton>
+                <a class="e-btn pf-training-page-action-btn" href="/crewing/crew">
+                    <span class="e-btn-icon e-icons e-arrow-left e-icon-left"></span>Back
+                </a>
+                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-check-circled" IconPosition="IconPosition.Left" OnClick="EvaluateAsync">Evaluate Compliance</SfButton>
+                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="OpenCreateDoc">Add Document</SfButton>
             </div>
         </div>
 
@@ -35,15 +38,13 @@
         {
             @if (WorkflowDashboard.OverallStatus is CrewComplianceOverallStatus.PendingTraining or CrewComplianceOverallStatus.Expired)
             {
-                <div class="alert alert-warning d-flex align-items-center gap-2 mb-3" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                <div class="pf-alert pf-alert--warning-strong" role="alert">
                     <strong>NON-COMPLIANT</strong> — This crew member has not completed all mandatory training for their position.
                 </div>
             }
             else if (WorkflowDashboard.OverallStatus == CrewComplianceOverallStatus.Unknown)
             {
-                <div class="alert alert-secondary d-flex align-items-center gap-2 mb-3" role="alert">
-                    <i class="bi bi-question-circle-fill fs-5"></i>
+                <div class="pf-alert" role="alert">
                     <strong>UNKNOWN</strong> — No applicable training courses found for this crew member. Ensure audience rules are configured.
                 </div>
             }
@@ -53,7 +54,7 @@
                     <div class="pf-form-grid">
                         <div class="pf-col-3">
                             <label class="pf-field-label">Overall Status</label>
-                            <div><span class="ab-badge @OverallStatusBadge(WorkflowDashboard.OverallStatus)">@WorkflowDashboard.OverallStatusText</span></div>
+                            <div><span class="crew-status-badge @OverallStatusBadge(WorkflowDashboard.OverallStatus)">@WorkflowDashboard.OverallStatusText</span></div>
                         </div>
                         <div class="pf-col-3">
                             <label class="pf-field-label">Required / Completed</label>
@@ -124,7 +125,7 @@
                                 <GridColumn HeaderText="Status" Width="160">
                                     <Template>
                                         @{ var item = context as CrewComplianceCourseItemModel; }
-                                        <span class="ab-badge @CourseStatusBadge(item)">@item?.StatusText</span>
+                                        <span class="crew-status-badge @CourseStatusBadge(item)">@item?.StatusText</span>
                                     </Template>
                                 </GridColumn>
                                 <GridColumn HeaderText="Progress" Width="150">
@@ -172,7 +173,7 @@
                         @if (CanSubmitTrainingRegistration)
                         {
                             <div class="pf-grid-actions pf-grid-actions--compact" style="margin-top:12px;">
-                                <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-add" OnClick="OpenRegistrationDialog">Register for Training</SfButton>
+                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-education" IconPosition="IconPosition.Left" OnClick="OpenRegistrationDialog">Register for Training</SfButton>
                             </div>
                         }
                     }
@@ -194,7 +195,7 @@
                     @if (!string.IsNullOrWhiteSpace(LastResult.AssignedCourseIds) && Crew?.EmployerOperatorId is not null)
                     {
                         <div class="pf-grid-actions pf-grid-actions--compact" style="margin-top:12px;">
-                            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-bill" OnClick="OpenInvoiceDialog">Generate Remediation Invoice</SfButton>
+                            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-bill" IconPosition="IconPosition.Left" OnClick="OpenInvoiceDialog">Generate Remediation Invoice</SfButton>
                             @if (LastResult.GeneratedInvoiceId is int invId)
                             {
                                 <SfButton CssClass="pf-training-page-action-btn" IconCss="e-icons e-eye" OnClick="@(() => NavigationManager.NavigateTo($"/billing/invoices/{invId}"))">View Invoice #@invId</SfButton>
@@ -544,35 +545,35 @@
 
     private static string OverallStatusBadge(CrewComplianceOverallStatus status) => status switch
     {
-        CrewComplianceOverallStatus.FullyCompliant => "ab-badge-active",
-        CrewComplianceOverallStatus.PendingTraining => "ab-badge-warning",
-        CrewComplianceOverallStatus.PendingApproval => "ab-badge-warning",
-        CrewComplianceOverallStatus.PendingPayment => "ab-badge-warning",
-        CrewComplianceOverallStatus.Expired => "ab-badge-inactive",
-        CrewComplianceOverallStatus.Unknown => "ab-badge-ops",
-        _ => "ab-badge-inactive"
+        CrewComplianceOverallStatus.FullyCompliant => "crew-badge-green",
+        CrewComplianceOverallStatus.PendingTraining => "crew-badge-red",
+        CrewComplianceOverallStatus.PendingApproval => "crew-badge-orange",
+        CrewComplianceOverallStatus.PendingPayment => "crew-badge-orange",
+        CrewComplianceOverallStatus.Expired => "crew-badge-red",
+        CrewComplianceOverallStatus.Unknown => "crew-badge-blue-gray",
+        _ => "crew-badge-blue-gray"
     };
 
     private static string CourseStatusBadge(CrewComplianceCourseItemModel? item)
     {
         if (item is null)
         {
-            return "ab-badge-inactive";
+            return "crew-badge-red";
         }
 
         if (item.IsExpired)
         {
-            return "ab-badge-inactive";
+            return "crew-badge-red";
         }
 
         return item.AssignmentStatus switch
         {
-            AssignmentStatus.Completed => "ab-badge-active",
-            AssignmentStatus.CompletedPendingPayment => "ab-badge-warning",
-            AssignmentStatus.PendingApproval => "ab-badge-warning",
-            AssignmentStatus.Started => "ab-badge-active",
-            AssignmentStatus.Assigned => "ab-badge-warning",
-            _ => "ab-badge-inactive"
+            AssignmentStatus.Completed => "crew-badge-green",
+            AssignmentStatus.CompletedPendingPayment => "crew-badge-orange",
+            AssignmentStatus.PendingApproval => "crew-badge-orange",
+            AssignmentStatus.Started => "crew-badge-teal",
+            AssignmentStatus.Assigned => "crew-badge-orange",
+            _ => "crew-badge-red"
         };
     }
 

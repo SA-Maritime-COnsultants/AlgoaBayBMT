@@ -17,30 +17,26 @@
     @* ══════════════════════════════════════════════
        HERO — Operations Banner
        ══════════════════════════════════════════════ *@
-    <section class="hero-section" aria-label="Operations overview">
-        <div class="hero-overlay" aria-hidden="true"></div>
+    <section class="hero-section hero-section--light" aria-label="Operations overview">
         <div class="hero-content">
-            <h1 class="hero-title">Algoa Bay Bunkering Management &amp; Training</h1>
-            <p class="hero-subtitle">
+            <h1 class="hero-title hero-title--dark">Algoa Bay Bunkering Management &amp; Training</h1>
+            <p class="hero-subtitle hero-subtitle--dark">
                 Real-time bunkering operations, DFFE-compliant environmental oversight,
                 and crew training — integrated in one platform.
             </p>
             <div class="hero-actions">
-                <SfButton CssClass="action-btn action-btn--primary e-btn"
-                          IsPrimary="false"
-                          @onclick='() => Nav.NavigateTo("bunkering-operations")'>
-                    Bunkering Operations
-                </SfButton>
-                <SfButton CssClass="action-btn action-btn--success e-btn"
-                          IsPrimary="false"
-                          @onclick='() => Nav.NavigateTo("my-training")'>
-                    My Training Dashboard
-                </SfButton>
-                <SfButton CssClass="action-btn action-btn--warning e-btn"
-                          IsPrimary="false"
-                          @onclick='() => Nav.NavigateTo("crewing/compliance")'>
-                    Crew Compliance
-                </SfButton>
+                <button class="abmt-action-btn abmt-btn-teal"
+                        @onclick='() => Nav.NavigateTo("bunkering-operations")'>
+                    <i class="bi bi-droplet-fill"></i> Bunkering Operations
+                </button>
+                <button class="abmt-action-btn abmt-btn-green"
+                        @onclick='() => Nav.NavigateTo("my-training")'>
+                    <i class="bi bi-mortarboard-fill"></i> My Training Dashboard
+                </button>
+                <button class="abmt-action-btn abmt-btn-blue"
+                        @onclick='() => Nav.NavigateTo("crewing/compliance")'>
+                    <i class="bi bi-shield-check"></i> Crew Compliance
+                </button>
             </div>
         </div>
     </section>

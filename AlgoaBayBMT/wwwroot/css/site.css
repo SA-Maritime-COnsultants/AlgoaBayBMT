@@ -683,6 +683,68 @@ code, pre, .bmt-mono {
    All internal containers must have 8px rounded corners.
    ────────────────────────────────────────────────────────────────────── */
 
+/* === ABMT Shared Action Button Styles ===
+   Extracted from pf-training-page-action-btn (abmt-training-buttons.css):
+     height: 46px | min-width: 155px | padding: 0 0.6rem | border-radius: 8px
+     font-size: 0.72rem | font-weight: 600
+   Pastel colour tokens:
+     Teal:  bg #80CBC4  hover #4DB6AC  text #004D40
+     Green: bg #A5D6A7  hover #81C784  text #1B5E20
+     Blue:  bg #90CAF9  hover #64B5F6  text #0D47A1
+*/
+
+.abmt-action-btn {
+    height: 46px;
+    min-width: 155px;
+    padding: 0 0.6rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    line-height: 1.1;
+}
+
+.abmt-action-btn:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-decoration: none;
+}
+
+.abmt-btn-teal {
+    background-color: #80CBC4;
+    color: #004D40;
+}
+.abmt-btn-teal:hover {
+    background-color: #4DB6AC;
+    color: #004D40;
+}
+
+.abmt-btn-green {
+    background-color: #A5D6A7;
+    color: #1B5E20;
+}
+.abmt-btn-green:hover {
+    background-color: #81C784;
+    color: #1B5E20;
+}
+
+.abmt-btn-blue {
+    background-color: #90CAF9;
+    color: #0D47A1;
+}
+.abmt-btn-blue:hover {
+    background-color: #64B5F6;
+    color: #0D47A1;
+}
+
+/* === END ABMT Shared Action Button Styles === */
+
 .bmt-card {
     background: var(--bmt-surface);
     border: 1px solid var(--bmt-border-subtle);

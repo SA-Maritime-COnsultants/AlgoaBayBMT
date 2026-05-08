@@ -1850,17 +1850,17 @@ a.abmt-btn-red-3d.e-btn:hover {
 }
 
 /* -- pf-training-page-action-btn (no colour modifier) → pastel blue */
-/* (coloured variants pf-training-create-course-btn / pf-training-reset-data-btn have their own rules above) */
-.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn),
-.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):focus,
-.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):active {
+/* (coloured variants have their own rules; crew-action-btn-* are also excluded) */
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue),
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue):focus,
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue):active {
     background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
     border-color: #7aabe8 !important;
     color: #0f2d4a !important;
     text-shadow: none !important;
     box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
 }
-.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):hover {
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue):hover {
     background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
     border-color: #5e94c7 !important;
     color: #0a1f33 !important;
@@ -1868,7 +1868,7 @@ a.abmt-btn-red-3d.e-btn:hover {
     transform: translateY(-1px) !important;
     box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
 }
-.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn) .e-btn-icon {
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue) .e-btn-icon {
     color: #0f2d4a !important;
 }
 

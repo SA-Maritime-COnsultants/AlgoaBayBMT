@@ -23,7 +23,7 @@
             <div class="auth-subtitle">Create your account to access Algoa Bay BMT.</div>
         </div>
 
-        <SfCard CssClass="pf-card-shell auth-card register-card">
+        <SfCard CssClass="pf-card-shell auth-card register-card register-panel">
             <CardHeader Title="Create a new account" SubTitle="Complete the form below to request access" />
             <CardContent>
                 <StatusMessage Message="@Message" />
@@ -123,8 +123,10 @@
                         </div>
                     </div>
 
-                    <div class="d-grid mt-4">
-                        <SfButton CssClass="e-primary e-large" IsPrimary="true" Type="ButtonType.Submit">Register</SfButton>
+                    <div class="d-flex mt-4">
+                        <button type="submit" class="abmt-action-btn abmt-btn-green">
+                            <i class="bi bi-person-plus-fill"></i> Register
+                        </button>
                     </div>
                 </EditForm>
             </CardContent>

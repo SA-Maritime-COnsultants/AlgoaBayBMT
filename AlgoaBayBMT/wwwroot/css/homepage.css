@@ -303,6 +303,25 @@ h1, h2, h3, h4, h5, h6 {
     gap: 0.875rem;
 }
 
+/* ── Hero Section — Light Pastel Variant ────────────────────────── */
+.hero-section--light {
+    background: #ddecf0;
+    min-height: 200px;
+}
+
+.hero-section--light .hero-overlay {
+    display: none;
+}
+
+.hero-title--dark {
+    color: #1a3a4a;
+    text-shadow: none;
+}
+
+.hero-subtitle--dark {
+    color: #2c4f5f;
+}
+
 /* ── Hero Action Buttons — 3D ───────────────────────────────────── */
 .action-btn.e-btn {
     font-family: var(--font-heading);

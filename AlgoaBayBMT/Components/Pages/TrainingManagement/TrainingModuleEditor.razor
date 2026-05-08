@@ -78,13 +78,13 @@
                     <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-down" IconCss="e-icons e-chevron-down" IconPosition="IconPosition.Left" OnClick="MoveDownAsync">Down</SfButton>
                     @if (Model.ModuleId.HasValue)
                     {
-                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-delete" IconCss="e-icons e-delete" IconPosition="IconPosition.Left" OnClick="DeleteAsync">Delete</SfButton>
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-delete" IconCss="e-icons e-trash" IconPosition="IconPosition.Left" OnClick="DeleteAsync">Delete</SfButton>
                     }
                 </div>
                 <div class="pf-grid-actions pf-grid-actions--compact">
                     @if (Model.ModuleId.HasValue)
                     {
-                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-new-lesson" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="CreateLessonAsync">New Lesson</SfButton>
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-new-lesson" IconCss="e-icons e-file-new" IconPosition="IconPosition.Left" OnClick="CreateLessonAsync">New Lesson</SfButton>
                     }
                     <SfButton CssClass="pf-training-page-action-btn cb-btn-save-module" IsPrimary="true" IconCss="e-icons e-save" IconPosition="IconPosition.Left" type="submit">Save Module</SfButton>
                 </div>

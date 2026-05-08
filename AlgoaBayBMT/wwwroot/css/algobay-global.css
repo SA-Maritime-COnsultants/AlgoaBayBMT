@@ -227,3 +227,333 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* =====================================================
+   AlgoaBayBMT — Account/Manage Shared Styles
+   ===================================================== */
+
+/* Shared panel card header — matches pf-card-shell SfCard header exactly */
+.card-header-bmt {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    font-size:     0.875rem !important;
+    font-weight:   600 !important;
+    color:         #1a3a4a !important;
+    padding:       0.6875rem 1.15rem !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18) !important;
+    box-shadow:    0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+    display:       flex !important;
+    align-items:   center !important;
+    gap:           0.5rem !important;
+}
+
+/* Hero / profile banner */
+.pf-profile-hero.profile-hero-bmt,
+.pf-manage-overview .profile-hero-bmt {
+    background-color: #ddecf0 !important;
+}
+
+/* Label + field vertical separation */
+.field-group {
+    margin-bottom: 1rem;
+}
+.field-group > label {
+    display:       block;
+    font-weight:   600;
+    margin-bottom: 0.25rem;
+}
+.field-group .field-value {
+    display:   block;
+    padding:   0.375rem 0;
+    color:     #495057;
+    font-size: 0.95rem;
+}
+
+/* Manage nav panel header */
+.pf-manage-nav-title {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18);
+    box-shadow:    0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset;
+    color:         #1a3a4a;
+    font-size:     0.875rem;
+    font-weight:   600;
+    padding:       0.6875rem 1.15rem;
+    letter-spacing: 0.01em;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Manage layout — sidebar + content */
+.pf-manage-layout {
+    display:   flex;
+    gap:       1.5rem;
+    align-items: flex-start;
+}
+
+.pf-manage-nav-panel {
+    flex:       0 0 220px;
+    min-width:  180px;
+}
+
+.pf-manage-content-panel {
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+.pf-manage-nav {
+    background:   #ffffff;
+    border:       1px solid rgba(15, 87, 96, 0.14);
+    border-radius: 10px;
+    overflow:     hidden;
+    box-shadow:   0 2px 8px rgba(0,0,0,0.07);
+}
+
+.pf-manage-nav-list {
+    list-style: none;
+    margin:     0;
+    padding:    0.4rem 0;
+}
+
+.pf-manage-nav-list li {
+    margin: 0;
+    padding: 0;
+}
+
+.pf-manage-nav-link {
+    display:       block;
+    padding:       0.5rem 1.15rem;
+    font-size:     0.875rem;
+    color:         #1a3a4a;
+    text-decoration: none;
+    border-left:   3px solid transparent;
+    transition:    background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.pf-manage-nav-link:hover {
+    background:   rgba(15, 87, 96, 0.07);
+    color:        #0e5f68;
+}
+
+.pf-manage-nav-link.active {
+    background:   rgba(15, 87, 96, 0.10);
+    border-left-color: #0e5f68;
+    color:        #0e5f68;
+    font-weight:  600;
+}
+
+/* Profile hero area inside manage index */
+.pf-manage-overview {
+    display:       flex;
+    align-items:   center;
+    gap:           1.25rem;
+    padding:       1rem 1.15rem;
+    background:    #ddecf0;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.pf-manage-overview-title {
+    margin:      0;
+    font-size:   1.15rem;
+    font-weight: 700;
+    color:       #0f3247;
+}
+
+.pf-manage-overview-subtitle {
+    font-size: 0.85rem;
+    color:     #4d7080;
+    margin:    0.2rem 0 0.5rem;
+}
+
+.pf-profile-avatar-placeholder {
+    width:           64px;
+    height:          64px;
+    border-radius:   50%;
+    background:      linear-gradient(180deg, #1a8fa0 0%, #0f6a7a 100%);
+    color:           #ffffff;
+    font-size:       1.4rem;
+    font-weight:     700;
+    display:         flex;
+    align-items:     center;
+    justify-content: center;
+    flex-shrink:     0;
+}
+
+.pf-profile-avatar-image {
+    width:         64px;
+    height:        64px;
+    border-radius: 50%;
+    object-fit:    cover;
+    flex-shrink:   0;
+}
+
+/* Security action row */
+.pf-manage-security-actions {
+    display:   flex;
+    flex-wrap: wrap;
+    gap:       0.65rem;
+    margin-top: 1rem;
+}
+
+/* Submit row */
+.pf-manage-submit-row {
+    display:         flex;
+    justify-content: flex-end;
+    margin-top:      1rem;
+}
+
+/* Manage page section cards */
+.pf-manage-section-card {
+    margin-bottom: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .pf-manage-layout {
+        flex-direction: column;
+    }
+    .pf-manage-nav-panel {
+        flex: none;
+        width: 100%;
+    }
+}
+
+
+/* === ABMT Shared Action Button Styles — loaded last, wins cascade
+   Geometry: 46px × 155px, radius 8px, 0.82rem / 600
+   3D style matches courseBuilder pastel buttons exactly:
+     - 3-stop gradient (light top → mid → darker bottom)
+     - bottom border gives the "raised slab" edge
+     - inset top highlight + drop shadow for depth
+     - ::before glass sheen (same as courseBuilder)
+     - translateY(-1px) lift on hover, translateY(2px) press on active
+   portflow-modern.css excludes .abmt-action-btn via :not() so no conflicts. */
+
+/* ── Base geometry ────────────────────────────────────────────── */
+.abmt-action-btn {
+    position: relative !important;
+    height: 46px !important;
+    min-width: 155px !important;
+    padding: 0 0.9rem !important;
+    border-radius: 8px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    line-height: 1.1 !important;
+    transform: translateY(0) !important;
+    transition: transform 110ms ease, box-shadow 140ms ease, filter 140ms ease !important;
+    user-select: none !important;
+    /* text shadow gives legibility depth */
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+}
+
+/* Glass sheen overlay — same technique as courseBuilder ::before */
+.abmt-action-btn::before {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: inherit !important;
+    pointer-events: none !important;
+    background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.30) 0%,
+        rgba(255, 255, 255, 0.04) 52%,
+        rgba(0, 0, 0, 0.07) 100%
+    ) !important;
+}
+
+.abmt-action-btn:hover {
+    transform: translateY(-1px) !important;
+    filter: brightness(1.06) !important;
+}
+
+.abmt-action-btn:active {
+    transform: translateY(2px) !important;
+    filter: brightness(0.97) !important;
+}
+
+/* ── Teal — #80CBC4 ──────────────────────────────────────────── */
+.abmt-btn-teal,
+.abmt-btn-teal:visited,
+.abmt-btn-teal:focus {
+    background: linear-gradient(180deg, #a5ddd8 0%, #80CBC4 52%, #5bbdb5 100%) !important;
+    border: 1px solid #4ab8b2 !important;
+    color: #004D40 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 2px 0 rgba(0, 77, 64, 0.30),
+                0 4px 10px rgba(0, 77, 64, 0.16) !important;
+}
+.abmt-btn-teal:hover {
+    background: linear-gradient(180deg, #80CBC4 0%, #5bbdb5 52%, #3eada4 100%) !important;
+    border-color: #2e9e98 !important;
+    color: #003830 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 3px 0 rgba(0, 77, 64, 0.32),
+                0 6px 14px rgba(0, 77, 64, 0.20) !important;
+}
+.abmt-btn-teal:active {
+    background: linear-gradient(180deg, #5bbdb5 0%, #3eada4 100%) !important;
+    box-shadow: 0 1px 3px rgba(0, 77, 64, 0.18) inset !important;
+}
+
+/* ── Green — #A5D6A7 ────────────────────────────────────────── */
+.abmt-btn-green,
+.abmt-btn-green:visited,
+.abmt-btn-green:focus {
+    background: linear-gradient(180deg, #c1e4c2 0%, #A5D6A7 52%, #85c487 100%) !important;
+    border: 1px solid #6ab86c !important;
+    color: #1B5E20 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 2px 0 rgba(27, 94, 32, 0.30),
+                0 4px 10px rgba(27, 94, 32, 0.16) !important;
+}
+.abmt-btn-green:hover {
+    background: linear-gradient(180deg, #A5D6A7 0%, #85c487 52%, #67b469 100%) !important;
+    border-color: #4ea451 !important;
+    color: #144a18 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 3px 0 rgba(27, 94, 32, 0.32),
+                0 6px 14px rgba(27, 94, 32, 0.20) !important;
+}
+.abmt-btn-green:active {
+    background: linear-gradient(180deg, #85c487 0%, #67b469 100%) !important;
+    box-shadow: 0 1px 3px rgba(27, 94, 32, 0.18) inset !important;
+}
+
+/* ── Blue — #90CAF9 ─────────────────────────────────────────── */
+.abmt-btn-blue,
+.abmt-btn-blue:visited,
+.abmt-btn-blue:focus {
+    background: linear-gradient(180deg, #b3d9fb 0%, #90CAF9 52%, #6cbaf6 100%) !important;
+    border: 1px solid #4aa8f2 !important;
+    color: #0D47A1 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 2px 0 rgba(13, 71, 161, 0.30),
+                0 4px 10px rgba(13, 71, 161, 0.16) !important;
+}
+.abmt-btn-blue:hover {
+    background: linear-gradient(180deg, #90CAF9 0%, #6cbaf6 52%, #4aaaf3 100%) !important;
+    border-color: #2084e0 !important;
+    color: #083593 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset,
+                0 3px 0 rgba(13, 71, 161, 0.32),
+                0 6px 14px rgba(13, 71, 161, 0.20) !important;
+}
+.abmt-btn-blue:active {
+    background: linear-gradient(180deg, #6cbaf6 0%, #4aaaf3 100%) !important;
+    box-shadow: 0 1px 3px rgba(13, 71, 161, 0.18) inset !important;
+}
+
+/* ── Hero light panel ───────────────────────────────────────── */
+.hero-section--light {
+    background: #ddecf0 !important;
+    background-image: none !important;
+}
+.hero-section--light .hero-overlay { display: none !important; }
+.hero-title--dark    { color: #1a3a4a !important; text-shadow: none !important; }
+.hero-subtitle--dark { color: #2c4f5f !important; }
+
+/* === END ABMT Shared Action Button Styles === */
