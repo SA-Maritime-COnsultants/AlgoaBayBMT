@@ -1,12 +1,14 @@
 @page "/billing/invoices"
 @rendermode InteractiveServer
-@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+@attribute [Authorize(Policy = PolicyNames.BillingManagement)]
 
 @inject IOperatorService OperatorService
 @inject IBillingService BillingService
 @inject ICrewComplianceWorkflowService CrewComplianceWorkflowService
+@inject IUserManagementService UserMgmtService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
+@using AlgoaBayBMT.Shared.Security
 
 <PageTitle>Invoices</PageTitle>
 
@@ -27,6 +29,8 @@
         <CardHeader Title="Filter" />
         <CardContent>
             <div class="pf-form-grid">
+                @if (_isAdmin)
+                {
                 <div class="pf-col-6">
                     <label class="pf-field-label">Operator</label>
                     <SfDropDownList TValue="int?" TItem="BunkerOperator" DataSource="@Operators" @bind-Value="SelectedOperatorId" Placeholder="Select operator">
@@ -34,6 +38,7 @@
                         <DropDownListEvents TValue="int?" TItem="BunkerOperator" ValueChange="@(async _ => await LoadInvoicesAsync())" />
                     </SfDropDownList>
                 </div>
+                }
             </div>
         </CardContent>
     </SfCard>
@@ -93,11 +98,34 @@
     private int? SelectedOperatorId { get; set; }
     private string? Message;
     private bool IsError;
+    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
-        Operators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
-        SelectedOperatorId = Operators.FirstOrDefault()?.Id;
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+
+        var allOperators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+
+        if (_isAdmin)
+        {
+            Operators = allOperators;
+            SelectedOperatorId = Operators.FirstOrDefault()?.Id;
+        }
+        else
+        {
+            // Company Managers see only their own company
+            var userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is not null)
+            {
+                var userModel = await UserMgmtService.GetUserEditorAsync(userId);
+                if (userModel?.CompanyId is int cid)
+                {
+                    Operators = allOperators.Where(x => x.Id == cid).ToList();
+                    SelectedOperatorId = cid;
+                }
+            }
+        }
         await LoadInvoicesAsync();
     }
 

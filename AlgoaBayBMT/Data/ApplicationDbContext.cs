@@ -82,6 +82,11 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ProfilePictureContentType).HasMaxLength(100);
                 entity.Property(x => x.ApprovalNotes).HasMaxLength(1024);
                 entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
+                entity.Property(x => x.IsCrewManager).HasDefaultValue(false);
+                entity.HasOne<BunkerOperator>()
+                    .WithMany()
+                    .HasForeignKey(x => x.CompanyId)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             builder.Entity<Lesson>(entity =>

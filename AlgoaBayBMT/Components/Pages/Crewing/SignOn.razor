@@ -1,12 +1,14 @@
 @page "/crewing/sign-on"
 @rendermode InteractiveServer
-@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+@attribute [Authorize(Policy = PolicyNames.CrewComplianceManagement)]
 
 @inject IVesselService VesselService
 @inject ICrewService CrewService
 @inject ICrewAssignmentService AssignmentService
 @inject ICrewComplianceWorkflowService ComplianceWorkflowService
+@inject IUserManagementService UserMgmtService
 @inject AuthenticationStateProvider AuthState
+@using AlgoaBayBMT.Shared.Security
 
 <PageTitle>Sign On / Off</PageTitle>
 
@@ -128,16 +130,44 @@
 
     private string? Message;
     private bool IsError;
+    private int? _scopedCompanyId;
 
     protected override async Task OnInitializedAsync()
     {
-        Vessels = await VesselService.GetAllAsync();
-        var crews = await CrewService.GetAllAsync();
-        CrewList = crews.Select(c => new CrewOption
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        var isAdmin = auth.User.IsInRole(RoleNames.Admin);
+
+        if (!isAdmin)
         {
-            Id = c.Id,
-            DisplayName = $"{c.LastName}, {c.FirstName}" + (c.Rank.HasValue ? $" ({c.Rank.Value.GetDisplayName()})" : string.Empty)
-        }).ToList();
+            var userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is not null)
+            {
+                var userModel = await UserMgmtService.GetUserEditorAsync(userId);
+                _scopedCompanyId = userModel?.CompanyId;
+            }
+        }
+
+        if (_scopedCompanyId.HasValue)
+        {
+            Vessels = await VesselService.GetByCompanyAsync(_scopedCompanyId.Value);
+            var crews = await CrewService.GetByCompanyAsync(_scopedCompanyId.Value);
+            CrewList = crews.Select(c => new CrewOption
+            {
+                Id = c.Id,
+                DisplayName = $"{c.LastName}, {c.FirstName}" + (c.Rank.HasValue ? $" ({c.Rank.Value.GetDisplayName()})" : string.Empty)
+            }).ToList();
+        }
+        else
+        {
+            Vessels = await VesselService.GetAllAsync();
+            var crews = await CrewService.GetAllAsync();
+            CrewList = crews.Select(c => new CrewOption
+            {
+                Id = c.Id,
+                DisplayName = $"{c.LastName}, {c.FirstName}" + (c.Rank.HasValue ? $" ({c.Rank.Value.GetDisplayName()})" : string.Empty)
+            }).ToList();
+        }
+
         RankOptions = CrewRankExtensions.All.ToList();
 
         if (VesselId.HasValue) SelectedVesselId = VesselId.Value;

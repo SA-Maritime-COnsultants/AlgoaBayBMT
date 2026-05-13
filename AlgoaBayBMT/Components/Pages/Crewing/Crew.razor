@@ -1,12 +1,14 @@
 @page "/crewing/crew"
 @rendermode InteractiveServer
-@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
 @inject ICrewService CrewService
 @inject IOperatorService OperatorService
 @inject ICrewComplianceWorkflowService ComplianceWorkflowService
+@inject IUserManagementService UserMgmtService
 @inject AuthenticationStateProvider AuthState
 @inject NavigationManager NavigationManager
+@using AlgoaBayBMT.Shared.Security
 
 <PageTitle>Crew Register</PageTitle>
 
@@ -173,16 +175,45 @@
     private string? Message { get; set; }
     private bool IsError { get; set; }
 
+    // Company-scoping: null means Admin (see all)
+    private int? _scopedCompanyId;
+    private bool _isAdmin;
+
     protected override async Task OnInitializedAsync()
     {
         RankOptions = CrewRankExtensions.All.ToList();
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+        if (!_isAdmin)
+        {
+            // Company Managers are scoped to their own CompanyId stored on the user record.
+            // We resolve it via the OperatorService by matching the claim subject.
+            var userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is not null)
+            {
+                var allOperators = await OperatorService.GetAllAsync();
+                Operators = allOperators.Where(x => x.IsActive).ToList();
+                // Resolve the user's CompanyId from the DB via UserManagementService injected below
+                var userModel = await UserMgmtService.GetUserEditorAsync(userId);
+                _scopedCompanyId = userModel?.CompanyId;
+            }
+        }
+        else
+        {
+            Operators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        }
         await LoadAsync();
     }
 
     private async Task LoadAsync()
     {
-        Items = await CrewService.GetAllAsync();
-        Operators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        if (_isAdmin)
+            Items = await CrewService.GetAllAsync();
+        else if (_scopedCompanyId.HasValue)
+            Items = await CrewService.GetByCompanyAsync(_scopedCompanyId.Value);
+        else
+            Items = [];
+
         var ids = Items.Select(x => x.Id);
         ComplianceStatuses = await ComplianceWorkflowService.GetCrewComplianceSummaryAsync(ids);
         ApplyFilter();
@@ -240,7 +271,7 @@
     private void OpenCreateDialog()
     {
         Message = null;
-        EditModel = new CrewMember { IsActive = true };
+        EditModel = new CrewMember { IsActive = true, EmployerOperatorId = _scopedCompanyId };
         IsDialogVisible = true;
     }
 

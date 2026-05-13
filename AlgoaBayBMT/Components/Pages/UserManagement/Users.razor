@@ -3,9 +3,12 @@
 @attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
 @using Syncfusion.Blazor.Notifications
+@using AlgoaBayBMT.Shared.Models
+@using Microsoft.EntityFrameworkCore
 
 @inject IUserManagementService UserManagementService
 @inject IApplicationEmailService EmailService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
@@ -144,6 +147,9 @@
                                         </span>
                                         <span class="pf-icon-action" title="Allocate Roles">
                                             <SfButton CssClass="e-flat pf-btn-roles pf-btn-icon pf-btn-square" IconCss="e-icons e-user" OnClick="@(_ => OpenRolesDialogAsync(user))"><span class="visually-hidden">Allocate Roles</span></SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="Assign Company">
+                                            <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-office" OnClick="@(_ => OpenCompanyDialogAsync(user))"><span class="visually-hidden">Assign Company</span></SfButton>
                                         </span>
                                         <span class="pf-icon-action" title="Re-send Welcome Email">
                                             <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" IconCss="e-icons e-send" OnClick="@(_ => ResendWelcomeEmailAsync(user))"><span class="visually-hidden">Re-send Welcome Email</span></SfButton>
@@ -338,6 +344,33 @@
     </DialogTemplates>
 </SfDialog>
 
+<SfDialog Width="620px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsCompanyDialogVisible">
+    <DialogTemplates>
+        <Header>Assign Company — @(CompanyTargetUser?.FullName ?? CompanyTargetUser?.Email)</Header>
+        <Content>
+            <div class="pf-form-grid">
+                <div class="pf-col-12">
+                    <label class="pf-field-label">Company (Bunker Operator)</label>
+                    <SfDropDownList TValue="int?" TItem="BunkerOperator" DataSource="@CompanyOptions"
+                                   @bind-Value="CompanyAssignId" Placeholder="No company assigned">
+                        <DropDownListFieldSettings Value="Id" Text="Name" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-12">
+                    <SfCheckBox @bind-Checked="GrantCompanyManagerRole" Label="Grant COMPANY_MANAGER role" />
+                </div>
+                <div class="pf-col-12">
+                    <SfCheckBox @bind-Checked="SetCrewManagerFlag" Label="Mark as Crew Manager (can sign on/off crew)" />
+                </div>
+            </div>
+            <div class="pf-dialog-actions">
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@(_ => IsCompanyDialogVisible = false)">Cancel</SfButton>
+                <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" OnClick="SaveCompanyAsync">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
 <SfDialog Width="520px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
     <DialogTemplates>
         <Header>Permanent Delete</Header>
@@ -374,6 +407,14 @@
     private bool IsDeleteDialogVisible;
     private bool IsAdmin;
     private SfToast SuccessToast = default!;
+
+    // Company assignment dialog state
+    private bool IsCompanyDialogVisible;
+    private ApplicationUser? CompanyTargetUser;
+    private int? CompanyAssignId;
+    private bool GrantCompanyManagerRole;
+    private bool SetCrewManagerFlag;
+    private List<BunkerOperator> CompanyOptions { get; set; } = [];
 
     private static IReadOnlyList<CrewRankOption> CrewRankOptions => Enum.GetValues<CrewRank>()
         .Select(rank => new CrewRankOption { Value = rank, Text = rank.GetDisplayName() })
@@ -485,6 +526,41 @@
         SelectedRoleNames = Array.Empty<string>();
     }
 
+    private async Task OpenCompanyDialogAsync(ApplicationUser user)
+    {
+        CompanyTargetUser = user;
+        CompanyAssignId = user.CompanyId;
+        GrantCompanyManagerRole = false;
+        SetCrewManagerFlag = user.IsCrewManager;
+        if (CompanyOptions.Count == 0)
+        {
+            await using var db = await DbContextFactory.CreateDbContextAsync();
+            CompanyOptions = await db.BunkerOperators.AsNoTracking()
+                .Where(x => x.IsActive).OrderBy(x => x.Name).ToListAsync();
+        }
+        IsCompanyDialogVisible = true;
+    }
+
+    private async Task SaveCompanyAsync()
+    {
+        if (CompanyTargetUser is null) return;
+        var assignResult = await UserManagementService.AssignCompanyAsync(
+            CompanyTargetUser.Id, CompanyAssignId, GrantCompanyManagerRole);
+        if (!assignResult.Succeeded)
+        {
+            StatusMessage = string.Join(", ", assignResult.Errors);
+            IsCompanyDialogVisible = false;
+            return;
+        }
+        var crewResult = await UserManagementService.SetCrewManagerAsync(
+            CompanyTargetUser.Id, SetCrewManagerFlag);
+        StatusMessage = crewResult.Succeeded
+            ? "Company and crew manager settings saved."
+            : string.Join(", ", crewResult.Errors);
+        IsCompanyDialogVisible = false;
+        await LoadAsync();
+    }
+
     private void CloseDeleteDialog()
     {
         IsDeleteDialogVisible = false;
@@ -582,7 +658,7 @@
             return;
         }
 
-        var result = await UserManagementService.UpdateUserRolesAsync(RolesTargetUser.Id, SelectedRoleNames);
+        var result = await UserManagementService.UpdateUserRolesAsync(RolesTargetUser.Id, SelectedRoleNames ?? Array.Empty<string>());
         if (!result.Succeeded)
         {
             StatusMessage = result.Message ?? string.Join(", ", result.Errors);

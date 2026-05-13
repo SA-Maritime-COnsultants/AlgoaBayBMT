@@ -75,7 +75,7 @@
             </section>
         </AuthorizeView>
 
-        <AuthorizeView Roles="@RoleNames.Admin">
+        <AuthorizeView Roles="@($"{RoleNames.Admin},{RoleNames.CompanyManager}")">
             <section class="side-nav-group" aria-labelledby="crewing-nav-heading">
                 <button id="crewing-nav-heading" type="button" class="side-nav-group-toggle"
                         @onclick="ToggleCrewManagementAsync"

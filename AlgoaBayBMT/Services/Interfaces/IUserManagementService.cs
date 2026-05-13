@@ -20,5 +20,14 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<OperationResult> UpdateUserRolesAsync(string userId, IReadOnlyCollection<string> roleNames, CancellationToken cancellationToken = default);
         Task<OperationResult> DeleteUserAsync(string userId, CancellationToken cancellationToken = default);
         Task<Dictionary<string, IReadOnlyList<string>>> GetUserRolesBulkAsync(IReadOnlyList<string> userIds, CancellationToken cancellationToken = default);
+
+        /// <summary>Assigns a user to a BunkerOperator company and (optionally) the COMPANY_MANAGER role.</summary>
+        Task<OperationResult> AssignCompanyAsync(string userId, int? companyId, bool grantCompanyManagerRole, CancellationToken cancellationToken = default);
+
+        /// <summary>Toggles the IsCrewManager flag on a user.</summary>
+        Task<OperationResult> SetCrewManagerAsync(string userId, bool isCrewManager, CancellationToken cancellationToken = default);
+
+        /// <summary>Returns users belonging to a given company (by CompanyId).</summary>
+        Task<List<ApplicationUser>> GetUsersByCompanyAsync(int companyId, CancellationToken cancellationToken = default);
     }
 }

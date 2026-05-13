@@ -1,11 +1,13 @@
 @page "/crewing/vessels"
 @rendermode InteractiveServer
-@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
 
 @inject IVesselService VesselService
 @inject IOperatorService OperatorService
+@inject IUserManagementService UserMgmtService
 @inject AuthenticationStateProvider AuthState
 @inject NavigationManager NavigationManager
+@using AlgoaBayBMT.Shared.Security
 
 <PageTitle>Vessels</PageTitle>
 
@@ -106,12 +108,34 @@
     private string? Message { get; set; }
     private bool IsError { get; set; }
 
-    protected override async Task OnInitializedAsync() => await LoadAsync();
+    private int? _scopedCompanyId;
+    private bool _isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+        if (!_isAdmin)
+        {
+            var userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is not null)
+            {
+                var userModel = await UserMgmtService.GetUserEditorAsync(userId);
+                _scopedCompanyId = userModel?.CompanyId;
+            }
+        }
+        await LoadAsync();
+    }
 
     private async Task LoadAsync()
     {
-        Items = await VesselService.GetAllAsync();
         Operators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        if (_isAdmin)
+            Items = await VesselService.GetAllAsync();
+        else if (_scopedCompanyId.HasValue)
+            Items = await VesselService.GetByCompanyAsync(_scopedCompanyId.Value);
+        else
+            Items = [];
     }
 
     private async Task<string?> CurrentUserIdAsync()
@@ -123,7 +147,7 @@
     private void OpenCreateDialog()
     {
         Message = null;
-        EditModel = new Vessel { IsActive = true };
+        EditModel = new Vessel { IsActive = true, OwningOperatorId = _scopedCompanyId };
         IsDialogVisible = true;
     }
 

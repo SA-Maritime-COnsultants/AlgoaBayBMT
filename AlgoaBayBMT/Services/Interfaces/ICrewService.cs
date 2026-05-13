@@ -5,6 +5,7 @@ namespace AlgoaBayBMT.Services.Interfaces
     public interface ICrewService
     {
         Task<List<CrewMember>> GetAllAsync(bool includeInactive = false, CancellationToken cancellationToken = default);
+        Task<List<CrewMember>> GetByCompanyAsync(int bunkerOperatorId, bool includeInactive = false, CancellationToken cancellationToken = default);
         Task<CrewMember?> GetByIdAsync(int id, CancellationToken cancellationToken = default);
         Task<CrewMember?> GetByApplicationUserIdAsync(string applicationUserId, CancellationToken cancellationToken = default);
         Task<CrewMember> CreateAsync(CrewMember crewMember, string? performedByUserId, CancellationToken cancellationToken = default);

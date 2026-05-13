@@ -28,5 +28,11 @@ namespace AlgoaBayBMT.Data
         public string? ProfilePictureContentType { get; set; }
         public bool IsActive { get; set; } = true;
         public DateTime RegisteredOnUtc { get; set; } = DateTime.UtcNow;
+
+        /// <summary>The BunkerOperator the user is assigned to as a Company Manager or Crew Manager.</summary>
+        public int? CompanyId { get; set; }
+
+        /// <summary>When true the user may sign crew on/off a vessel and review crew training.</summary>
+        public bool IsCrewManager { get; set; }
     }
 }

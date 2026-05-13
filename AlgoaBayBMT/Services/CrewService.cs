@@ -22,6 +22,15 @@ namespace AlgoaBayBMT.Services
             return await query.OrderBy(x => x.LastName).ThenBy(x => x.FirstName).ToListAsync(cancellationToken);
         }
 
+        public async Task<List<CrewMember>> GetByCompanyAsync(int bunkerOperatorId, bool includeInactive = false, CancellationToken cancellationToken = default)
+        {
+            await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var query = db.CrewMembers.AsNoTracking().Include(x => x.EmployerOperator)
+                .Where(x => x.EmployerOperatorId == bunkerOperatorId);
+            if (!includeInactive) query = query.Where(x => x.IsActive);
+            return await query.OrderBy(x => x.LastName).ThenBy(x => x.FirstName).ToListAsync(cancellationToken);
+        }
+
         public async Task<CrewMember?> GetByIdAsync(int id, CancellationToken cancellationToken = default)
         {
             await using var db = await dbContextFactory.CreateDbContextAsync(cancellationToken);

@@ -68,7 +68,9 @@ namespace AlgoaBayBMT.Services
                 SidExpiryDate = user.SidExpiryDate,
                 IsActive = user.IsActive,
                 IsAccountApproved = user.IsAccountApproved,
-                EmailConfirmed = user.EmailConfirmed
+                EmailConfirmed = user.EmailConfirmed,
+                CompanyId = user.CompanyId,
+                IsCrewManager = user.IsCrewManager
             };
         }
 
@@ -444,7 +446,10 @@ namespace AlgoaBayBMT.Services
                 return OperationResult.Failure("User not found.");
             }
 
-            var distinctRoles = roleNames.Where(x => !string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).ToArray();
+            var distinctRoles = (roleNames ?? Array.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
             if (distinctRoles.Length == 0)
             {
                 return OperationResult.Failure("Select at least one role.");
@@ -568,5 +573,54 @@ namespace AlgoaBayBMT.Services
             ProfilePicture = user.ProfilePicture,
             ProfilePictureContentType = user.ProfilePictureContentType
         };
+
+    // ── Company / CrewManager helpers ─────────────────────────────────────────
+
+    public async Task<OperationResult> AssignCompanyAsync(
+        string userId, int? companyId, bool grantCompanyManagerRole,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return OperationResult.Failure("User not found.");
+
+        user.CompanyId = companyId;
+        var updateResult = await userManager.UpdateAsync(user);
+        if (!updateResult.Succeeded)
+            return OperationResult.Failure(updateResult.Errors.Select(e => e.Description).ToArray());
+
+        if (grantCompanyManagerRole && companyId.HasValue)
+        {
+            if (!await userManager.IsInRoleAsync(user, RoleNames.CompanyManager))
+                await userManager.AddToRoleAsync(user, RoleNames.CompanyManager);
+        }
+        else if (!companyId.HasValue)
+        {
+            // Removing company assignment also strips the role
+            if (await userManager.IsInRoleAsync(user, RoleNames.CompanyManager))
+                await userManager.RemoveFromRoleAsync(user, RoleNames.CompanyManager);
+        }
+
+        return OperationResult.Success();
+    }
+
+    public async Task<OperationResult> SetCrewManagerAsync(
+        string userId, bool isCrewManager,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return OperationResult.Failure("User not found.");
+
+        user.IsCrewManager = isCrewManager;
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded
+            ? OperationResult.Success()
+            : OperationResult.Failure(result.Errors.Select(e => e.Description).ToArray());
+    }
+
+    public Task<List<ApplicationUser>> GetUsersByCompanyAsync(int companyId, CancellationToken cancellationToken = default)
+        => dbContext.Users.AsNoTracking()
+            .Where(x => x.CompanyId == companyId && x.IsActive)
+            .OrderBy(x => x.FullName)
+            .ToListAsync(cancellationToken);
     }
 }

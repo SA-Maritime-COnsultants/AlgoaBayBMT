@@ -90,6 +90,12 @@ namespace AlgoaBayBMT.Services.Models
         [Display(Name = "Email Confirmed")]
         public bool EmailConfirmed { get; set; }
 
+        [Display(Name = "Company")]
+        public int? CompanyId { get; set; }
+
+        [Display(Name = "Crew Manager")]
+        public bool IsCrewManager { get; set; }
+
         [Display(Name = "Password")]
         public string? Password { get; set; }
 

@@ -11,6 +11,7 @@
 
 @inject ICrewComplianceWorkflowService CrewComplianceWorkflowService
 @inject IOperatorService OperatorService
+@inject IUserManagementService UserMgmtService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager NavigationManager
 
@@ -42,6 +43,8 @@
         <CardHeader Title="Filter" SubTitle="Limit approvals to a specific bunker operator when needed." />
         <CardContent>
             <div class="pf-form-grid">
+                @if (_isAdmin)
+                {
                 <div class="pf-col-6">
                     <label class="pf-field-label">Operator</label>
                     <SfDropDownList TValue="int?"
@@ -53,6 +56,7 @@
                         <DropDownListEvents TValue="int?" TItem="BunkerOperator" ValueChange="@(async _ => await ReloadAsync())" />
                     </SfDropDownList>
                 </div>
+                }
             </div>
         </CardContent>
     </SfCard>
@@ -145,10 +149,31 @@
     private int? SelectedOperatorId { get; set; }
     private string? Message;
     private bool IsError;
+    private bool _isAdmin;
 
     protected override async Task OnInitializedAsync()
     {
-        Operators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+        var allOperators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+
+        if (_isAdmin)
+        {
+            Operators = allOperators;
+        }
+        else
+        {
+            var userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is not null)
+            {
+                var userModel = await UserMgmtService.GetUserEditorAsync(userId);
+                if (userModel?.CompanyId is int cid)
+                {
+                    Operators = allOperators.Where(x => x.Id == cid).ToList();
+                    SelectedOperatorId = cid;
+                }
+            }
+        }
         await ReloadAsync();
     }
 
