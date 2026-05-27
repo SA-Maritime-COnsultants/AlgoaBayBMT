@@ -31,12 +31,27 @@
     <SfCard CssClass="pf-card-shell abmt-panel-3d">
         <CardHeader Title="Crew Members" SubTitle="Click a row to manage documents and assignments." />
         <CardContent>
-            <div class="d-flex gap-2 mb-3 flex-wrap">
-                <SfButton CssClass="@($"crew-filter-btn {(ComplianceFilter == null ? "crew-filter-btn--active" : "")}")" IconCss="e-icons e-filter" IconPosition="IconPosition.Left" OnClick='() => SetFilter(null)'>All</SfButton>
-                <SfButton CssClass="@($"crew-filter-btn {(ComplianceFilter == CrewComplianceOverallStatus.FullyCompliant ? "crew-filter-btn--active" : "")}")" IconCss="e-icons e-check-circled" IconPosition="IconPosition.Left" OnClick='() => SetFilter(CrewComplianceOverallStatus.FullyCompliant)'>Compliant</SfButton>
-                <SfButton CssClass="@($"crew-filter-btn {(ComplianceFilter == CrewComplianceOverallStatus.PendingTraining ? "crew-filter-btn--active" : "")}")" IconCss="e-icons e-warning" IconPosition="IconPosition.Left" OnClick='() => SetFilter(CrewComplianceOverallStatus.PendingTraining)'>Non-Compliant</SfButton>
-                <SfButton CssClass="@($"crew-filter-btn {(ComplianceFilter == CrewComplianceOverallStatus.Expired ? "crew-filter-btn--active" : "")}")" IconCss="e-icons e-close-circled" IconPosition="IconPosition.Left" OnClick='() => SetFilter(CrewComplianceOverallStatus.Expired)'>Expired</SfButton>
-                <SfButton CssClass="@($"crew-filter-btn {(ComplianceFilter == CrewComplianceOverallStatus.Unknown ? "crew-filter-btn--active" : "")}")" IconCss="e-icons e-info" IconPosition="IconPosition.Left" OnClick='() => SetFilter(CrewComplianceOverallStatus.Unknown)'>Unknown</SfButton>
+            <div class="crew-filter-row">
+                <div class="crew-filter-field">
+                    <label class="pf-field-label">Compliance Filter</label>
+                    <SfDropDownList TValue="string" TItem="ComplianceFilterOption"
+                                    DataSource="@ComplianceFilterOptions"
+                                    @bind-Value="_complianceFilterKey"
+                                    Placeholder="All crew"
+                                    PopupHeight="220px">
+                        <DropDownListFieldSettings Value="Key" Text="Label" />
+                    </SfDropDownList>
+                </div>
+                <div class="crew-filter-action">
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal"
+                              IconCss="e-icons e-search"
+                              IconPosition="IconPosition.Left"
+                              OnClick="ApplyComplianceFilter">Search</SfButton>
+                    <SfButton CssClass="pf-training-page-action-btn"
+                              IconCss="e-icons e-close"
+                              IconPosition="IconPosition.Left"
+                              OnClick="ClearComplianceFilter">Clear</SfButton>
+                </div>
             </div>
             <div class="pf-training-responsive-grid">
             <SfGrid DataSource="@FilteredItems" TValue="CrewMember" AllowPaging="true" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
@@ -171,6 +186,18 @@
     private CrewMember EditModel { get; set; } = new();
     private Dictionary<int, CrewComplianceOverallStatus> ComplianceStatuses { get; set; } = [];
     private CrewComplianceOverallStatus? ComplianceFilter { get; set; }
+    private string _complianceFilterKey = "";
+
+    // ── Compliance filter dropdown options ──────────────────────────
+    public record ComplianceFilterOption(string Key, string Label);
+    private static readonly List<ComplianceFilterOption> ComplianceFilterOptions =
+    [
+        new("", "All Crew"),
+        new("Compliant", "✅ Compliant"),
+        new("NonCompliant", "⚠️ Non-Compliant"),
+        new("Expired", "🔴 Expired"),
+        new("Unknown", "❓ Unknown")
+    ];
     private bool IsDialogVisible { get; set; }
     private string? Message { get; set; }
     private bool IsError { get; set; }
@@ -216,6 +243,26 @@
 
         var ids = Items.Select(x => x.Id);
         ComplianceStatuses = await ComplianceWorkflowService.GetCrewComplianceSummaryAsync(ids);
+        ApplyFilter();
+    }
+
+    private void ApplyComplianceFilter()
+    {
+        ComplianceFilter = _complianceFilterKey switch
+        {
+            "Compliant"    => CrewComplianceOverallStatus.FullyCompliant,
+            "NonCompliant" => CrewComplianceOverallStatus.PendingTraining,
+            "Expired"      => CrewComplianceOverallStatus.Expired,
+            "Unknown"      => CrewComplianceOverallStatus.Unknown,
+            _              => null
+        };
+        ApplyFilter();
+    }
+
+    private void ClearComplianceFilter()
+    {
+        _complianceFilterKey = "";
+        ComplianceFilter = null;
         ApplyFilter();
     }
 

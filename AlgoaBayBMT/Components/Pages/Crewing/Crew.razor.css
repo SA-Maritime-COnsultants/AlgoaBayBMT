@@ -1,0 +1,25 @@
+/* ============================================================
+   Crew Register page — scoped component styles
+   ============================================================ */
+
+/* ── Filter row layout ───────────────────────────────────────── */
+.crew-filter-row {
+    display:       flex;
+    align-items:   flex-end;
+    gap:           0.75rem;
+    flex-wrap:     wrap;
+    margin-bottom: 1rem;
+}
+
+.crew-filter-field {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.3rem;
+    min-width:      200px;
+}
+
+.crew-filter-action {
+    display:     flex;
+    align-items: flex-end;
+    gap:         0.5rem;
+}
