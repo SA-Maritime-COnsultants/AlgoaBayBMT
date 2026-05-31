@@ -342,6 +342,46 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Visualization
             => areaSqM <= 0 ? 0 : Math.Sqrt(areaSqM / Math.PI);
 
         /// <summary>
+        /// Computes the centroid (mean vertex) of the first usable ring of a GeoJSON polygon /
+        /// multipolygon. Returns null when no ring with at least three vertices can be parsed.
+        /// </summary>
+        public static (double Latitude, double Longitude)? PolygonCentroid(string? polygonGeoJson)
+        {
+            var ring = ParsePolygon(polygonGeoJson);
+            return RingCentroid(ring);
+        }
+
+        /// <summary>
+        /// Computes the centroid (mean vertex) of a ring of (latitude, longitude) points. Returns
+        /// null when the ring has fewer than three vertices or contains only non-finite values.
+        /// </summary>
+        public static (double Latitude, double Longitude)? RingCentroid(
+            IReadOnlyList<(double Latitude, double Longitude)> ring)
+        {
+            if (ring is null || ring.Count < 3)
+            {
+                return null;
+            }
+
+            double sumLat = 0, sumLon = 0;
+            var count = 0;
+            foreach (var (lat, lon) in ring)
+            {
+                if (double.IsNaN(lat) || double.IsNaN(lon)
+                    || double.IsInfinity(lat) || double.IsInfinity(lon))
+                {
+                    continue;
+                }
+
+                sumLat += lat;
+                sumLon += lon;
+                count++;
+            }
+
+            return count == 0 ? null : (sumLat / count, sumLon / count);
+        }
+
+        /// <summary>
         /// Returns the coastline (land) polygons used for shoreline-impact detection, expressed as
         /// rings of (latitude, longitude) points. The default implementation supplies a coarse
         /// Algoa Bay shoreline; replace <see cref="LoadLandPolygonsFromGeoJson"/> output with a

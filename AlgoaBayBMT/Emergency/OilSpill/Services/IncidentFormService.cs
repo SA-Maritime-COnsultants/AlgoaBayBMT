@@ -20,6 +20,9 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             WriteIndented = false
         };
 
+        /// <summary>Default operational period used when the caller does not specify one.</summary>
+        public const int DefaultOperationalPeriodId = 1;
+
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
         public IncidentFormService(IDbContextFactory<ApplicationDbContext> contextFactory)
@@ -51,6 +54,46 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 .FirstOrDefaultAsync(f => f.IncidentId == incidentId && f.FormType == formType);
         }
 
+        public async Task<IReadOnlyList<IncidentForm>> GetFormsByTypeAsync(int incidentId, IncidentFormType formType)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.IncidentForms
+                .Where(f => f.IncidentId == incidentId && f.FormType == formType)
+                .OrderByDescending(f => f.LastUpdatedAt ?? f.CreatedAt)
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<IncidentForm> CreateFormAsync(
+            int incidentId,
+            IncidentFormType formType,
+            string jsonData,
+            string createdBy,
+            int? operationalPeriodId = null,
+            string? personName = null,
+            bool linkToSitrep = false)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var now = DateTime.UtcNow;
+            var form = new IncidentForm
+            {
+                IncidentId = incidentId,
+                FormType = formType,
+                JsonData = string.IsNullOrWhiteSpace(jsonData) ? "{}" : jsonData,
+                Status = IncidentFormStatus.Draft,
+                IsLinkedToSitrep = linkToSitrep,
+                OperationalPeriodId = operationalPeriodId,
+                PersonName = personName,
+                CreatedAt = now,
+                CreatedBy = string.IsNullOrWhiteSpace(createdBy) ? "System" : createdBy,
+                LastUpdatedAt = now
+            };
+
+            context.IncidentForms.Add(form);
+            await context.SaveChangesAsync();
+            return form;
+        }
+
         public async Task<bool> UpdateFormAsync(int formId, string jsonData, IncidentFormStatus? status = null)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
@@ -69,6 +112,103 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
 
             await context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<bool> DeleteFormAsync(int formId)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var form = await context.IncidentForms.FirstOrDefaultAsync(f => f.Id == formId);
+            if (form is null)
+            {
+                return false;
+            }
+
+            context.IncidentForms.Remove(form);
+            await context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IncidentForm> AddActivityLogEntryAsync(
+            int incidentId,
+            string personName,
+            string activity,
+            string? notes,
+            int operationalPeriodId,
+            string createdBy)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var incident = await context.OilSpillIncidents.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == incidentId);
+
+            var now = DateTime.UtcNow;
+            var payload = new Ics214EntryPayload
+            {
+                IncidentName = incident?.SpillName ?? string.Empty,
+                Timestamp = now,
+                PersonName = personName,
+                Activity = activity,
+                Notes = notes ?? string.Empty
+            };
+
+            var form = new IncidentForm
+            {
+                IncidentId = incidentId,
+                FormType = IncidentFormType.ICS214,
+                JsonData = Serialize(payload),
+                Status = IncidentFormStatus.Draft,
+                IsLinkedToSitrep = true, // ICS-214 entries feed the consolidated SITREP log.
+                OperationalPeriodId = operationalPeriodId,
+                PersonName = personName,
+                CreatedAt = now,
+                CreatedBy = string.IsNullOrWhiteSpace(createdBy) ? personName : createdBy,
+                LastUpdatedAt = now
+            };
+
+            context.IncidentForms.Add(form);
+            await context.SaveChangesAsync();
+            return form;
+        }
+
+        public async Task<IncidentForm> EnsureAssignmentListAsync(
+            int incidentId,
+            OilSpillActionType actionType,
+            string division,
+            int operationalPeriodId,
+            string createdBy)
+        {
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            var incident = await context.OilSpillIncidents.AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == incidentId);
+
+            var now = DateTime.UtcNow;
+            var payload = new Ics204Payload
+            {
+                IncidentName = incident?.SpillName ?? string.Empty,
+                Division = string.IsNullOrWhiteSpace(division) ? actionType.ToString() : division,
+                BranchOrGroup = "Operations",
+                OperationsLeader = incident?.Commander ?? string.Empty,
+                OperationalPeriodStart = now,
+                Resources = $"Auto-generated for {actionType} deployment.",
+                Assignment = $"Execute {actionType} response measure and report progress via ICS-214.",
+                SpecialInstructions = "Maintain responder safety and coordinate with the Operations Section Chief."
+            };
+
+            var form = new IncidentForm
+            {
+                IncidentId = incidentId,
+                FormType = IncidentFormType.ICS204,
+                JsonData = Serialize(payload),
+                Status = IncidentFormStatus.Draft,
+                IsLinkedToSitrep = false,
+                OperationalPeriodId = operationalPeriodId,
+                CreatedAt = now,
+                CreatedBy = string.IsNullOrWhiteSpace(createdBy) ? "Operations" : createdBy,
+                LastUpdatedAt = now
+            };
+
+            context.IncidentForms.Add(form);
+            await context.SaveChangesAsync();
+            return form;
         }
 
         public async Task EnsureInitialFormsAsync(int incidentId, string createdBy)
@@ -192,50 +332,16 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
 
         public async Task LogActivityAsync(int incidentId, string activity, string performedBy)
         {
-            await using var context = await _contextFactory.CreateDbContextAsync();
-            var incident = await context.OilSpillIncidents.FirstOrDefaultAsync(s => s.Id == incidentId);
-            if (incident is null)
-            {
-                return;
-            }
-
-            var form = await context.IncidentForms
-                .FirstOrDefaultAsync(f => f.IncidentId == incidentId && f.FormType == IncidentFormType.ICS214);
-
-            var now = DateTime.UtcNow;
-            Ics214Payload payload;
-
-            if (form is null)
-            {
-                payload = new Ics214Payload { IncidentName = incident.SpillName };
-                form = new IncidentForm
-                {
-                    IncidentId = incidentId,
-                    FormType = IncidentFormType.ICS214,
-                    Status = IncidentFormStatus.Draft,
-                    IsLinkedToSitrep = true, // ICS-214 is linked once response actions exist.
-                    CreatedAt = now,
-                    CreatedBy = performedBy,
-                };
-                context.IncidentForms.Add(form);
-            }
-            else
-            {
-                payload = Deserialize<Ics214Payload>(form.JsonData) ?? new Ics214Payload { IncidentName = incident.SpillName };
-                form.IsLinkedToSitrep = true;
-            }
-
-            payload.Entries.Add(new Ics214Entry
-            {
-                Timestamp = now,
-                Activity = activity,
-                PerformedBy = performedBy
-            });
-
-            form.JsonData = Serialize(payload);
-            form.LastUpdatedAt = now;
-
-            await context.SaveChangesAsync();
+            // Each activity is now persisted as its own ICS-214 entry record (one entry == one
+            // form) under the default operational period so multiple contributors log independently.
+            var person = string.IsNullOrWhiteSpace(performedBy) ? "Response Team" : performedBy;
+            await AddActivityLogEntryAsync(
+                incidentId,
+                person,
+                activity,
+                notes: null,
+                operationalPeriodId: DefaultOperationalPeriodId,
+                createdBy: person);
         }
 
         public async Task<IReadOnlyList<IncidentForm>> GetSitrepLinkedFormsAsync(int incidentId)

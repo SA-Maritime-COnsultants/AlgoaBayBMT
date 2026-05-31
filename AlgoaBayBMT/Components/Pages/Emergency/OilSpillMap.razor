@@ -142,6 +142,22 @@
                                         Shape="MarkerType.Diamond" Fill="#6c757d" Height="14" Width="14"
                                         AnimationDuration="0" />
                         }
+
+                        @* Plume time labels ("T+Xh") drawn at polygon centroids. Rendered through a
+                           template marker so the label text sits at each centroid without crashing
+                           the PolygonRenderer. *@
+                        @if (ShowTimeLabels && _timeLabels.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_timeLabels" TValue="OilSpillTimeLabel"
+                                        Height="0" Width="0" AnimationDuration="0">
+                                <MarkerTemplate>
+                                    @{
+                                        var label = (context as OilSpillTimeLabel);
+                                    }
+                                    <div class="oilspill-time-label">@label?.Text</div>
+                                </MarkerTemplate>
+                            </MapsMarker>
+                        }
                     </MapsMarkerSettings>
                 </MapsLayer>
             </MapsLayers>

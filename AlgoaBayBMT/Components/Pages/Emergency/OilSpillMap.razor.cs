@@ -43,6 +43,9 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         [Parameter] public bool ShowDispersants { get; set; } = true;
         [Parameter] public bool ShowShorelineProtection { get; set; } = true;
 
+        /// <summary>When true a small "T+Xh" time label is drawn at each plume centroid.</summary>
+        [Parameter] public bool ShowTimeLabels { get; set; } = true;
+
         private SfMaps? _mapsRef;
         private int? _renderedHighlightIndex;
         private bool _refreshQueued;
@@ -74,6 +77,17 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         private List<OilSpillMapPoint> _skimmerMarkers = new();
         private List<OilSpillMapPoint> _reconMarkers = new();
 
+        // Plume time labels ("T+Xh") rendered at polygon centroids.
+        private List<OilSpillTimeLabel> _timeLabels = new();
+
+        /// <summary>A plume time label positioned at a polygon centroid.</summary>
+        private sealed class OilSpillTimeLabel
+        {
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+            public string Text { get; set; } = string.Empty;
+        }
+
         /// <summary>A response line geometry ready for a Syncfusion navigation line.</summary>
         private sealed class ResponseLine
         {
@@ -91,6 +105,7 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             BuildPolyline();
             BuildPolygon();
             BuildResponseGeometry();
+            BuildTimeLabels();
             ComputeCenter();
 
             // Queue a Maps redraw whenever the highlighted timestep changes so the
@@ -230,6 +245,57 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             _polygonPoints = _slickRings.Count > 0
                 ? _slickRings.OrderByDescending(r => r.Count).First()
                 : new List<Coordinate>();
+        }
+
+        /// <summary>
+        /// Builds the plume time labels ("T+Xh") positioned at each trajectory polygon centroid.
+        /// One label per timestep up to (and including) the current playback index, so labels
+        /// accumulate as the animation advances. Skipped entirely when ShowTimeLabels is false.
+        /// </summary>
+        private void BuildTimeLabels()
+        {
+            var labels = new List<OilSpillTimeLabel>();
+
+            if (!ShowTimeLabels || Trajectory.Count == 0)
+            {
+                _timeLabels = labels;
+                return;
+            }
+
+            var lastIndex = HighlightIndex is int idx && idx >= 0 && idx < Trajectory.Count
+                ? idx
+                : Trajectory.Count - 1;
+
+            var origin = Trajectory[0].Timestamp;
+
+            for (var i = 0; i <= lastIndex && i < Trajectory.Count; i++)
+            {
+                var point = Trajectory[i];
+
+                // Prefer the centroid of the instantaneous slick polygon; fall back to the stored
+                // trajectory coordinate when no usable polygon geometry exists for this step.
+                var centroid = OilSpillGeometry.PolygonCentroid(point.PolygonGeoJson)
+                               ?? (point.Latitude, point.Longitude);
+
+                if (!IsFinite(centroid.Latitude) || !IsFinite(centroid.Longitude))
+                {
+                    continue;
+                }
+
+                var hours = (point.Timestamp - origin).TotalHours;
+                var text = hours <= 0.01
+                    ? "T+0h"
+                    : $"T+{hours:0.#}h";
+
+                labels.Add(new OilSpillTimeLabel
+                {
+                    Latitude = centroid.Latitude,
+                    Longitude = centroid.Longitude,
+                    Text = text
+                });
+            }
+
+            _timeLabels = labels;
         }
 
         /// <summary>

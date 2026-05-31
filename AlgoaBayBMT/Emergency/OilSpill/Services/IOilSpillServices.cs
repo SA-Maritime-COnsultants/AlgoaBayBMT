@@ -40,8 +40,50 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         /// <summary>Returns the single form of the given type for an incident, if it exists.</summary>
         Task<IncidentForm?> GetFormByTypeAsync(int incidentId, IncidentFormType formType);
 
+        /// <summary>Returns every form of the given type for an incident (newest first).</summary>
+        Task<IReadOnlyList<IncidentForm>> GetFormsByTypeAsync(int incidentId, IncidentFormType formType);
+
+        /// <summary>
+        /// Creates a new incident form (used by the "New Form" / "New Entry" UI actions). Returns the
+        /// persisted form so the caller can immediately open it in the editor.
+        /// </summary>
+        Task<IncidentForm> CreateFormAsync(
+            int incidentId,
+            IncidentFormType formType,
+            string jsonData,
+            string createdBy,
+            int? operationalPeriodId = null,
+            string? personName = null,
+            bool linkToSitrep = false);
+
         /// <summary>Persists JSON payload changes for an existing form and optionally updates status.</summary>
         Task<bool> UpdateFormAsync(int formId, string jsonData, IncidentFormStatus? status = null);
+
+        /// <summary>Deletes an incident form (e.g. a mistaken ICS-214 entry). Returns false if missing.</summary>
+        Task<bool> DeleteFormAsync(int formId);
+
+        /// <summary>
+        /// Adds a single ICS-214 activity-log entry as its own form record so each contributor can
+        /// log independently. Entries are grouped by <paramref name="operationalPeriodId"/>.
+        /// </summary>
+        Task<IncidentForm> AddActivityLogEntryAsync(
+            int incidentId,
+            string personName,
+            string activity,
+            string? notes,
+            int operationalPeriodId,
+            string createdBy);
+
+        /// <summary>
+        /// Auto-generates an ICS-204 Assignment List when a response measure is deployed. Each call
+        /// creates a new assignment record scoped to the operational period and division.
+        /// </summary>
+        Task<IncidentForm> EnsureAssignmentListAsync(
+            int incidentId,
+            OilSpillActionType actionType,
+            string division,
+            int operationalPeriodId,
+            string createdBy);
 
         /// <summary>
         /// Creates the mandatory ICS-209 (and, when applicable, ICS-201) forms for a newly created

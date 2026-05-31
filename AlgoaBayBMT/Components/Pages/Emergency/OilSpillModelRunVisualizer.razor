@@ -58,6 +58,8 @@
                                     CheckedChanged="OnActionsToggled" Label="Response Actions" />
                         <SfCheckBox TChecked="bool" Checked="_showCumulative"
                                     CheckedChanged="OnCumulativeToggled" Label="Cumulative footprint" />
+                        <SfCheckBox TChecked="bool" Checked="_showTimeLabels"
+                                    CheckedChanged="OnTimeLabelsToggled" Label="Time labels" />
                     </div>
                 </div>
 
@@ -140,7 +142,76 @@
                                             CheckedChanged="OnDispersantsToggled" Label="Dispersants" />
                                 <SfCheckBox TChecked="bool" Checked="_showShorelineProtection"
                                             CheckedChanged="OnShorelineProtectionToggled" Label="Shoreline protection" />
+                                <SfButton CssClass="e-small e-primary ms-auto" IconCss="e-icons e-plus"
+                                          Content="@(_showMeasurePanel ? "Close" : "Add measure")"
+                                          OnClick="ToggleMeasurePanel" />
                             </div>
+                            @if (_showMeasurePanel)
+                            {
+                                <div class="oilspill-measure-form border rounded mt-2 p-3 bg-white">
+                                    <div class="row g-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label small mb-1">Action type</label>
+                                            <SfDropDownList TValue="OilSpillActionType" TItem="MeasureTypeOption"
+                                                            DataSource="_measureTypeOptions"
+                                                            @bind-Value="_measure.ActionType" Width="100%">
+                                                <DropDownListFieldSettings Value="Value" Text="Label" />
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">Latitude</label>
+                                            <SfNumericTextBox TValue="double" @bind-Value="_measure.Latitude"
+                                                              Format="0.#####" Step="0.001" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">Longitude</label>
+                                            <SfNumericTextBox TValue="double" @bind-Value="_measure.Longitude"
+                                                              Format="0.#####" Step="0.001" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">Start time</label>
+                                            <SfDateTimePicker TValue="DateTime" @bind-Value="_measure.StartTime" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">End time (optional)</label>
+                                            <SfDateTimePicker TValue="DateTime?" @bind-Value="_measure.EndTime" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            @if (_measure.ActionType is OilSpillActionType.Skimmer
+                                                or OilSpillActionType.Dispersant)
+                                            {
+                                                <label class="form-label small mb-1">Radius (m)</label>
+                                                <SfNumericTextBox TValue="double?" @bind-Value="_measure.RadiusMeters"
+                                                                  Min="10" Step="25" Width="100%" />
+                                            }
+                                            else
+                                            {
+                                                <label class="form-label small mb-1">Length (m)</label>
+                                                <SfNumericTextBox TValue="double?" @bind-Value="_measure.LengthMeters"
+                                                                  Min="10" Step="25" Width="100%" />
+                                            }
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Notes</label>
+                                            <SfTextBox @bind-Value="_measure.Notes" Placeholder="Optional notes" Width="100%" />
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <SfButton CssClass="e-success" IconCss="e-icons e-save"
+                                                  Content="Save measure" Disabled="@_savingMeasure"
+                                                  OnClick="SaveMeasureAsync" />
+                                        <SfButton CssClass="e-outline" Content="Cancel"
+                                                  Disabled="@_savingMeasure" OnClick="ToggleMeasurePanel" />
+                                        <span class="text-muted small">
+                                            Tip: defaults to the current playback position. Saving re-runs the model.
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(_measureMessage))
+                            {
+                                <div class="alert alert-info py-1 px-2 mt-2 mb-0 small" role="alert">@_measureMessage</div>
+                            }
                             <div class="d-flex flex-wrap align-items-center gap-3 mt-2 small">
                                 <span class="oilspill-legend-item">
                                     <span class="oilspill-legend-swatch" style="background:#fd7e14;"></span> Boom
@@ -173,6 +244,7 @@
                                              ShowSkimmers="_showSkimmers"
                                              ShowDispersants="_showDispersants"
                                              ShowShorelineProtection="_showShorelineProtection"
+                                             ShowTimeLabels="_showTimeLabels"
                                              ShorelineImpact="_shorelineImpactDetected"
                                              ImpactIndex="_shorelineImpactIndex"
                                              ProductType="@(_spill?.ProductType ?? OilSpillProductType.Unknown)" />

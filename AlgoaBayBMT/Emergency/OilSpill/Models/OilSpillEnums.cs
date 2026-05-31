@@ -52,6 +52,9 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Models
         /// <summary>ICS-201 Incident Briefing.</summary>
         ICS201 = 201,
 
+        /// <summary>ICS-204 Assignment List.</summary>
+        ICS204 = 204,
+
         /// <summary>ICS-209 Incident Status Summary (always linked to SITREP).</summary>
         ICS209 = 209,
 

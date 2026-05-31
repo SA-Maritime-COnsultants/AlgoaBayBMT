@@ -1,0 +1,286 @@
+@using System.Text.Json
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IIncidentFormService IncidentFormService
+@inject IOilSpillExportService OilSpillExportService
+@inject IJSRuntime JS
+
+@if (Form is not null)
+{
+    <div class="card border-primary shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <span class="fw-semibold">Edit @FormTitle(Form.FormType)</span>
+            <button type="button" class="btn-close btn-close-white" @onclick="OnCancelAsync"></button>
+        </div>
+        <div class="card-body">
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="alert alert-info py-2">@_message</div>
+            }
+
+            <div class="row g-3">
+                @switch (Form.FormType)
+                {
+                    case IncidentFormType.ICS201:
+                        <div class="col-md-6">
+                            <label class="form-label">Incident name</label>
+                            <SfTextBox @bind-Value="_ics201.IncidentName" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Commander</label>
+                            <SfTextBox @bind-Value="_ics201.Commander" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Incident start time</label>
+                            <SfDateTimePicker TValue="DateTime" @bind-Value="_ics201.IncidentStartTime" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Source type</label>
+                            <SfTextBox @bind-Value="_ics201.SourceType" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Product type</label>
+                            <SfTextBox @bind-Value="_ics201.ProductType" />
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Estimated volume (m³)</label>
+                            <SfNumericTextBox TValue="double" @bind-Value="_ics201.EstimatedVolume" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Current situation</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics201.CurrentSituation" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Initial objectives</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics201.InitialObjectives" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Safety message</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics201.SafetyMessage" />
+                        </div>
+                        break;
+
+                    case IncidentFormType.ICS204:
+                        <div class="col-md-6">
+                            <label class="form-label">Incident name</label>
+                            <SfTextBox @bind-Value="_ics204.IncidentName" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Division</label>
+                            <SfTextBox @bind-Value="_ics204.Division" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Branch / group</label>
+                            <SfTextBox @bind-Value="_ics204.BranchOrGroup" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Operations leader</label>
+                            <SfTextBox @bind-Value="_ics204.OperationsLeader" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Operational period start</label>
+                            <SfDateTimePicker TValue="DateTime" @bind-Value="_ics204.OperationalPeriodStart" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Operational period end</label>
+                            <SfDateTimePicker TValue="DateTime?" @bind-Value="_ics204.OperationalPeriodEnd" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Resources</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics204.Resources" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Assignment</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics204.Assignment" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Special instructions</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics204.SpecialInstructions" />
+                        </div>
+                        break;
+
+                    case IncidentFormType.ICS214:
+                        <div class="col-md-6">
+                            <label class="form-label">Date / time</label>
+                            <SfDateTimePicker TValue="DateTime" @bind-Value="_ics214.Timestamp" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Person</label>
+                            <SfTextBox @bind-Value="_ics214.PersonName" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Activity</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics214.Activity" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Notes</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics214.Notes" />
+                        </div>
+                        break;
+
+                    case IncidentFormType.ICS209:
+                        <div class="col-md-6">
+                            <label class="form-label">Commander</label>
+                            <SfTextBox @bind-Value="_ics209.Commander" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <SfTextBox @bind-Value="_ics209.Status" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Situation summary</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics209.SituationSummary" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Planned actions</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics209.PlannedActions" />
+                        </div>
+                        break;
+                }
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <SfButton CssClass="e-primary" Disabled="_busy" @onclick="SaveAsync">Save</SfButton>
+                <SfButton CssClass="e-outline" Disabled="_busy" @onclick="ExportAsync">Export PDF</SfButton>
+                <SfButton CssClass="e-flat" Disabled="_busy" @onclick="OnCancelAsync">Cancel</SfButton>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    /// <summary>The form being edited. When null the editor renders nothing.</summary>
+    [Parameter] public IncidentForm? Form { get; set; }
+
+    /// <summary>Raised after a successful save so the parent can refresh its grids.</summary>
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    /// <summary>Raised when the editor is dismissed.</summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private Ics201Payload _ics201 = new();
+    private Ics204Payload _ics204 = new();
+    private Ics214EntryPayload _ics214 = new();
+    private Ics209Payload _ics209 = new();
+
+    private bool _busy;
+    private string? _message;
+    private int _loadedFormId = -1;
+
+    protected override void OnParametersSet()
+    {
+        if (Form is null || Form.Id == _loadedFormId)
+        {
+            return;
+        }
+
+        _loadedFormId = Form.Id;
+        _message = null;
+
+        switch (Form.FormType)
+        {
+            case IncidentFormType.ICS201:
+                _ics201 = Deserialize<Ics201Payload>(Form.JsonData) ?? new Ics201Payload();
+                break;
+            case IncidentFormType.ICS204:
+                _ics204 = Deserialize<Ics204Payload>(Form.JsonData) ?? new Ics204Payload();
+                break;
+            case IncidentFormType.ICS214:
+                _ics214 = Deserialize<Ics214EntryPayload>(Form.JsonData) ?? new Ics214EntryPayload();
+                break;
+            case IncidentFormType.ICS209:
+                _ics209 = Deserialize<Ics209Payload>(Form.JsonData) ?? new Ics209Payload();
+                break;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Form is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var json = Form.FormType switch
+            {
+                IncidentFormType.ICS201 => Serialize(_ics201),
+                IncidentFormType.ICS204 => Serialize(_ics204),
+                IncidentFormType.ICS214 => Serialize(_ics214),
+                IncidentFormType.ICS209 => Serialize(_ics209),
+                _ => Form.JsonData
+            };
+
+            await IncidentFormService.UpdateFormAsync(Form.Id, json, IncidentFormStatus.Completed);
+            Form.JsonData = json;
+            _message = "Saved.";
+            await OnSaved.InvokeAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ExportAsync()
+    {
+        if (Form is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            // Persist current edits first so the exported PDF reflects what is on screen.
+            await SaveAsync();
+            var fresh = await IncidentFormService.GetFormByIdAsync(Form.Id) ?? Form;
+            var file = OilSpillExportService.GenerateFormPdf(fresh);
+            await JS.InvokeVoidAsync(
+                "oilSpillExport.downloadFile", file.FileName, file.ToBase64(), file.ContentType);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OnCancelAsync()
+    {
+        _loadedFormId = -1;
+        await OnCancel.InvokeAsync();
+    }
+
+    private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, JsonOptions);
+
+    private static T? Deserialize<T>(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return default;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return default;
+        }
+    }
+
+    private static string FormTitle(IncidentFormType type) => type switch
+    {
+        IncidentFormType.ICS201 => "ICS-201 Incident Briefing",
+        IncidentFormType.ICS204 => "ICS-204 Assignment List",
+        IncidentFormType.ICS209 => "ICS-209 Incident Status Summary",
+        IncidentFormType.ICS214 => "ICS-214 Activity Log",
+        _ => type.ToString()
+    };
+}

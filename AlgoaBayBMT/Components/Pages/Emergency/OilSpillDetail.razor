@@ -158,59 +158,70 @@
                 }
 
                 <div class="row g-4">
-                    <div class="col-lg-7">
-                        <h4 class="h6 text-muted">IMS / ICS Forms</h4>
-                        @if (_forms.Count == 0)
-                        {
-                            <div class="text-muted">No forms yet.</div>
-                        }
-                        else
-                        {
-                            <div class="table-responsive">
-                                <table class="table table-sm align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>Form</th>
-                                            <th>Status</th>
-                                            <th>SITREP</th>
-                                            <th>Updated</th>
-                                            <th class="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach (var form in _forms)
-                                        {
-                                            <tr>
-                                                <td>@FormLabel(form.FormType)</td>
-                                                <td><span class="badge @StatusBadge(form.Status)">@form.Status</span></td>
-                                                <td>
-                                                    @if (form.IsLinkedToSitrep)
-                                                    {
-                                                        <span class="badge bg-success">Linked</span>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="badge bg-secondary">Not linked</span>
-                                                    }
-                                                </td>
-                                                <td>@((form.LastUpdatedAt ?? form.CreatedAt).ToString("dd MMM HH:mm"))</td>
-                                                <td class="text-end">
-                                                    @if (form.FormType == IncidentFormType.ICS209)
-                                                    {
-                                                        <button type="button" class="btn btn-sm btn-outline-secondary me-1"
-                                                                @onclick="() => EditIcs209(form)">Edit</button>
-                                                    }
-                                                    <button type="button" class="btn btn-sm btn-outline-primary"
-                                                            @onclick="() => DownloadFormAsync(form.Id)" disabled="@_busy">PDF</button>
-                                                </td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                        }
+                    <div class="col-lg-8">
+                        <ul class="nav nav-tabs" role="tablist">
+                            <li class="nav-item">
+                                <button type="button" class="nav-link @TabClass(FormsTab.ICS201)"
+                                        @onclick="() => _activeTab = FormsTab.ICS201">ICS-201 Briefing</button>
+                            </li>
+                            <li class="nav-item">
+                                <button type="button" class="nav-link @TabClass(FormsTab.ICS214)"
+                                        @onclick="() => _activeTab = FormsTab.ICS214">ICS-214 Activity Log</button>
+                            </li>
+                            <li class="nav-item">
+                                <button type="button" class="nav-link @TabClass(FormsTab.ICS204)"
+                                        @onclick="() => _activeTab = FormsTab.ICS204">ICS-204 Assignments</button>
+                            </li>
+                            <li class="nav-item">
+                                <button type="button" class="nav-link @TabClass(FormsTab.ICS209)"
+                                        @onclick="() => _activeTab = FormsTab.ICS209">ICS-209 Status</button>
+                            </li>
+                        </ul>
+
+                        <div class="border border-top-0 rounded-bottom p-3">
+                            @switch (_activeTab)
+                            {
+                                case FormsTab.ICS201:
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="h6 text-muted mb-0">Incident Briefings</h4>
+                                        <button type="button" class="btn btn-sm btn-primary"
+                                                @onclick="NewIcs201Async" disabled="@_busy">New Form</button>
+                                    </div>
+                                    @RenderFormGrid(FormsOf(IncidentFormType.ICS201))
+                                    break;
+
+                                case FormsTab.ICS214:
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="h6 text-muted mb-0">Activity Log Entries</h4>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                                    @onclick="ExportConsolidated214Async" disabled="@(_busy || FormsOf(IncidentFormType.ICS214).Count == 0)">
+                                                Export Consolidated Log
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-primary"
+                                                    @onclick="NewIcs214EntryAsync" disabled="@_busy">New Entry</button>
+                                        </div>
+                                    </div>
+                                    @RenderActivityGrid(FormsOf(IncidentFormType.ICS214))
+                                    break;
+
+                                case FormsTab.ICS204:
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h4 class="h6 text-muted mb-0">Assignment Lists</h4>
+                                        <button type="button" class="btn btn-sm btn-primary"
+                                                @onclick="NewIcs204Async" disabled="@_busy">New Form</button>
+                                    </div>
+                                    @RenderFormGrid(FormsOf(IncidentFormType.ICS204))
+                                    break;
+
+                                case FormsTab.ICS209:
+                                    <h4 class="h6 text-muted mb-2">Status Summary</h4>
+                                    @RenderFormGrid(FormsOf(IncidentFormType.ICS209))
+                                    break;
+                            }
+                        </div>
                     </div>
-                    <div class="col-lg-5">
+                    <div class="col-lg-4">
                         <h4 class="h6 text-muted">Reports</h4>
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -224,7 +235,7 @@
                                         @onclick="DownloadRunSummaryAsync" disabled="@(_busy || _runs.Count == 0)">Generate</button>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                Compliance Package (ZIP)
+                                Incident Package (ZIP)
                                 <button type="button" class="btn btn-sm btn-outline-primary"
                                         @onclick="ExportAllAsync" disabled="@(_busy || _runs.Count == 0)">Export All</button>
                             </li>
@@ -232,43 +243,110 @@
                     </div>
                 </div>
 
-                @if (_editingIcs209 is not null)
+                @if (_editingForm is not null)
                 {
-                    <div class="card mt-4 border-primary">
-                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                            <span>Edit ICS-209 Incident Status Summary</span>
-                            <button type="button" class="btn-close btn-close-white" @onclick="CancelEditIcs209"></button>
-                        </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="form-label">Commander</label>
-                                    <input class="form-control" @bind="_ics209.Commander" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Status</label>
-                                    <input class="form-control" @bind="_ics209.Status" />
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Situation summary</label>
-                                    <textarea class="form-control" rows="2" @bind="_ics209.SituationSummary"></textarea>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label">Planned actions</label>
-                                    <textarea class="form-control" rows="2" @bind="_ics209.PlannedActions"></textarea>
-                                </div>
-                            </div>
-                            <div class="mt-3 d-flex gap-2">
-                                <button type="button" class="btn btn-primary" @onclick="SaveIcs209Async" disabled="@_busy">Save</button>
-                                <button type="button" class="btn btn-outline-secondary" @onclick="CancelEditIcs209">Cancel</button>
-                            </div>
-                        </div>
+                    <div class="mt-4">
+                        <IncidentFormEditor Form="_editingForm"
+                                            OnSaved="OnFormSavedAsync"
+                                            OnCancel="OnFormEditCancelled" />
                     </div>
                 }
             </div>
         </div>
     }
 </div>
+
+@{
+    RenderFragment RenderFormGrid(IReadOnlyList<IncidentForm> forms) =>
+    @<text>
+        @if (forms.Count == 0)
+        {
+            <div class="text-muted">No forms yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>SITREP</th>
+                            <th>Updated</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var form in forms)
+                        {
+                            <tr>
+                                <td><span class="badge @StatusBadge(form.Status)">@form.Status</span></td>
+                                <td>
+                                    @if (form.IsLinkedToSitrep)
+                                    {
+                                        <span class="badge bg-success">Linked</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Not linked</span>
+                                    }
+                                </td>
+                                <td>@((form.LastUpdatedAt ?? form.CreatedAt).ToString("dd MMM HH:mm"))</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                            @onclick="() => EditForm(form)">Edit</button>
+                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                            @onclick="() => DownloadFormAsync(form.Id)" disabled="@_busy">PDF</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </text>;
+
+    RenderFragment RenderActivityGrid(IReadOnlyList<IncidentForm> forms) =>
+    @<text>
+        @if (forms.Count == 0)
+        {
+            <div class="text-muted">No activity entries yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Person</th>
+                            <th>Activity</th>
+                            <th>Notes</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var form in forms)
+                        {
+                            var entry = ParseActivity(form);
+                            <tr>
+                                <td>@entry.Timestamp.ToString("dd MMM HH:mm")</td>
+                                <td>@(string.IsNullOrWhiteSpace(entry.PersonName) ? form.PersonName : entry.PersonName)</td>
+                                <td>@entry.Activity</td>
+                                <td>@entry.Notes</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                            @onclick="() => EditForm(form)">Edit</button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => DeleteFormAsync(form.Id)" disabled="@_busy">Delete</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </text>;
+}
 
 @code {
     [Parameter]
@@ -283,10 +361,30 @@
     private bool _busy;
     private string? _formsMessage;
 
-    private IncidentForm? _editingIcs209;
-    private Ics209Payload _ics209 = new();
+    private FormsTab _activeTab = FormsTab.ICS201;
+    private IncidentForm? _editingForm;
+
+    private enum FormsTab { ICS201, ICS214, ICS204, ICS209 }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private IReadOnlyList<IncidentForm> FormsOf(IncidentFormType type) =>
+        _forms.Where(f => f.FormType == type).ToList();
+
+    private string TabClass(FormsTab tab) => _activeTab == tab ? "active" : string.Empty;
+
+    private static Ics214EntryPayload ParseActivity(IncidentForm form)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<Ics214EntryPayload>(form.JsonData, JsonOptions)
+                   ?? new Ics214EntryPayload();
+        }
+        catch (JsonException)
+        {
+            return new Ics214EntryPayload();
+        }
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -434,21 +532,25 @@
         }
     }
 
-    private void EditIcs209(IncidentForm form)
+    private void EditForm(IncidentForm form)
     {
-        _editingIcs209 = form;
-        _ics209 = JsonSerializer.Deserialize<Ics209Payload>(form.JsonData, JsonOptions) ?? new Ics209Payload();
+        _editingForm = form;
     }
 
-    private void CancelEditIcs209()
+    private void OnFormEditCancelled()
     {
-        _editingIcs209 = null;
-        _ics209 = new Ics209Payload();
+        _editingForm = null;
     }
 
-    private async Task SaveIcs209Async()
+    private async Task OnFormSavedAsync()
     {
-        if (_editingIcs209 is null)
+        await ReloadFormsAsync();
+        _formsMessage = "Form saved.";
+    }
+
+    private async Task NewIcs201Async()
+    {
+        if (_spill is null || _busy)
         {
             return;
         }
@@ -456,17 +558,138 @@
         _busy = true;
         try
         {
-            var json = JsonSerializer.Serialize(_ics209, JsonOptions);
-            await IncidentFormService.UpdateFormAsync(_editingIcs209.Id, json, IncidentFormStatus.Completed);
-            _editingIcs209 = null;
+            var payload = new Ics201Payload
+            {
+                IncidentName = _spill.SpillName,
+                Commander = _spill.Commander ?? string.Empty,
+                IncidentStartTime = _spill.SpillStartTime,
+                SourceType = _spill.SourceType.ToString(),
+                ProductType = _spill.ProductType.ToString(),
+                EstimatedVolume = _spill.EstimatedVolume
+            };
+
+            var form = await IncidentFormService.CreateFormAsync(
+                Id, IncidentFormType.ICS201, JsonSerializer.Serialize(payload, JsonOptions),
+                _spill.CreatedBy, linkToSitrep: _spill.Status == OilSpillStatus.Active);
+
             await ReloadFormsAsync();
-            _formsMessage = "ICS-209 saved.";
+            _editingForm = form;
+            _activeTab = FormsTab.ICS201;
         }
         finally
         {
             _busy = false;
         }
     }
+
+    private async Task NewIcs204Async()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var payload = new Ics204Payload
+            {
+                IncidentName = _spill.SpillName,
+                OperationsLeader = _spill.Commander ?? string.Empty,
+                OperationalPeriodStart = DateTime.UtcNow
+            };
+
+            var form = await IncidentFormService.CreateFormAsync(
+                Id, IncidentFormType.ICS204, JsonSerializer.Serialize(payload, JsonOptions),
+                _spill.CreatedBy, operationalPeriodId: DefaultOperationalPeriodId);
+
+            await ReloadFormsAsync();
+            _editingForm = form;
+            _activeTab = FormsTab.ICS204;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task NewIcs214EntryAsync()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var form = await IncidentFormService.AddActivityLogEntryAsync(
+                Id, personName: _spill.Commander ?? "Contributor",
+                activity: string.Empty, notes: null,
+                operationalPeriodId: DefaultOperationalPeriodId,
+                createdBy: _spill.CreatedBy);
+
+            await ReloadFormsAsync();
+            _editingForm = form;
+            _activeTab = FormsTab.ICS214;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeleteFormAsync(int formId)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            if (_editingForm?.Id == formId)
+            {
+                _editingForm = null;
+            }
+            await IncidentFormService.DeleteFormAsync(formId);
+            await ReloadFormsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ExportConsolidated214Async()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var entries = FormsOf(IncidentFormType.ICS214);
+            if (entries.Count == 0)
+            {
+                _formsMessage = "No ICS-214 entries to export.";
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateConsolidatedActivityLogPdf(
+                _spill.SpillName, DefaultOperationalPeriodId, entries);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private const int DefaultOperationalPeriodId = 1;
 
     private async Task DownloadAsync(OilSpillExportFile file)
     {
@@ -477,6 +700,7 @@
     private static string FormLabel(IncidentFormType type) => type switch
     {
         IncidentFormType.ICS201 => "ICS-201 Briefing",
+        IncidentFormType.ICS204 => "ICS-204 Assignment List",
         IncidentFormType.ICS209 => "ICS-209 Status Summary",
         IncidentFormType.ICS214 => "ICS-214 Activity Log",
         _ => type.ToString()

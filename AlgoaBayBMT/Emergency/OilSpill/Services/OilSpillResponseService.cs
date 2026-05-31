@@ -34,6 +34,7 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 ActionType = request.ActionType,
                 Description = request.Description,
                 StartTime = request.StartTime,
+                EndTime = request.EndTime,
                 Latitude = request.Latitude,
                 Longitude = request.Longitude,
                 PerformedBy = request.PerformedBy,
@@ -50,6 +51,15 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 request.SpillId,
                 $"{action.ActionType}: {action.Description}",
                 string.IsNullOrWhiteSpace(action.PerformedBy) ? "Response Team" : action.PerformedBy);
+
+            // Automation: auto-generate an ICS-204 Assignment List for the deployed measure so the
+            // Operations Section has an editable assignment record per division/operational period.
+            await _formService.EnsureAssignmentListAsync(
+                request.SpillId,
+                action.ActionType,
+                division: action.ActionType.ToString(),
+                operationalPeriodId: IncidentFormService.DefaultOperationalPeriodId,
+                createdBy: string.IsNullOrWhiteSpace(action.PerformedBy) ? "Operations" : action.PerformedBy);
 
             return action;
         }
@@ -72,7 +82,8 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 case OilSpillActionType.DeployBoom:
                     // Default boom: a short line segment oriented across the bay mouth.
                     action.GeometryGeoJson = ResponseGeometryBuilder.BuildShortBoomGeoJson(
-                        lat, lon, orientationDeg: 35.0, lengthMeters: DefaultBoomLengthMeters);
+                        lat, lon, orientationDeg: 35.0,
+                        lengthMeters: request.LengthMeters ?? DefaultBoomLengthMeters);
                     break;
 
                 case OilSpillActionType.Skimmer:
@@ -87,7 +98,9 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                     break;
 
                 case OilSpillActionType.ShorelineProtection:
-                    action.GeometryGeoJson = ResponseGeometryBuilder.BuildCoastalSegmentGeoJson(lat, lon);
+                    action.GeometryGeoJson = request.LengthMeters is double protectLen
+                        ? ResponseGeometryBuilder.BuildShortBoomGeoJson(lat, lon, 35.0, protectLen)
+                        : ResponseGeometryBuilder.BuildCoastalSegmentGeoJson(lat, lon);
                     break;
 
                 case OilSpillActionType.AerialRecon:

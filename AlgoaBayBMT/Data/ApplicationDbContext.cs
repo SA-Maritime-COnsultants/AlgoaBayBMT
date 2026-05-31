@@ -203,9 +203,11 @@ namespace AlgoaBayBMT.Data
                 entity.ToTable("IncidentForms");
                 entity.HasKey(x => x.Id);
                 entity.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.PersonName).HasMaxLength(150);
                 entity.Property(x => x.ExportFilePath).HasMaxLength(400);
                 entity.HasIndex(x => x.IncidentId);
                 entity.HasIndex(x => new { x.IncidentId, x.FormType });
+                entity.HasIndex(x => new { x.IncidentId, x.FormType, x.OperationalPeriodId });
                 entity.HasOne(x => x.Spill)
                     .WithMany(x => x.Forms)
                     .HasForeignKey(x => x.IncidentId)

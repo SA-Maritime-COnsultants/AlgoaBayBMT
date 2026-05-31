@@ -51,6 +51,10 @@ namespace AlgoaBayBMT.Emergency.OilSpill.DTOs
         public OilSpillActionType ActionType { get; set; }
         public string Description { get; set; } = string.Empty;
         public DateTime StartTime { get; set; }
+
+        /// <summary>Optional end time after which the measure is no longer active.</summary>
+        public DateTime? EndTime { get; set; }
+
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         public string PerformedBy { get; set; } = string.Empty;
@@ -58,5 +62,8 @@ namespace AlgoaBayBMT.Emergency.OilSpill.DTOs
 
         /// <summary>Optional override for the influence radius (skimmer/dispersant), in metres.</summary>
         public double? RadiusMeters { get; set; }
+
+        /// <summary>Optional override for the deployed length (boom/shoreline protection), in metres.</summary>
+        public double? LengthMeters { get; set; }
     }
 }

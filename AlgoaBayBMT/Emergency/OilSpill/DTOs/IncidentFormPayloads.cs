@@ -53,4 +53,32 @@ namespace AlgoaBayBMT.Emergency.OilSpill.DTOs
         public string Activity { get; set; } = string.Empty;
         public string PerformedBy { get; set; } = string.Empty;
     }
+
+    /// <summary>
+    /// Strongly-typed payload for a single ICS-214 activity-log entry persisted as its own
+    /// <see cref="IncidentForm"/> record (one entry == one record). Multiple contributors can add
+    /// entries independently and they are grouped per operational period for consolidated export.
+    /// </summary>
+    public class Ics214EntryPayload
+    {
+        public string IncidentName { get; set; } = string.Empty;
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public string PersonName { get; set; } = string.Empty;
+        public string Activity { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+    }
+
+    /// <summary>Strongly-typed payload for an ICS-204 Assignment List.</summary>
+    public class Ics204Payload
+    {
+        public string IncidentName { get; set; } = string.Empty;
+        public string Division { get; set; } = string.Empty;
+        public string BranchOrGroup { get; set; } = string.Empty;
+        public string OperationsLeader { get; set; } = string.Empty;
+        public DateTime OperationalPeriodStart { get; set; } = DateTime.UtcNow;
+        public DateTime? OperationalPeriodEnd { get; set; }
+        public string Resources { get; set; } = string.Empty;
+        public string Assignment { get; set; } = string.Empty;
+        public string SpecialInstructions { get; set; } = string.Empty;
+    }
 }

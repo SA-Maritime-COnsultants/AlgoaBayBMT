@@ -36,6 +36,15 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         OilSpillExportFile GenerateFormPdf(IncidentForm form);
 
         /// <summary>
+        /// Generates a single consolidated ICS-214 Activity Log PDF for an operational period from
+        /// the individual ICS-214 entry records (one record per entry).
+        /// </summary>
+        OilSpillExportFile GenerateConsolidatedActivityLogPdf(
+            string incidentName,
+            int operationalPeriodId,
+            IReadOnlyList<IncidentForm> activityEntries);
+
+        /// <summary>
         /// Bundles the SITREP PDF, every individual ICS form PDF, and the run summary PDF into a
         /// single ZIP archive ("Export All").
         /// </summary>
@@ -329,6 +338,61 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             return new OilSpillExportFile(fileName, "application/pdf", output.ToArray());
         }
 
+        public OilSpillExportFile GenerateConsolidatedActivityLogPdf(
+            string incidentName,
+            int operationalPeriodId,
+            IReadOnlyList<IncidentForm> activityEntries)
+        {
+            using var document = new PdfDocument();
+            var page = document.Pages.Add();
+            var graphics = page.Graphics;
+            var pageWidth = page.GetClientSize().Width;
+
+            var titleFont = new PdfStandardFont(PdfFontFamily.Helvetica, 16, PdfFontStyle.Bold);
+            var bodyFont = new PdfStandardFont(PdfFontFamily.Helvetica, 10);
+            var navy = new PdfSolidBrush(new PdfColor(13, 27, 62));
+
+            graphics.DrawRectangle(navy, new RectangleF(0, 0, pageWidth, 45));
+            graphics.DrawString("ICS-214 CONSOLIDATED ACTIVITY LOG",
+                titleFont, PdfBrushes.White, new PointF(15, 13));
+            float y = 60f;
+
+            graphics.DrawString(
+                $"Incident: {incidentName}  |  Operational period: {operationalPeriodId}  |  " +
+                $"Entries: {activityEntries.Count}",
+                bodyFont, PdfBrushes.Black, new PointF(15, y));
+            y += 24f;
+
+            var grid = new PdfGrid();
+            grid.Columns.Add(4);
+            var header = grid.Rows.Add();
+            header.Cells[0].Value = "Date/Time";
+            header.Cells[1].Value = "Person";
+            header.Cells[2].Value = "Activity";
+            header.Cells[3].Value = "Notes";
+
+            var entries = activityEntries
+                .Select(f => Deserialize<Ics214EntryPayload>(f.JsonData) ?? new Ics214EntryPayload())
+                .OrderBy(e => e.Timestamp);
+
+            foreach (var entry in entries)
+            {
+                var row = grid.Rows.Add();
+                row.Cells[0].Value = entry.Timestamp.ToString("dd MMM HH:mm", Inv);
+                row.Cells[1].Value = entry.PersonName;
+                row.Cells[2].Value = entry.Activity;
+                row.Cells[3].Value = entry.Notes;
+            }
+
+            ApplyGridStyle(grid);
+            DrawGrid(grid, page, 15, y);
+
+            using var output = new MemoryStream();
+            document.Save(output);
+            var fileName = $"ICS214_Consolidated_OP{operationalPeriodId}_{Sanitize(incidentName)}.pdf";
+            return new OilSpillExportFile(fileName, "application/pdf", output.ToArray());
+        }
+
         public OilSpillExportFile GenerateIncidentPackageZip(
             OilSpillRunSummary summary,
             IReadOnlyList<IncidentForm> forms,
@@ -365,6 +429,7 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         private static string FormTitle(IncidentFormType type) => type switch
         {
             IncidentFormType.ICS201 => "ICS-201 Incident Briefing",
+            IncidentFormType.ICS204 => "ICS-204 Assignment List",
             IncidentFormType.ICS209 => "ICS-209 Incident Status Summary",
             IncidentFormType.ICS214 => "ICS-214 Activity Log",
             _ => type.ToString()
@@ -413,8 +478,37 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                     AddRow(grid, "Safety message", p.SafetyMessage);
                     break;
                 }
+                case IncidentFormType.ICS204:
+                {
+                    var p = Deserialize<Ics204Payload>(form.JsonData) ?? new Ics204Payload();
+                    AddRow(grid, "Incident name", p.IncidentName);
+                    AddRow(grid, "Division", p.Division);
+                    AddRow(grid, "Branch / group", p.BranchOrGroup);
+                    AddRow(grid, "Operations leader", p.OperationsLeader);
+                    AddRow(grid, "Operational period start",
+                        p.OperationalPeriodStart.ToString("dd MMM yyyy HH:mm", Inv));
+                    AddRow(grid, "Operational period end",
+                        p.OperationalPeriodEnd?.ToString("dd MMM yyyy HH:mm", Inv) ?? "Open");
+                    AddRow(grid, "Resources", p.Resources);
+                    AddRow(grid, "Assignment", p.Assignment);
+                    AddRow(grid, "Special instructions", p.SpecialInstructions);
+                    break;
+                }
                 case IncidentFormType.ICS214:
                 {
+                    // Each ICS-214 record is a single activity-log entry.
+                    var entry = Deserialize<Ics214EntryPayload>(form.JsonData);
+                    if (entry is not null && (!string.IsNullOrEmpty(entry.Activity) || !string.IsNullOrEmpty(entry.PersonName)))
+                    {
+                        AddRow(grid, "Incident name", entry.IncidentName);
+                        AddRow(grid, "Date/Time", entry.Timestamp.ToString("dd MMM yyyy HH:mm", Inv));
+                        AddRow(grid, "Person", entry.PersonName);
+                        AddRow(grid, "Activity", entry.Activity);
+                        AddRow(grid, "Notes", entry.Notes);
+                        break;
+                    }
+
+                    // Backwards compatibility with legacy aggregate ICS-214 payloads.
                     var p = Deserialize<Ics214Payload>(form.JsonData) ?? new Ics214Payload();
                     AddRow(grid, "Incident name", p.IncidentName);
                     if (p.Entries.Count == 0)
@@ -423,11 +517,11 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                     }
                     else
                     {
-                        foreach (var entry in p.Entries.OrderBy(e => e.Timestamp))
+                        foreach (var legacyEntry in p.Entries.OrderBy(e => e.Timestamp))
                         {
                             AddRow(grid,
-                                entry.Timestamp.ToString("dd MMM HH:mm", Inv),
-                                $"{entry.Activity} ({entry.PerformedBy})");
+                                legacyEntry.Timestamp.ToString("dd MMM HH:mm", Inv),
+                                $"{legacyEntry.Activity} ({legacyEntry.PerformedBy})");
                         }
                     }
                     break;

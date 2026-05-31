@@ -202,6 +202,19 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Models
         [Required]
         public IncidentFormType FormType { get; set; }
 
+        /// <summary>
+        /// Operational period this form belongs to (nullable). Used to group ICS-214 activity-log
+        /// entries and ICS-204 assignment lists by operational period.
+        /// </summary>
+        public int? OperationalPeriodId { get; set; }
+
+        /// <summary>
+        /// Name of the person the form relates to (nullable). Used for ICS-214 entries so each
+        /// contributor's log records can be attributed and filtered independently.
+        /// </summary>
+        [StringLength(150)]
+        public string? PersonName { get; set; }
+
         /// <summary>Structured form payload serialized as JSON.</summary>
         public string JsonData { get; set; } = "{}";
 

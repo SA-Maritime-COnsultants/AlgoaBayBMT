@@ -215,6 +215,12 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             // Running cumulative footprint (union of every instantaneous slick polygon so far).
             string? cumulativePolygon = null;
 
+            // First-landfall tracking. Reset here so a regenerated run recomputes impact timing
+            // from scratch using polygon intersection against the coastline.
+            run.ShorelineImpactIndex = null;
+            run.ShorelineImpactTime = null;
+            var shorelineImpactRecorded = false;
+
             // Semi-diurnal tide period (~12.42 h) drives the oscillating tidal stream.
             const double TidalPeriodSeconds = 12.42 * 3600.0;
             // Tidal stream amplitude scales with the supplied current speed.
@@ -264,36 +270,62 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 var timeFactor = Math.Log(1.0 + step);
                 var effectiveArea = area * spreadFactor * Math.Max(timeFactor, 1.0);
 
+                // The slick ring is needed both for response-measure interaction tests and for
+                // coastline (landfall) intersection, so compute it once up-front for this step.
+                var slick = OilSpillGeometry.ParsePolygon(BuildSlickPolygonGeoJson(
+                    currentLat, currentLon, effectiveArea, driftDirectionDeg, aspectRatio));
+
+                // True when an active boom or shoreline-protection measure is currently containing
+                // the slick; used to delay shoreline-impact detection for this step.
+                var shorelineImpactDelayed = false;
+
                 // --- Apply simplified physical effects of active response measures ---
-                if (effects.HasAny)
+                if (effects.HasAny && slick.Count >= 3)
                 {
-                    var slick = OilSpillGeometry.ParsePolygon(BuildSlickPolygonGeoJson(
-                        currentLat, currentLon, effectiveArea, driftDirectionDeg, aspectRatio));
-
-                    if (slick.Count >= 3)
+                    // Dispersant: slows further spreading where the slick is treated and speeds
+                    // weathering/decay so the reported area shrinks faster.
+                    if (effects.IntersectsDispersant(slick, timestamp))
                     {
-                        // Dispersant: slows further spreading where the slick is treated.
-                        if (effects.IntersectsDispersant(slick, timestamp))
-                        {
-                            effectiveArea *= 0.5;
-                            area *= 0.85;
-                        }
-
-                        // Skimmer: actively recovers oil, reducing the reported area.
-                        var recovered = effects.SkimmerRecovery(slick, timestamp, stepSeconds);
-                        if (recovered > 0)
-                        {
-                            area = Math.Max(0.0, area - recovered);
-                            effectiveArea = Math.Max(1.0, effectiveArea - recovered);
-                        }
-
-                        // Boom: contains the slick, damping drift on the far side.
-                        if (effects.IntersectsBoom(slick, timestamp))
-                        {
-                            driftX *= 0.2;
-                            driftY *= 0.2;
-                        }
+                        effectiveArea *= 0.5;
+                        area *= 0.85;
                     }
+
+                    // Skimmer: actively recovers oil, reducing the reported area.
+                    var recovered = effects.SkimmerRecovery(slick, timestamp, stepSeconds);
+                    if (recovered > 0)
+                    {
+                        area = Math.Max(0.0, area - recovered);
+                        effectiveArea = Math.Max(1.0, effectiveArea - recovered);
+                    }
+
+                    // Boom: contains the slick, damping drift on the far side and delaying the
+                    // moment it reaches the shoreline.
+                    if (effects.IntersectsBoom(slick, timestamp))
+                    {
+                        driftX *= 0.2;
+                        driftY *= 0.2;
+                        shorelineImpactDelayed = true;
+                    }
+
+                    // Shoreline protection: a protected segment prevents/defers shoreline impact.
+                    if (effects.IsShorelineProtected(slick, timestamp))
+                    {
+                        shorelineImpactDelayed = true;
+                    }
+                }
+
+                // --- Landfall detection (polygon intersection with coastline) ---
+                // Test the UNCLIPPED slick against the in-memory coastline polygons. Record the
+                // first timestep that reaches the shore unless an active response measure is
+                // currently delaying impact. The loop continues so the animation never stops
+                // abruptly at landfall.
+                if (!shorelineImpactRecorded && !shorelineImpactDelayed
+                    && coastline is not null && coastline.HasCoastline
+                    && coastline.IntersectsLand(slick))
+                {
+                    shorelineImpactRecorded = true;
+                    run.ShorelineImpactIndex = step;
+                    run.ShorelineImpactTime = timestamp;
                 }
 
                 // Build the instantaneous slick polygon for this step and accumulate the

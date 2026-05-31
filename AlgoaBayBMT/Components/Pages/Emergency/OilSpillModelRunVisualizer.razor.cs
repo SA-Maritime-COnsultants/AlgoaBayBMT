@@ -38,6 +38,24 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         // When true, the slick layer shows the cumulative footprint (union of all steps).
         private bool _showCumulative = true;
 
+        // When true, plume time labels ("T+Xh") are drawn at polygon centroids.
+        private bool _showTimeLabels = true;
+
+        // Deployment Measures panel state.
+        private bool _showMeasurePanel;
+        private bool _savingMeasure;
+        private string? _measureMessage;
+        private readonly DeploymentMeasureModel _measure = new();
+
+        // Selectable measure types for the deployment-measure form.
+        private readonly List<MeasureTypeOption> _measureTypeOptions = new()
+        {
+            new(OilSpillActionType.DeployBoom, "Boom"),
+            new(OilSpillActionType.Skimmer, "Skimmer"),
+            new(OilSpillActionType.Dispersant, "Dispersant"),
+            new(OilSpillActionType.ShorelineProtection, "Shoreline protection"),
+        };
+
         private bool _isPlaying;
         private CancellationTokenSource? _playCts;
 
@@ -374,6 +392,136 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             _showCumulative = value;
             StateHasChanged();
         }
+
+        private void OnTimeLabelsToggled(bool value)
+        {
+            _showTimeLabels = value;
+            StateHasChanged();
+        }
+
+        private void ToggleMeasurePanel()
+        {
+            _showMeasurePanel = !_showMeasurePanel;
+            if (_showMeasurePanel)
+            {
+                PrepareMeasureDefaults();
+            }
+
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Seeds the deployment-measure form with sensible defaults: the current playback location
+        /// (or the spill origin) and a start time anchored to the current playback timestamp.
+        /// </summary>
+        private void PrepareMeasureDefaults()
+        {
+            _measureMessage = null;
+
+            double lat, lon;
+            if (_currentIndex >= 0 && _currentIndex < _trajectory.Count)
+            {
+                lat = _trajectory[_currentIndex].Latitude;
+                lon = _trajectory[_currentIndex].Longitude;
+            }
+            else if (_spill is not null)
+            {
+                lat = _spill.Latitude;
+                lon = _spill.Longitude;
+            }
+            else
+            {
+                lat = -33.96;
+                lon = 25.62;
+            }
+
+            _measure.ActionType = OilSpillActionType.DeployBoom;
+            _measure.Latitude = Math.Round(lat, 5);
+            _measure.Longitude = Math.Round(lon, 5);
+            _measure.StartTime = CurrentTime ?? SelectedRun?.StartTime ?? DateTime.Now;
+            _measure.EndTime = null;
+            _measure.RadiusMeters = null;
+            _measure.LengthMeters = null;
+            _measure.Description = string.Empty;
+            _measure.Notes = null;
+        }
+
+        /// <summary>
+        /// Persists the deployment measure as an <see cref="OilSpillResponseAction"/>, refreshes the
+        /// action list so the measure renders immediately, and re-runs the model so the new measure
+        /// influences landfall timing and slick behaviour.
+        /// </summary>
+        private async Task SaveMeasureAsync()
+        {
+            if (_spill is null || _savingMeasure)
+            {
+                return;
+            }
+
+            _savingMeasure = true;
+            _measureMessage = "Saving deployment measure…";
+            StateHasChanged();
+
+            try
+            {
+                var request = new AlgoaBayBMT.Emergency.OilSpill.DTOs.CreateOilSpillResponseActionRequest
+                {
+                    SpillId = SpillId,
+                    ActionType = _measure.ActionType,
+                    Description = string.IsNullOrWhiteSpace(_measure.Description)
+                        ? _measure.ActionType.ToString()
+                        : _measure.Description,
+                    StartTime = _measure.StartTime,
+                    EndTime = _measure.EndTime,
+                    Latitude = _measure.Latitude,
+                    Longitude = _measure.Longitude,
+                    PerformedBy = "Response Team",
+                    Notes = _measure.Notes,
+                    RadiusMeters = _measure.RadiusMeters,
+                    LengthMeters = _measure.LengthMeters
+                };
+
+                await OilSpillResponseService.AddResponseActionAsync(request);
+
+                // Refresh the action list so the new measure is rendered on the map immediately.
+                _actions = (await OilSpillResponseService.GetActionsForSpillAsync(SpillId)).ToList();
+
+                // Re-run the model so the measure affects landfall timing and slick behaviour.
+                if (SelectedRun is not null)
+                {
+                    await RegenerateRunAsync();
+                }
+
+                _measureMessage = "Deployment measure saved and applied to the model.";
+                _showMeasurePanel = false;
+            }
+            catch (Exception ex)
+            {
+                _measureMessage = $"Failed to save measure: {ex.Message}";
+            }
+            finally
+            {
+                _savingMeasure = false;
+                StateHasChanged();
+            }
+        }
+
+        /// <summary>Form-backing model for the Deployment Measures panel.</summary>
+        private sealed class DeploymentMeasureModel
+        {
+            public OilSpillActionType ActionType { get; set; } = OilSpillActionType.DeployBoom;
+            public string Description { get; set; } = string.Empty;
+            public DateTime StartTime { get; set; } = DateTime.Now;
+            public DateTime? EndTime { get; set; }
+            public double Latitude { get; set; } = -33.96;
+            public double Longitude { get; set; } = 25.62;
+            public double? RadiusMeters { get; set; }
+            public double? LengthMeters { get; set; }
+            public string? Notes { get; set; }
+        }
+
+        /// <summary>A selectable deployment-measure type for the action-type dropdown.</summary>
+        private sealed record MeasureTypeOption(OilSpillActionType Value, string Label);
 
         private void GoToComparison()
             => NavigationManager.NavigateTo($"/emergency/oilspill/{SpillId}/compare");

@@ -887,3 +887,21 @@ code, pre, .bmt-mono {
         gap: 0.5rem;
     }
 }
+
+/* ──────────────────────────────────────────────────────────────────────
+   Oil-spill plume time labels ("T+Xh") rendered at polygon centroids.
+   ────────────────────────────────────────────────────────────────────── */
+.oilspill-time-label {
+    display: inline-block;
+    transform: translate(-50%, -50%);
+    padding: 1px 5px;
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    color: #0d243d;
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(13, 36, 61, 0.25);
+    border-radius: 3px;
+    pointer-events: none;
+}
