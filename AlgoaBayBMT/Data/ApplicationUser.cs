@@ -34,5 +34,8 @@ namespace AlgoaBayBMT.Data
 
         /// <summary>When true the user may sign crew on/off a vessel and review crew training.</summary>
         public bool IsCrewManager { get; set; }
+
+        /// <summary>When true the user may capture bunkering operations for their assigned vessel.</summary>
+        public bool IsBunkerManager { get; set; }
     }
 }

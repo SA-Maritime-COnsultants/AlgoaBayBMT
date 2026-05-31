@@ -96,6 +96,9 @@ namespace AlgoaBayBMT.Services.Models
         [Display(Name = "Crew Manager")]
         public bool IsCrewManager { get; set; }
 
+        [Display(Name = "Bunker Manager")]
+        public bool IsBunkerManager { get; set; }
+
         [Display(Name = "Password")]
         public string? Password { get; set; }
 

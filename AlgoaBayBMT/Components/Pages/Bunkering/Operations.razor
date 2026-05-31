@@ -1,0 +1,351 @@
+@page "/bunkering/operations"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@inject IBunkeringOperationService BunkeringService
+@inject IISGOTTTemplateService ISGOTTTemplateService
+@inject IISGOTTChecklistService ISGOTTChecklistService
+@inject IVesselService VesselService
+@inject IUserManagementService UserMgmtService
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Bunkering Operations</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Bunkering Operations</h1>
+            <div class="page-subtitle">Operational capture, pumping intervals, weather and ISGOTT checklist.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-save" IconPosition="IconPosition.Left" OnClick="SaveAsync">Save Operation</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Operation Context" SubTitle="Logged-in user's bunker vessel and customer vessel." />
+        <CardContent>
+            <div class="pf-form-grid">
+                <div class="pf-col-4">
+                    <label class="pf-field-label">Bunker Vessel</label>
+                    <div class="pf-field-readonly">@(_bunkerVessel?.Name ?? "No bunker vessel assigned")</div>
+                </div>
+                <div class="pf-col-4">
+                    <label class="pf-field-label">Customer Vessel</label>
+                    <SfDropDownList TValue="int" TItem="Vessel" DataSource="@CustomerVessels" @bind-Value="Operation.CustomerVesselId" Placeholder="Select customer vessel" PopupHeight="280px">
+                        <DropDownListFieldSettings Value="Id" Text="Name" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-4 bunkering-inline-action">
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-plus" IconPosition="IconPosition.Left" OnClick="OpenCustomerVesselDialog">Add Vessel</SfButton>
+                </div>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Operation Details" SubTitle="All times captured as local GMT+2." />
+        <CardContent>
+            <div class="pf-form-grid">
+                <div class="pf-col-3"><label class="pf-field-label">Start Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.StartTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3"><label class="pf-field-label">Alongside Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.AlongsideTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3"><label class="pf-field-label">Cast Off Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.CastOffTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3"><label class="pf-field-label">Completion Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.CompletionTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3"><label class="pf-field-label">Job Start Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.JobStartTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3"><label class="pf-field-label">Job End Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.JobEndTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3"><label class="pf-field-label">Pumping Stop Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="Operation.PumpingStopTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-3">
+                    <label class="pf-field-label">Bunker Fuel</label>
+                    <SfDropDownList TValue="int" TItem="BunkerFuel" DataSource="@Fuels" @bind-Value="Operation.BunkerFuelId" Placeholder="Select fuel">
+                        <DropDownListFieldSettings Value="Id" Text="Name" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-3"><label class="pf-field-label">Total Quantity</label><SfNumericTextBox TValue="decimal" @bind-Value="Operation.TotalQuantity" Min="0" Decimals="3" /></div>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Pumping Intervals" SubTitle="Fuel movement and weather by interval." />
+        <CardContent>
+            <div class="pf-grid-actions pf-grid-actions--compact bunkering-card-action">
+                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-plus" IconPosition="IconPosition.Left" OnClick="OpenIntervalDialog">Add Interval</SfButton>
+            </div>
+            <div class="pf-training-responsive-grid">
+                <SfGrid DataSource="@Intervals" TValue="BunkeringOperationPumpingInterval" AllowPaging="true" AllowSorting="true" CssClass="pf-grid--compact pf-courses-grid">
+                    <GridPageSettings PageSize="8" />
+                    <GridColumns>
+                        <GridColumn HeaderText="Pump Start" Width="170"><Template>@FormatLocal((context as BunkeringOperationPumpingInterval)?.PumpStartTime)</Template></GridColumn>
+                        <GridColumn HeaderText="Pump End" Width="170"><Template>@FormatLocal((context as BunkeringOperationPumpingInterval)?.PumpEndTime)</Template></GridColumn>
+                        <GridColumn HeaderText="Fuel" Width="140"><Template>@FuelName((context as BunkeringOperationPumpingInterval)?.BunkerFuelId ?? 0)</Template></GridColumn>
+                        <GridColumn Field="@nameof(BunkeringOperationPumpingInterval.Quantity)" HeaderText="Quantity" Width="120" />
+                        <GridColumn HeaderText="Weather" Width="260"><Template>@WeatherSummary(context as BunkeringOperationPumpingInterval)</Template></GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="ISGOTT Checklist" SubTitle="Configured stage templates rendered as an operational wizard." />
+        <CardContent>
+            @if (StageTemplates.Count == 0)
+            {
+                <div class="pf-alert pf-status-message">No active ISGOTT templates configured.</div>
+            }
+            else
+            {
+                <div class="bunkering-wizard-shell">
+                    <div class="bunkering-stage-tabs">
+                        @for (var i = 0; i < StageTemplates.Count; i++)
+                        {
+                            var index = i;
+                            <button type="button" class="bunkering-stage-tab @(index == _activeStageIndex ? "bunkering-stage-tab--active" : "")" @onclick="() => _activeStageIndex = index">@(index + 1). @StageTemplates[index].Name</button>
+                        }
+                    </div>
+                    <div class="bunkering-stage-panel">
+                        @{ var stage = StageTemplates[_activeStageIndex]; }
+                        <h3>@stage.Name</h3>
+                        @foreach (var item in stage.Items.OrderBy(x => x.Order))
+                        {
+                            <div class="bunkering-check-item">
+                                <label class="pf-field-label">@item.Text @(item.IsMandatory ? "*" : "")</label>
+                                @if (item.ItemType == ISGOTTItemType.YesNoNa)
+                                {
+                                    <SfDropDownList TValue="YesNoNaValue?" TItem="YesNoNaOption" DataSource="@YesNoNaOptions" @bind-Value="ChecklistResponses[item.Id].YesNoNaValue" Placeholder="Select">
+                                        <DropDownListFieldSettings Value="Value" Text="Text" />
+                                    </SfDropDownList>
+                                }
+                                else if (item.ItemType == ISGOTTItemType.Numeric)
+                                {
+                                    <SfNumericTextBox TValue="decimal?" @bind-Value="ChecklistResponses[item.Id].NumericValue" Decimals="3" />
+                                }
+                                else
+                                {
+                                    <SfTextBox @bind-Value="ChecklistResponses[item.Id].TextValue" />
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="760px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsCustomerVesselDialogVisible">
+    <DialogTemplates>
+        <Header>Add Customer Vessel</Header>
+        <Content>
+            <div class="pf-form-grid">
+                <div class="pf-col-6"><label class="pf-field-label">Name</label><SfTextBox @bind-Value="NewCustomerVessel.Name" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">Call Sign</label><SfTextBox @bind-Value="NewCustomerVessel.CallSign" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">IMO Number</label><SfTextBox @bind-Value="NewCustomerVessel.IMO" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">LOA</label><SfNumericTextBox TValue="double?" @bind-Value="NewCustomerVessel.LOA" Decimals="2" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">Beam</label><SfNumericTextBox TValue="double?" @bind-Value="NewCustomerVessel.Beam" Decimals="2" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">Flag</label><SfTextBox @bind-Value="NewCustomerVessel.Flag" /></div>
+            </div>
+            <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" OnClick="CloseCustomerVesselDialog">Cancel</SfButton>
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" OnClick="SaveCustomerVesselAsync">Save Vessel</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="860px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsIntervalDialogVisible">
+    <DialogTemplates>
+        <Header>Add Pumping Interval</Header>
+        <Content>
+            <div class="pf-form-grid">
+                <div class="pf-col-6"><label class="pf-field-label">Pump Start Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="IntervalModel.PumpStartTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">Pump End Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="IntervalModel.PumpEndTime" Format="dd MMM yyyy HH:mm" /></div>
+                <div class="pf-col-6"><label class="pf-field-label">Bunker Fuel</label><SfDropDownList TValue="int" TItem="BunkerFuel" DataSource="@Fuels" @bind-Value="IntervalModel.BunkerFuelId"><DropDownListFieldSettings Value="Id" Text="Name" /></SfDropDownList></div>
+                <div class="pf-col-6"><label class="pf-field-label">Quantity</label><SfNumericTextBox TValue="decimal" @bind-Value="IntervalModel.Quantity" Min="0" Decimals="3" /></div>
+                <div class="pf-col-4"><label class="pf-field-label">Wind Speed</label><SfTextBox @bind-Value="IntervalModel.WindSpeed" /></div>
+                <div class="pf-col-4"><label class="pf-field-label">Wind Direction</label><SfTextBox @bind-Value="IntervalModel.WindDirection" /></div>
+                <div class="pf-col-4"><label class="pf-field-label">Sea State</label><SfTextBox @bind-Value="IntervalModel.SeaState" /></div>
+                <div class="pf-col-4"><label class="pf-field-label">Swell</label><SfTextBox @bind-Value="IntervalModel.Swell" /></div>
+                <div class="pf-col-4"><label class="pf-field-label">Visibility</label><SfTextBox @bind-Value="IntervalModel.Visibility" /></div>
+                <div class="pf-col-12"><label class="pf-field-label">Notes</label><SfTextBox Multiline="true" @bind-Value="IntervalModel.Notes" /></div>
+            </div>
+            <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" OnClick="CloseIntervalDialog">Cancel</SfButton>
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" OnClick="AddInterval">Add Interval</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private static readonly TimeZoneInfo SastZone = TimeZoneInfo.FindSystemTimeZoneById("South Africa Standard Time");
+    private readonly List<YesNoNaOption> YesNoNaOptions = [new(YesNoNaValue.Yes, "Yes"), new(YesNoNaValue.No, "No"), new(YesNoNaValue.NA, "N/A")];
+    private List<Vessel> CustomerVessels { get; set; } = [];
+    private List<BunkerFuel> Fuels { get; set; } = [];
+    private List<ISGOTTStageTemplate> StageTemplates { get; set; } = [];
+    private Dictionary<int, ISGOTTChecklistItemResponse> ChecklistResponses { get; set; } = [];
+    private List<BunkeringOperationPumpingInterval> Intervals { get; set; } = [];
+    private BunkeringOperation Operation { get; set; } = NewOperation();
+    private Vessel NewCustomerVessel { get; set; } = new() { IsActive = true };
+    private BunkeringOperationPumpingInterval IntervalModel { get; set; } = NewInterval();
+    private Vessel? _bunkerVessel;
+    private string? _currentUserId;
+    private int? _companyId;
+    private bool _isAdmin;
+    private bool _isCompanyManager;
+    private bool _isBunkerManager;
+    private bool IsCustomerVesselDialogVisible;
+    private bool IsIntervalDialogVisible;
+    private string? Message;
+    private bool IsError;
+    private int _activeStageIndex;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _currentUserId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+        _isCompanyManager = auth.User.IsInRole(RoleNames.CompanyManager);
+
+        if (_currentUserId is null)
+        {
+            Message = "User context unavailable.";
+            IsError = true;
+            return;
+        }
+
+        var userModel = await UserMgmtService.GetUserEditorAsync(_currentUserId);
+        _companyId = userModel?.CompanyId;
+        _isBunkerManager = userModel?.IsBunkerManager ?? false;
+
+        if (!_isAdmin && !_isCompanyManager && !_isBunkerManager)
+        {
+            Message = "You do not have access to bunkering operations.";
+            IsError = true;
+            return;
+        }
+
+        CustomerVessels = await VesselService.GetAllAsync();
+        Fuels = await BunkeringService.GetFuelsAsync();
+        StageTemplates = await ISGOTTTemplateService.GetActiveTemplatesAsync();
+        _bunkerVessel = await BunkeringService.GetAssignedBunkerVesselAsync(_currentUserId, _isAdmin, _isCompanyManager, _companyId);
+
+        Operation = NewOperation();
+        Operation.BunkerVesselId = _bunkerVessel?.Id ?? 0;
+        if (Fuels.Count > 0) Operation.BunkerFuelId = Fuels[0].Id;
+        BuildChecklistResponses();
+    }
+
+    private void BuildChecklistResponses()
+    {
+        ChecklistResponses = StageTemplates.SelectMany(x => x.Items).ToDictionary(x => x.Id, x => new ISGOTTChecklistItemResponse { ItemTemplateId = x.Id });
+    }
+
+    private void OpenCustomerVesselDialog() => IsCustomerVesselDialogVisible = true;
+    private void CloseCustomerVesselDialog() => IsCustomerVesselDialogVisible = false;
+    private void OpenIntervalDialog()
+    {
+        IntervalModel = NewInterval();
+        IntervalModel.BunkerFuelId = Operation.BunkerFuelId;
+        IsIntervalDialogVisible = true;
+    }
+    private void CloseIntervalDialog() => IsIntervalDialogVisible = false;
+
+    private async Task SaveCustomerVesselAsync()
+    {
+        if (string.IsNullOrWhiteSpace(NewCustomerVessel.Name))
+        {
+            Message = "Customer vessel name is required.";
+            IsError = true;
+            return;
+        }
+
+        NewCustomerVessel.VesselType = "Customer";
+        var saved = await VesselService.CreateAsync(NewCustomerVessel, _currentUserId);
+        CustomerVessels = await VesselService.GetAllAsync();
+        Operation.CustomerVesselId = saved.Id;
+        NewCustomerVessel = new() { IsActive = true };
+        IsCustomerVesselDialogVisible = false;
+    }
+
+    private void AddInterval()
+    {
+        if (IntervalModel.BunkerFuelId <= 0 || IntervalModel.Quantity <= 0)
+        {
+            Message = "Interval fuel and quantity are required.";
+            IsError = true;
+            return;
+        }
+
+        Intervals.Add(IntervalModel);
+        Operation.TotalQuantity = Intervals.Sum(x => x.Quantity);
+        IsIntervalDialogVisible = false;
+        Message = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_currentUserId is null || _bunkerVessel is null)
+        {
+            Message = "Bunker vessel assignment is required.";
+            IsError = true;
+            return;
+        }
+
+        var responses = BuildStageResponses();
+        var checklistValidation = await ISGOTTChecklistService.ValidateMandatoryResponsesAsync(StageTemplates, responses);
+        if (!checklistValidation.Succeeded)
+        {
+            Message = checklistValidation.Message;
+            IsError = true;
+            return;
+        }
+
+        Operation.BunkerVesselId = _bunkerVessel.Id;
+        Operation.CreatedByUserId = _currentUserId;
+        var result = await BunkeringService.SaveOperationAsync(Operation, Intervals, responses);
+        Message = result.Message;
+        IsError = !result.Succeeded;
+        if (result.Succeeded)
+        {
+            Intervals = [];
+            Operation = NewOperation();
+            Operation.BunkerVesselId = _bunkerVessel.Id;
+            if (Fuels.Count > 0) Operation.BunkerFuelId = Fuels[0].Id;
+            BuildChecklistResponses();
+        }
+    }
+
+    private List<ISGOTTChecklistStageResponse> BuildStageResponses()
+        => StageTemplates.Select(stage => new ISGOTTChecklistStageResponse
+        {
+            StageTemplateId = stage.Id,
+            CompletedByUserId = _currentUserId ?? string.Empty,
+            CompletedAt = DateTime.UtcNow,
+            ItemResponses = stage.Items.Select(item => ChecklistResponses[item.Id]).ToList()
+        }).ToList();
+
+    private static BunkeringOperation NewOperation()
+    {
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SastZone);
+        return new BunkeringOperation { StartTime = now, AlongsideTime = now, CastOffTime = now, CompletionTime = now, JobStartTime = now, JobEndTime = now, PumpingStopTime = now };
+    }
+
+    private static BunkeringOperationPumpingInterval NewInterval()
+    {
+        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SastZone);
+        return new BunkeringOperationPumpingInterval { PumpStartTime = now, PumpEndTime = now };
+    }
+
+    private string FuelName(int fuelId) => Fuels.FirstOrDefault(x => x.Id == fuelId)?.Name ?? "—";
+    private static string FormatLocal(DateTime? value) => value.HasValue ? value.Value.ToString("dd MMM yyyy HH:mm") : "—";
+    private static string WeatherSummary(BunkeringOperationPumpingInterval? interval)
+        => interval is null ? "—" : string.Join(" | ", new[] { interval.WindSpeed, interval.WindDirection, interval.SeaState, interval.Swell, interval.Visibility }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+    private sealed record YesNoNaOption(YesNoNaValue Value, string Text);
+}

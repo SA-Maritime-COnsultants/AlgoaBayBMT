@@ -27,6 +27,9 @@ namespace AlgoaBayBMT.Services.Interfaces
         /// <summary>Toggles the IsCrewManager flag on a user.</summary>
         Task<OperationResult> SetCrewManagerAsync(string userId, bool isCrewManager, CancellationToken cancellationToken = default);
 
+        /// <summary>Toggles the IsBunkerManager flag on a user.</summary>
+        Task<OperationResult> SetBunkerManagerAsync(string userId, bool isBunkerManager, CancellationToken cancellationToken = default);
+
         /// <summary>Returns users belonging to a given company (by CompanyId).</summary>
         Task<List<ApplicationUser>> GetUsersByCompanyAsync(int companyId, CancellationToken cancellationToken = default);
     }

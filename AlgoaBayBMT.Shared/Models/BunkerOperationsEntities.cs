@@ -176,4 +176,119 @@ namespace AlgoaBayBMT.Shared.Models
         [StringLength(1000)]
         public string Details { get; set; } = string.Empty;
     }
+
+    public enum ISGOTTItemType
+    {
+        YesNoNa = 0,
+        Text = 1,
+        Numeric = 2
+    }
+
+    public enum YesNoNaValue
+    {
+        Yes = 0,
+        No = 1,
+        NA = 2
+    }
+
+    public class BunkerFuel
+    {
+        public int Id { get; set; }
+
+        [Required, StringLength(120)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required, StringLength(40)]
+        public string Code { get; set; } = string.Empty;
+    }
+
+    public class BunkeringOperation
+    {
+        public int Id { get; set; }
+        public int BunkerVesselId { get; set; }
+        public Vessel BunkerVessel { get; set; } = null!;
+        public int CustomerVesselId { get; set; }
+        public Vessel CustomerVessel { get; set; } = null!;
+        public int BunkerFuelId { get; set; }
+        public BunkerFuel BunkerFuel { get; set; } = null!;
+        public decimal TotalQuantity { get; set; }
+        public DateTime StartTime { get; set; }
+        public DateTime AlongsideTime { get; set; }
+        public DateTime CastOffTime { get; set; }
+        public DateTime CompletionTime { get; set; }
+        public DateTime JobStartTime { get; set; }
+        public DateTime JobEndTime { get; set; }
+        public DateTime PumpingStopTime { get; set; }
+        [Required, StringLength(450)]
+        public string CreatedByUserId { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<BunkeringOperationPumpingInterval> PumpingIntervals { get; set; } = new List<BunkeringOperationPumpingInterval>();
+        public ICollection<ISGOTTChecklistStageResponse> ISGOTTStageResponses { get; set; } = new List<ISGOTTChecklistStageResponse>();
+    }
+
+    public class BunkeringOperationPumpingInterval
+    {
+        public int Id { get; set; }
+        public int BunkeringOperationId { get; set; }
+        public BunkeringOperation BunkeringOperation { get; set; } = null!;
+        public DateTime PumpStartTime { get; set; }
+        public DateTime PumpEndTime { get; set; }
+        public int BunkerFuelId { get; set; }
+        public BunkerFuel BunkerFuel { get; set; } = null!;
+        public decimal Quantity { get; set; }
+        [StringLength(80)] public string? WindSpeed { get; set; }
+        [StringLength(80)] public string? WindDirection { get; set; }
+        [StringLength(120)] public string? SeaState { get; set; }
+        [StringLength(120)] public string? Swell { get; set; }
+        [StringLength(120)] public string? Visibility { get; set; }
+        [StringLength(1000)] public string? Notes { get; set; }
+    }
+
+    public class ISGOTTStageTemplate
+    {
+        public int Id { get; set; }
+        [Required, StringLength(200)]
+        public string Name { get; set; } = string.Empty;
+        public int Order { get; set; }
+        public bool IsActive { get; set; } = true;
+        public ICollection<ISGOTTItemTemplate> Items { get; set; } = new List<ISGOTTItemTemplate>();
+    }
+
+    public class ISGOTTItemTemplate
+    {
+        public int Id { get; set; }
+        public int StageTemplateId { get; set; }
+        public ISGOTTStageTemplate StageTemplate { get; set; } = null!;
+        [Required, StringLength(1000)]
+        public string Text { get; set; } = string.Empty;
+        public ISGOTTItemType ItemType { get; set; } = ISGOTTItemType.YesNoNa;
+        public bool IsMandatory { get; set; }
+        public int Order { get; set; }
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class ISGOTTChecklistStageResponse
+    {
+        public int Id { get; set; }
+        public int BunkeringOperationId { get; set; }
+        public BunkeringOperation BunkeringOperation { get; set; } = null!;
+        public int StageTemplateId { get; set; }
+        public ISGOTTStageTemplate StageTemplate { get; set; } = null!;
+        [Required, StringLength(450)]
+        public string CompletedByUserId { get; set; } = string.Empty;
+        public DateTime CompletedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<ISGOTTChecklistItemResponse> ItemResponses { get; set; } = new List<ISGOTTChecklistItemResponse>();
+    }
+
+    public class ISGOTTChecklistItemResponse
+    {
+        public int Id { get; set; }
+        public int StageResponseId { get; set; }
+        public ISGOTTChecklistStageResponse StageResponse { get; set; } = null!;
+        public int ItemTemplateId { get; set; }
+        public ISGOTTItemTemplate ItemTemplate { get; set; } = null!;
+        public YesNoNaValue? YesNoNaValue { get; set; }
+        [StringLength(2000)] public string? TextValue { get; set; }
+        public decimal? NumericValue { get; set; }
+    }
 }

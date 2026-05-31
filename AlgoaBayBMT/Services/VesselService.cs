@@ -69,6 +69,7 @@ namespace AlgoaBayBMT.Services
                 existing.VesselType = vessel.VesselType;
                 existing.GrossTonnage = vessel.GrossTonnage;
                 existing.LengthOverall = vessel.LengthOverall;
+                existing.Beam = vessel.Beam;
                 existing.OwningOperatorId = vessel.OwningOperatorId;
                 existing.IsActive = vessel.IsActive;
                 existing.ModifiedOnUtc = DateTime.UtcNow;

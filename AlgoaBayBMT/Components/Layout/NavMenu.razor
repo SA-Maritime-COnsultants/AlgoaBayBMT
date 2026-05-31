@@ -3,6 +3,7 @@
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IUserManagementService UserManagementService
 
 <nav class="side-nav" aria-label="Primary navigation menu">
     <a href="/" class="side-nav-brand" aria-label="Algoa Bay BMT home">
@@ -127,6 +128,30 @@
                     </ul>
                 </div>
             </section>
+        </AuthorizeView>
+
+        <AuthorizeView>
+            @if (_canViewBunkering)
+            {
+                <section class="side-nav-group" aria-labelledby="bunkering-nav-heading">
+                    <button id="bunkering-nav-heading" type="button" class="side-nav-group-toggle"
+                            @onclick="ToggleBunkeringAsync"
+                            aria-expanded="@_bunkeringExpanded.ToString().ToLower()">
+                        <span class="side-nav-group-label">Bunkering</span>
+                        <span class="side-nav-chevron @(_bunkeringExpanded ? "side-nav-chevron--open" : "")" aria-hidden="true">@((MarkupString)ChevronIcon)</span>
+                    </button>
+                    <div class="side-nav-collapsible @(_bunkeringExpanded ? "side-nav-collapsible--open" : "")">
+                        <ul class="side-nav-items">
+                            <li class="side-nav-item">
+                                <NavLink class="side-nav-link" href="bunkering/operations" @onclick="HandleNavClick">
+                                    <span class="side-nav-icon" aria-hidden="true">@((MarkupString)OperationsIcon)</span>
+                                    <span class="side-nav-copy"><span class="side-nav-label">Operations</span><span class="side-nav-meta">Bunkering capture</span></span>
+                                </NavLink>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            }
         </AuthorizeView>
 
         <AuthorizeView Roles="@RoleNames.Admin">
@@ -306,6 +331,8 @@
     private bool _trainingMgmtExpanded = true;
     private bool _userMgmtExpanded = true;
     private bool _billingExpanded = true;
+    private bool _bunkeringExpanded = true;
+    private bool _canViewBunkering;
     private bool _menuStateLoaded;
     private string? _menuStorageKey;
 
@@ -318,6 +345,23 @@
     {
         returnUrl = BuildReturnUrl(NavigationManager.Uri);
         NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _canViewBunkering = user.IsInRole(RoleNames.Admin) || user.IsInRole(RoleNames.CompanyManager);
+
+        if (!_canViewBunkering)
+        {
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                var model = await UserManagementService.GetUserEditorAsync(userId);
+                _canViewBunkering = model?.IsBunkerManager == true;
+            }
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -354,6 +398,8 @@
 
     private Task ToggleBillingAsync() => ToggleSectionAsync(() => _billingExpanded = !_billingExpanded);
 
+    private Task ToggleBunkeringAsync() => ToggleSectionAsync(() => _bunkeringExpanded = !_bunkeringExpanded);
+
     private async Task ToggleSectionAsync(System.Action toggleAction)
     {
         toggleAction();
@@ -377,6 +423,7 @@
                     _trainingMgmtExpanded = state.TrainingManagementExpanded;
                     _userMgmtExpanded = state.UserManagementExpanded;
                     _billingExpanded = state.BillingExpanded;
+                    _bunkeringExpanded = state.BunkeringExpanded;
                 }
             }
         }
@@ -407,7 +454,8 @@
                 _adminExpanded,
                 _trainingMgmtExpanded,
                 _userMgmtExpanded,
-                _billingExpanded));
+                _billingExpanded,
+                _bunkeringExpanded));
 
             await JSRuntime.InvokeVoidAsync("localStorage.setItem", _menuStorageKey, json);
         }
@@ -447,7 +495,8 @@
         bool AdminExpanded,
         bool TrainingManagementExpanded,
         bool UserManagementExpanded,
-        bool BillingExpanded = true);
+        bool BillingExpanded = true,
+        bool BunkeringExpanded = true);
 
     private const string ChevronIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>""";
     private const string RoleEditorIcon = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='8' r='4'></circle><path d='M4 20c0-4 3.6-7 8-7'></path><path d='M16 19h6'></path><path d='M19 16v6'></path></svg>""";

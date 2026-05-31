@@ -70,7 +70,8 @@ namespace AlgoaBayBMT.Services
                 IsAccountApproved = user.IsAccountApproved,
                 EmailConfirmed = user.EmailConfirmed,
                 CompanyId = user.CompanyId,
-                IsCrewManager = user.IsCrewManager
+                IsCrewManager = user.IsCrewManager,
+                IsBunkerManager = user.IsBunkerManager
             };
         }
 
@@ -175,6 +176,8 @@ namespace AlgoaBayBMT.Services
             user.EmailConfirmed = model.EmailConfirmed;
             user.ApprovalStatus = model.IsAccountApproved ? ApprovalStatus.Approved : ApprovalStatus.PendingAccountApproval;
             user.ApprovedOnUtc = model.IsAccountApproved ? (user.ApprovedOnUtc ?? DateTime.UtcNow) : user.ApprovedOnUtc;
+            user.IsCrewManager = model.IsCrewManager;
+            user.IsBunkerManager = model.IsBunkerManager;
 
             var updateResult = await userManager.UpdateAsync(user);
             if (!updateResult.Succeeded)
@@ -611,6 +614,20 @@ namespace AlgoaBayBMT.Services
         if (user is null) return OperationResult.Failure("User not found.");
 
         user.IsCrewManager = isCrewManager;
+        var result = await userManager.UpdateAsync(user);
+        return result.Succeeded
+            ? OperationResult.Success()
+            : OperationResult.Failure(result.Errors.Select(e => e.Description).ToArray());
+    }
+
+    public async Task<OperationResult> SetBunkerManagerAsync(
+        string userId, bool isBunkerManager,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByIdAsync(userId);
+        if (user is null) return OperationResult.Failure("User not found.");
+
+        user.IsBunkerManager = isBunkerManager;
         var result = await userManager.UpdateAsync(user);
         return result.Succeeded
             ? OperationResult.Success()

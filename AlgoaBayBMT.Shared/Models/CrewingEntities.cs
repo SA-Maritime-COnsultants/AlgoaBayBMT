@@ -30,6 +30,14 @@ namespace AlgoaBayBMT.Shared.Models
         public double? GrossTonnage { get; set; }
         public double? LengthOverall { get; set; }
 
+        public double? LOA
+        {
+            get => LengthOverall;
+            set => LengthOverall = value;
+        }
+
+        public double? Beam { get; set; }
+
         public int? OwningOperatorId { get; set; }
         public BunkerOperator? OwningOperator { get; set; }
 

@@ -59,6 +59,15 @@ namespace AlgoaBayBMT.Data
         public DbSet<InvoiceLineItem> InvoiceLineItems => Set<InvoiceLineItem>();
         public DbSet<NotificationMessage> NotificationMessages => Set<NotificationMessage>();
 
+        // Bunkering operations
+        public DbSet<BunkerFuel> BunkerFuels => Set<BunkerFuel>();
+        public DbSet<BunkeringOperation> BunkeringOperations => Set<BunkeringOperation>();
+        public DbSet<BunkeringOperationPumpingInterval> BunkeringOperationPumpingIntervals => Set<BunkeringOperationPumpingInterval>();
+        public DbSet<ISGOTTStageTemplate> ISGOTTStageTemplates => Set<ISGOTTStageTemplate>();
+        public DbSet<ISGOTTItemTemplate> ISGOTTItemTemplates => Set<ISGOTTItemTemplate>();
+        public DbSet<ISGOTTChecklistStageResponse> ISGOTTChecklistStageResponses => Set<ISGOTTChecklistStageResponse>();
+        public DbSet<ISGOTTChecklistItemResponse> ISGOTTChecklistItemResponses => Set<ISGOTTChecklistItemResponse>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -83,6 +92,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ApprovalNotes).HasMaxLength(1024);
                 entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
                 entity.Property(x => x.IsCrewManager).HasDefaultValue(false);
+                entity.Property(x => x.IsBunkerManager).HasDefaultValue(false);
                 entity.HasOne<BunkerOperator>()
                     .WithMany()
                     .HasForeignKey(x => x.CompanyId)
@@ -123,8 +133,87 @@ namespace AlgoaBayBMT.Data
 
             ConfigureTrainingEntities(builder);
             ConfigureBunkerOperationEntities(builder);
+            ConfigureBunkeringModuleEntities(builder);
             ConfigureCrewingEntities(builder);
             ConfigureBillingEntities(builder);
+        }
+
+        private static void ConfigureBunkeringModuleEntities(ModelBuilder builder)
+        {
+            builder.Entity<BunkerFuel>(entity =>
+            {
+                entity.ToTable("BunkerFuels");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.Code).IsUnique();
+                entity.Property(x => x.Name).HasMaxLength(120).IsRequired();
+                entity.Property(x => x.Code).HasMaxLength(40).IsRequired();
+            });
+
+            builder.Entity<BunkeringOperation>(entity =>
+            {
+                entity.ToTable("BunkeringOperations");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => x.BunkerVesselId);
+                entity.HasIndex(x => x.CustomerVesselId);
+                entity.Property(x => x.TotalQuantity).HasPrecision(18, 3);
+                entity.Property(x => x.CreatedByUserId).HasMaxLength(450).IsRequired();
+                entity.HasOne(x => x.BunkerVessel).WithMany().HasForeignKey(x => x.BunkerVesselId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.CustomerVessel).WithMany().HasForeignKey(x => x.CustomerVesselId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.BunkerFuel).WithMany().HasForeignKey(x => x.BunkerFuelId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasMany(x => x.PumpingIntervals).WithOne(x => x.BunkeringOperation).HasForeignKey(x => x.BunkeringOperationId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.ISGOTTStageResponses).WithOne(x => x.BunkeringOperation).HasForeignKey(x => x.BunkeringOperationId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<BunkeringOperationPumpingInterval>(entity =>
+            {
+                entity.ToTable("BunkeringOperationPumpingIntervals");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Quantity).HasPrecision(18, 3);
+                entity.Property(x => x.WindSpeed).HasMaxLength(80);
+                entity.Property(x => x.WindDirection).HasMaxLength(80);
+                entity.Property(x => x.SeaState).HasMaxLength(120);
+                entity.Property(x => x.Swell).HasMaxLength(120);
+                entity.Property(x => x.Visibility).HasMaxLength(120);
+                entity.Property(x => x.Notes).HasMaxLength(1000);
+                entity.HasOne(x => x.BunkerFuel).WithMany().HasForeignKey(x => x.BunkerFuelId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<ISGOTTStageTemplate>(entity =>
+            {
+                entity.ToTable("ISGOTTStageTemplates");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasMany(x => x.Items).WithOne(x => x.StageTemplate).HasForeignKey(x => x.StageTemplateId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<ISGOTTItemTemplate>(entity =>
+            {
+                entity.ToTable("ISGOTTItemTemplates");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Text).HasMaxLength(1000).IsRequired();
+                entity.Property(x => x.ItemType).HasConversion<string>().HasMaxLength(20);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+            });
+
+            builder.Entity<ISGOTTChecklistStageResponse>(entity =>
+            {
+                entity.ToTable("ISGOTTChecklistStageResponses");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.CompletedByUserId).HasMaxLength(450).IsRequired();
+                entity.HasOne(x => x.StageTemplate).WithMany().HasForeignKey(x => x.StageTemplateId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasMany(x => x.ItemResponses).WithOne(x => x.StageResponse).HasForeignKey(x => x.StageResponseId).OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<ISGOTTChecklistItemResponse>(entity =>
+            {
+                entity.ToTable("ISGOTTChecklistItemResponses");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.YesNoNaValue).HasConversion<string>().HasMaxLength(10);
+                entity.Property(x => x.TextValue).HasMaxLength(2000);
+                entity.Property(x => x.NumericValue).HasPrecision(18, 3);
+                entity.HasOne(x => x.ItemTemplate).WithMany().HasForeignKey(x => x.ItemTemplateId).OnDelete(DeleteBehavior.Restrict);
+            });
         }
 
         private static void ConfigureBunkerOperationEntities(ModelBuilder builder)
@@ -684,6 +773,8 @@ namespace AlgoaBayBMT.Data
                 entity.HasIndex(x => x.IMO).IsUnique().HasFilter("[IMO] IS NOT NULL");
                 entity.HasIndex(x => x.Name);
                 entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Beam).HasPrecision(18, 2);
+                entity.Property(x => x.LengthOverall).HasPrecision(18, 2);
                 entity.HasOne(x => x.OwningOperator)
                     .WithMany()
                     .HasForeignKey(x => x.OwningOperatorId)

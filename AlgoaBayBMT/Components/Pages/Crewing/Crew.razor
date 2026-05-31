@@ -88,6 +88,19 @@
                             }
                         </Template>
                     </GridColumn>
+                    <GridColumn HeaderText="Bunker Mgr" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var c = context as CrewMember; }
+                            @if (c?.ApplicationUserId is not null && _bunkerManagerMap.TryGetValue(c.ApplicationUserId, out var isBunkerManager))
+                            {
+                                <SfSwitch TChecked="bool" Checked="@isBunkerManager" ValueChange="@((Syncfusion.Blazor.Buttons.ChangeEventArgs<bool> e) => ToggleBunkerManagerAsync(c.ApplicationUserId, e.Checked))" />
+                            }
+                            else
+                            {
+                                <span class="crew-status-badge crew-badge-blue-gray">—</span>
+                            }
+                        </Template>
+                    </GridColumn>
                     <GridColumn HeaderText="Compliance" Width="160" TextAlign="TextAlign.Center">
                         <Template>
                             @{ var c = context as CrewMember; }
@@ -185,6 +198,7 @@
     private List<CrewRankOption> RankOptions { get; set; } = [];
     private CrewMember EditModel { get; set; } = new();
     private Dictionary<int, CrewComplianceOverallStatus> ComplianceStatuses { get; set; } = [];
+    private Dictionary<string, bool> _bunkerManagerMap = [];
     private CrewComplianceOverallStatus? ComplianceFilter { get; set; }
     private string _complianceFilterKey = "";
 
@@ -243,7 +257,38 @@
 
         var ids = Items.Select(x => x.Id);
         ComplianceStatuses = await ComplianceWorkflowService.GetCrewComplianceSummaryAsync(ids);
+        await LoadBunkerManagerMapAsync();
         ApplyFilter();
+    }
+
+    private async Task LoadBunkerManagerMapAsync()
+    {
+        var userIds = Items.Select(x => x.ApplicationUserId).Where(x => !string.IsNullOrWhiteSpace(x)).Distinct().ToList();
+        _bunkerManagerMap = [];
+        foreach (var userId in userIds)
+        {
+            var user = await UserMgmtService.GetUserEditorAsync(userId!);
+            if (user is not null)
+            {
+                _bunkerManagerMap[user.UserId!] = user.IsBunkerManager;
+            }
+        }
+    }
+
+    private async Task ToggleBunkerManagerAsync(string applicationUserId, bool isBunkerManager)
+    {
+        var result = await UserMgmtService.SetBunkerManagerAsync(applicationUserId, isBunkerManager);
+        if (result.Succeeded)
+        {
+            _bunkerManagerMap[applicationUserId] = isBunkerManager;
+            Message = isBunkerManager ? "Bunker Manager flag set." : "Bunker Manager flag cleared.";
+            IsError = false;
+        }
+        else
+        {
+            Message = result.Message ?? "Could not update Bunker Manager flag.";
+            IsError = true;
+        }
     }
 
     private void ApplyComplianceFilter()
