@@ -1,0 +1,195 @@
+@page "/emergency/oilspill/{SpillId:int}/model"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@using Microsoft.AspNetCore.WebUtilities
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillService OilSpillService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_isEdit ? "Edit Oil Spill Model Run" : "New Oil Spill Model Run")</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="mb-3">
+        <button type="button" class="btn btn-link px-0" @onclick="BackToDetail">&larr; Back to spill</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Loading…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="alert alert-warning">Oil spill incident @SpillId was not found.</div>
+    }
+    else
+    {
+        <h1 class="h4 mb-1">@(_isEdit ? "Edit Model Run" : "New Model Run")</h1>
+        <div class="text-muted mb-3">@_spill.SpillName</div>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
+        }
+
+        <EditForm Model="_request" OnValidSubmit="RunModelAsync">
+            <DataAnnotationsValidator />
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Run Name</label>
+                    <InputText class="form-control" @bind-Value="_request.RunName" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Start Time</label>
+                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="_request.StartTime" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Duration (hours)</label>
+                    <InputNumber class="form-control" @bind-Value="_request.DurationHours" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Time Step (minutes)</label>
+                    <InputNumber class="form-control" @bind-Value="_request.TimeStepMinutes" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Tide State</label>
+                    <InputSelect class="form-select" @bind-Value="_request.TideState">
+                        @foreach (var tide in Enum.GetValues<OilSpillTideState>())
+                        {
+                            <option value="@tide">@tide</option>
+                        }
+                    </InputSelect>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Wind Speed (m/s)</label>
+                    <InputNumber class="form-control" @bind-Value="_request.WindSpeed" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Wind Direction (°)</label>
+                    <InputNumber class="form-control" @bind-Value="_request.WindDirection" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Current Speed (m/s)</label>
+                    <InputNumber class="form-control" @bind-Value="_request.CurrentSpeed" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Current Direction (°)</label>
+                    <InputNumber class="form-control" @bind-Value="_request.CurrentDirection" />
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Notes</label>
+                    <InputTextArea class="form-control" rows="2" @bind-Value="_request.Notes" />
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <button type="submit" class="btn btn-primary" disabled="@_running">
+                    @(_running ? "Running model…" : _isEdit ? "Save & Re-run Model" : "Run Model")
+                </button>
+            </div>
+        </EditForm>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int SpillId { get; set; }
+
+    private bool _loading = true;
+    private bool _running;
+    private bool _isError;
+    private bool _isEdit;
+    private int? _runId;
+    private string? _message;
+    private OilSpillIncident? _spill;
+    private OilSpillModelRunRequest _request = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _spill = await OilSpillService.GetSpillByIdAsync(SpillId);
+
+        // Detect an edit by reading the optional ?runId= query string.
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("runId", out var runIdValue)
+            && int.TryParse(runIdValue, out var parsedRunId))
+        {
+            _runId = parsedRunId;
+        }
+
+        if (_spill is not null)
+        {
+            OilSpillModelRun? existingRun = null;
+            if (_runId is int runId)
+            {
+                existingRun = await OilSpillModelService.GetModelRunByIdAsync(runId);
+            }
+
+            if (existingRun is not null && existingRun.SpillId == SpillId)
+            {
+                _isEdit = true;
+                _request = new OilSpillModelRunRequest
+                {
+                    SpillId = SpillId,
+                    RunId = existingRun.Id,
+                    RunName = existingRun.RunName,
+                    StartTime = existingRun.StartTime,
+                    DurationHours = existingRun.DurationHours,
+                    TimeStepMinutes = existingRun.TimeStepMinutes,
+                    WindSpeed = existingRun.WindSpeed,
+                    WindDirection = existingRun.WindDirection,
+                    CurrentSpeed = existingRun.CurrentSpeed,
+                    CurrentDirection = existingRun.CurrentDirection,
+                    TideState = existingRun.TideState,
+                    Notes = existingRun.Notes
+                };
+            }
+            else
+            {
+                _request = new OilSpillModelRunRequest
+                {
+                    SpillId = SpillId,
+                    RunName = "Base Case",
+                    StartTime = _spill.SpillStartTime,
+                    DurationHours = 12,
+                    TimeStepMinutes = 30,
+                    TideState = OilSpillTideState.Unknown
+                };
+            }
+        }
+
+        _loading = false;
+    }
+
+    private async Task RunModelAsync()
+    {
+        _running = true;
+        _isError = false;
+        _message = null;
+
+        try
+        {
+            var wasEdit = _isEdit;
+            var run = await OilSpillModelService.RunModelAsync(_request);
+            _runId = run.Id;
+            _isEdit = true;
+            _request.RunId = run.Id;
+            _message = wasEdit
+                ? $"Model run #{run.Id} '{run.RunName}' saved and re-run successfully."
+                : $"Model run #{run.Id} '{run.RunName}' completed successfully.";
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = $"Model run failed: {ex.Message}";
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private void BackToDetail() => NavigationManager.NavigateTo($"/emergency/oilspill/{SpillId}");
+}

@@ -4,6 +4,7 @@ using AlgoaBayBMT.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AlgoaBayBMT.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531125957_AddOilSpillShorelineImpact")]
+    partial class AddOilSpillShorelineImpact
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -183,54 +186,6 @@ namespace AlgoaBayBMT.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ExportFilePath")
-                        .HasMaxLength(400)
-                        .HasColumnType("nvarchar(400)");
-
-                    b.Property<int>("FormType")
-                        .HasColumnType("int");
-
-                    b.Property<int>("IncidentId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsLinkedToSitrep")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("JsonData")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("LastUpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IncidentId");
-
-                    b.HasIndex("IncidentId", "FormType");
-
-                    b.ToTable("IncidentForms", (string)null);
-                });
-
             modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", b =>
                 {
                     b.Property<int>("Id")
@@ -241,10 +196,6 @@ namespace AlgoaBayBMT.Migrations
 
                     b.Property<int?>("BunkeringOperationId")
                         .HasColumnType("int");
-
-                    b.Property<string>("Commander")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -376,9 +327,6 @@ namespace AlgoaBayBMT.Migrations
                     b.Property<DateTime?>("EndTime")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("GeometryGeoJson")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<double?>("Latitude")
                         .HasColumnType("float");
 
@@ -392,9 +340,6 @@ namespace AlgoaBayBMT.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<double?>("RadiusMeters")
-                        .HasColumnType("float");
 
                     b.Property<int>("SpillId")
                         .HasColumnType("int");
@@ -419,9 +364,6 @@ namespace AlgoaBayBMT.Migrations
 
                     b.Property<double>("AreaSqM")
                         .HasColumnType("float");
-
-                    b.Property<string>("CumulativePolygonGeoJson")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<double>("Latitude")
                         .HasColumnType("float");
@@ -3477,17 +3419,6 @@ namespace AlgoaBayBMT.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
-            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm", b =>
-                {
-                    b.HasOne("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", "Spill")
-                        .WithMany("Forms")
-                        .HasForeignKey("IncidentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Spill");
-                });
-
             modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", b =>
                 {
                     b.HasOne("AlgoaBayBMT.Shared.Models.BunkeringOperation", "Operation")
@@ -4398,8 +4329,6 @@ namespace AlgoaBayBMT.Migrations
 
             modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", b =>
                 {
-                    b.Navigation("Forms");
-
                     b.Navigation("ModelRuns");
 
                     b.Navigation("ResponseActions");

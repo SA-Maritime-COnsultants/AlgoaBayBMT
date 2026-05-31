@@ -1,0 +1,501 @@
+@page "/emergency/oilspill/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Text.Json
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillResponseService OilSpillResponseService
+@inject IIncidentFormService IncidentFormService
+@inject IOilSpillExportService OilSpillExportService
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Oil Spill Detail</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="mb-3">
+        <button type="button" class="btn btn-link px-0" @onclick="BackToDashboard">&larr; Back to dashboard</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Loading spill…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="alert alert-warning">Oil spill incident @Id was not found.</div>
+    }
+    else
+    {
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h2 class="h4 mb-0">@_spill.SpillName</h2>
+                <span class="badge bg-warning text-dark">@_spill.Status</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3"><div class="text-muted small">Product</div><div>@_spill.ProductType</div></div>
+                    <div class="col-md-3"><div class="text-muted small">Source</div><div>@_spill.SourceType</div></div>
+                    <div class="col-md-3"><div class="text-muted small">Est. Volume (m³)</div><div>@_spill.EstimatedVolume.ToString("N1")</div></div>
+                    <div class="col-md-3"><div class="text-muted small">Release Rate</div><div>@(_spill.ReleaseRate?.ToString("N1") ?? "—")</div></div>
+                    <div class="col-md-3"><div class="text-muted small">Start Time</div><div>@_spill.SpillStartTime.ToString("dd MMM yyyy HH:mm")</div></div>
+                    <div class="col-md-3"><div class="text-muted small">End Time</div><div>@(_spill.SpillEndTime?.ToString("dd MMM yyyy HH:mm") ?? "—")</div></div>
+                    <div class="col-md-3"><div class="text-muted small">Position</div><div>@_spill.Latitude.ToString("F5"), @_spill.Longitude.ToString("F5")</div></div>
+                    <div class="col-md-3"><div class="text-muted small">Bunkering Operation</div><div>@(_spill.BunkeringOperationId?.ToString() ?? "—")</div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0">Model Runs</h3>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary" @onclick="OpenVisualizer" disabled="@(_runs.Count == 0)">Visualise</button>
+                    <button type="button" class="btn btn-sm btn-primary" @onclick="NewModelRun">New Model Run</button>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (_runs.Count == 0)
+                {
+                    <div class="text-muted">No model runs yet.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Run Name</th>
+                                    <th>Start Time</th>
+                                    <th class="text-end">Duration (h)</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var run in _runs)
+                                {
+                                    <tr>
+                                        <td>@run.RunName</td>
+                                        <td>@run.StartTime.ToString("dd MMM yyyy HH:mm")</td>
+                                        <td class="text-end">@run.DurationHours.ToString("N1")</td>
+                                        <td class="text-end">
+                                            <button type="button" class="btn btn-sm btn-outline-primary me-1" @onclick="() => VisualizeRun(run.Id)">Visualise</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => ViewEditRun(run.Id)">View / Edit</button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3 class="h5 mb-0">Response Actions</h3>
+            </div>
+            <div class="card-body">
+                @if (_actions.Count == 0)
+                {
+                    <div class="text-muted">No response actions recorded.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Action</th>
+                                    <th>Description</th>
+                                    <th>Period</th>
+                                    <th>Performed By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var action in _actions)
+                                {
+                                    <tr>
+                                        <td>@action.ActionType</td>
+                                        <td>@action.Description</td>
+                                        <td>
+                                            @action.StartTime.ToString("dd MMM HH:mm")
+                                            &ndash;
+                                            @(action.EndTime?.ToString("dd MMM HH:mm") ?? "ongoing")
+                                        </td>
+                                        <td>@action.PerformedBy</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h3 class="h5 mb-0">Forms &amp; Reports</h3>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-sm btn-primary"
+                            @onclick="GenerateSitrepAsync" disabled="@(_busy || _runs.Count == 0)">
+                        Generate SITREP
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary"
+                            @onclick="ExportAllAsync" disabled="@(_busy || _runs.Count == 0)">
+                        Export All (ZIP)
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                @if (!string.IsNullOrEmpty(_formsMessage))
+                {
+                    <div class="alert alert-info py-2">@_formsMessage</div>
+                }
+
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <h4 class="h6 text-muted">IMS / ICS Forms</h4>
+                        @if (_forms.Count == 0)
+                        {
+                            <div class="text-muted">No forms yet.</div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
+                                            <th>Form</th>
+                                            <th>Status</th>
+                                            <th>SITREP</th>
+                                            <th>Updated</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var form in _forms)
+                                        {
+                                            <tr>
+                                                <td>@FormLabel(form.FormType)</td>
+                                                <td><span class="badge @StatusBadge(form.Status)">@form.Status</span></td>
+                                                <td>
+                                                    @if (form.IsLinkedToSitrep)
+                                                    {
+                                                        <span class="badge bg-success">Linked</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge bg-secondary">Not linked</span>
+                                                    }
+                                                </td>
+                                                <td>@((form.LastUpdatedAt ?? form.CreatedAt).ToString("dd MMM HH:mm"))</td>
+                                                <td class="text-end">
+                                                    @if (form.FormType == IncidentFormType.ICS209)
+                                                    {
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary me-1"
+                                                                @onclick="() => EditIcs209(form)">Edit</button>
+                                                    }
+                                                    <button type="button" class="btn btn-sm btn-outline-primary"
+                                                            @onclick="() => DownloadFormAsync(form.Id)" disabled="@_busy">PDF</button>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-lg-5">
+                        <h4 class="h6 text-muted">Reports</h4>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                SITREP (PDF)
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        @onclick="GenerateSitrepAsync" disabled="@(_busy || _runs.Count == 0)">Generate</button>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Run Summary (PDF)
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        @onclick="DownloadRunSummaryAsync" disabled="@(_busy || _runs.Count == 0)">Generate</button>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Compliance Package (ZIP)
+                                <button type="button" class="btn btn-sm btn-outline-primary"
+                                        @onclick="ExportAllAsync" disabled="@(_busy || _runs.Count == 0)">Export All</button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                @if (_editingIcs209 is not null)
+                {
+                    <div class="card mt-4 border-primary">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                            <span>Edit ICS-209 Incident Status Summary</span>
+                            <button type="button" class="btn-close btn-close-white" @onclick="CancelEditIcs209"></button>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Commander</label>
+                                    <input class="form-control" @bind="_ics209.Commander" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Status</label>
+                                    <input class="form-control" @bind="_ics209.Status" />
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Situation summary</label>
+                                    <textarea class="form-control" rows="2" @bind="_ics209.SituationSummary"></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Planned actions</label>
+                                    <textarea class="form-control" rows="2" @bind="_ics209.PlannedActions"></textarea>
+                                </div>
+                            </div>
+                            <div class="mt-3 d-flex gap-2">
+                                <button type="button" class="btn btn-primary" @onclick="SaveIcs209Async" disabled="@_busy">Save</button>
+                                <button type="button" class="btn btn-outline-secondary" @onclick="CancelEditIcs209">Cancel</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool _loading = true;
+    private OilSpillIncident? _spill;
+    private IReadOnlyList<OilSpillModelRun> _runs = new List<OilSpillModelRun>();
+    private IReadOnlyList<OilSpillResponseAction> _actions = new List<OilSpillResponseAction>();
+    private IReadOnlyList<IncidentForm> _forms = new List<IncidentForm>();
+
+    private bool _busy;
+    private string? _formsMessage;
+
+    private IncidentForm? _editingIcs209;
+    private Ics209Payload _ics209 = new();
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _spill = await OilSpillService.GetSpillByIdAsync(Id);
+
+        if (_spill is not null)
+        {
+            _runs = await OilSpillModelService.GetModelRunsForSpillAsync(Id);
+            _actions = await OilSpillResponseService.GetActionsForSpillAsync(Id);
+            _forms = await IncidentFormService.GetFormsForIncidentAsync(Id);
+        }
+
+        _loading = false;
+    }
+
+    private async Task ReloadFormsAsync()
+    {
+        _forms = await IncidentFormService.GetFormsForIncidentAsync(Id);
+        StateHasChanged();
+    }
+
+    private async Task<OilSpillRunSummary?> BuildLatestSummaryAsync()
+    {
+        if (_spill is null || _runs.Count == 0)
+        {
+            return null;
+        }
+
+        var run = _runs.OrderByDescending(r => r.CreatedAt).First();
+        var trajectory = await OilSpillModelService.GetTrajectoryAsync(run.Id);
+        return OilSpillRunSummary.Build(_spill, run, trajectory, _actions);
+    }
+
+    private async Task GenerateSitrepAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formsMessage = null;
+        try
+        {
+            // Refresh the ICS-209 so the SITREP reflects the latest run before exporting.
+            await IncidentFormService.SyncStatusSummaryAsync(Id);
+            await ReloadFormsAsync();
+
+            var summary = await BuildLatestSummaryAsync();
+            if (summary is null)
+            {
+                _formsMessage = "Add a model run before generating a SITREP.";
+                return;
+            }
+
+            var linked = await IncidentFormService.GetSitrepLinkedFormsAsync(Id);
+            var file = OilSpillExportService.GenerateSitrepPdf(summary, linked);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ExportAllAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formsMessage = null;
+        try
+        {
+            await IncidentFormService.SyncStatusSummaryAsync(Id);
+            await ReloadFormsAsync();
+
+            var summary = await BuildLatestSummaryAsync();
+            if (summary is null)
+            {
+                _formsMessage = "Add a model run before exporting the incident package.";
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateIncidentPackageZip(summary, _forms);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadRunSummaryAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var summary = await BuildLatestSummaryAsync();
+            if (summary is null)
+            {
+                _formsMessage = "Add a model run before generating a run summary.";
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateRunSummaryPdf(summary);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadFormAsync(int formId)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var form = await IncidentFormService.GetFormByIdAsync(formId);
+            if (form is null)
+            {
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateFormPdf(form);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void EditIcs209(IncidentForm form)
+    {
+        _editingIcs209 = form;
+        _ics209 = JsonSerializer.Deserialize<Ics209Payload>(form.JsonData, JsonOptions) ?? new Ics209Payload();
+    }
+
+    private void CancelEditIcs209()
+    {
+        _editingIcs209 = null;
+        _ics209 = new Ics209Payload();
+    }
+
+    private async Task SaveIcs209Async()
+    {
+        if (_editingIcs209 is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var json = JsonSerializer.Serialize(_ics209, JsonOptions);
+            await IncidentFormService.UpdateFormAsync(_editingIcs209.Id, json, IncidentFormStatus.Completed);
+            _editingIcs209 = null;
+            await ReloadFormsAsync();
+            _formsMessage = "ICS-209 saved.";
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadAsync(OilSpillExportFile file)
+    {
+        await JS.InvokeVoidAsync(
+            "oilSpillExport.downloadFile", file.FileName, file.ToBase64(), file.ContentType);
+    }
+
+    private static string FormLabel(IncidentFormType type) => type switch
+    {
+        IncidentFormType.ICS201 => "ICS-201 Briefing",
+        IncidentFormType.ICS209 => "ICS-209 Status Summary",
+        IncidentFormType.ICS214 => "ICS-214 Activity Log",
+        _ => type.ToString()
+    };
+
+    private static string StatusBadge(IncidentFormStatus status) => status switch
+    {
+        IncidentFormStatus.Completed => "bg-success",
+        IncidentFormStatus.Exported => "bg-info text-dark",
+        _ => "bg-secondary"
+    };
+
+    private void BackToDashboard() => NavigationManager.NavigateTo("/emergency/oilspill");
+
+    private void NewModelRun() => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/model");
+
+    private void OpenVisualizer() => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/visualize");
+
+    private void VisualizeRun(int runId) => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/visualize?runId={runId}");
+
+    private void ViewEditRun(int runId) => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/model?runId={runId}");
+}

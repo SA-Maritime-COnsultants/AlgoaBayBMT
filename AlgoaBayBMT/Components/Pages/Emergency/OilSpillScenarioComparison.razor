@@ -1,0 +1,164 @@
+@page "/emergency/oilspill/{SpillId:int}/compare"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@namespace AlgoaBayBMT.Components.Pages.Emergency
+
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@using AlgoaBayBMT.Emergency.OilSpill.Visualization
+@inject IOilSpillService OilSpillService
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillResponseService OilSpillResponseService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Oil Spill Scenario Comparison</PageTitle>
+
+<div class="container-fluid py-3 oilspill-visualizer">
+    <div class="mb-3">
+        <button type="button" class="btn btn-link px-0" @onclick="BackToVisualizer">&larr; Back to visualiser</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Loading…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="alert alert-warning">Oil spill incident @SpillId was not found.</div>
+    }
+    else if (_modelRuns.Count < 2)
+    {
+        <div class="alert alert-secondary">
+            Scenario comparison needs at least two model runs.
+            <a href="@($"/emergency/oilspill/{SpillId}/model")">Create another run</a> to compare scenarios.
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="h4 mb-1">Scenario Comparison</h1>
+                <div class="text-muted">@_spill.SpillName — base vs alternative run</div>
+            </div>
+
+            <div class="oilspill-toolbar d-flex flex-wrap align-items-end gap-3">
+                <div>
+                    <label class="form-label small mb-1 d-block">Base scenario</label>
+                    <SfDropDownList TValue="int?" TItem="OilSpillModelRun" DataSource="_modelRuns"
+                                    Value="_baseRunId" Placeholder="Base run" Width="220px">
+                        <DropDownListFieldSettings Value="Id" Text="RunName" />
+                        <DropDownListEvents TValue="int?" TItem="OilSpillModelRun" ValueChange="OnBaseRunChanged" />
+                    </SfDropDownList>
+                </div>
+                <div>
+                    <label class="form-label small mb-1 d-block">Alternative scenario</label>
+                    <SfDropDownList TValue="int?" TItem="OilSpillModelRun" DataSource="_modelRuns"
+                                    Value="_altRunId" Placeholder="Alternative run" Width="220px">
+                        <DropDownListFieldSettings Value="Id" Text="RunName" />
+                        <DropDownListEvents TValue="int?" TItem="OilSpillModelRun" ValueChange="OnAltRunChanged" />
+                    </SfDropDownList>
+                </div>
+                <div class="oilspill-playback">
+                    <label class="form-label small mb-1 d-block">Playback</label>
+                    <SfButton CssClass="@(_isPlaying ? "e-danger" : "e-success")"
+                              IconCss="@(_isPlaying ? "e-icons e-pause" : "e-icons e-play")"
+                              Content="@(_isPlaying ? "Pause" : "Play")"
+                              Disabled="@(SharedMaxIndex < 1)" OnClick="TogglePlay" />
+                </div>
+                <div class="oilspill-layer-toggles">
+                    <label class="form-label small mb-1 d-block">Slick</label>
+                    <SfCheckBox TChecked="bool" Checked="_showCumulative"
+                                CheckedChanged="OnCumulativeToggled" Label="Cumulative footprint" />
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-xl-6">
+                <div class="card oilspill-panel h-100">
+                    <div class="card-header py-2 fw-semibold d-flex justify-content-between">
+                        <span>@(_baseRun?.RunName ?? "Base")</span>
+                        <span class="badge bg-primary">Base</span>
+                    </div>
+                    <div class="card-body oilspill-map-host">
+                        <OilSpillMap Trajectory="_baseTrajectory"
+                                     Actions="_actions"
+                                     HighlightIndex="ClampIndex(_baseTrajectory)"
+                                     CurrentTime="BaseCurrentTime"
+                                     ShowCumulative="_showCumulative"
+                                     ShorelineImpact="_baseRun?.ShorelineImpactIndex is not null"
+                                     ImpactIndex="_baseRun?.ShorelineImpactIndex"
+                                     ProductType="@_spill.ProductType" />
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-6">
+                <div class="card oilspill-panel h-100">
+                    <div class="card-header py-2 fw-semibold d-flex justify-content-between">
+                        <span>@(_altRun?.RunName ?? "Alternative")</span>
+                        <span class="badge bg-info text-dark">Alternative</span>
+                    </div>
+                    <div class="card-body oilspill-map-host">
+                        <OilSpillMap Trajectory="_altTrajectory"
+                                     Actions="_actions"
+                                     HighlightIndex="ClampIndex(_altTrajectory)"
+                                     CurrentTime="AltCurrentTime"
+                                     ShowCumulative="_showCumulative"
+                                     ShorelineImpact="_altRun?.ShorelineImpactIndex is not null"
+                                     ImpactIndex="_altRun?.ShorelineImpactIndex"
+                                     ProductType="@_spill.ProductType" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mt-3 oilspill-panel">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="fw-semibold">Shared time-step</span>
+                    <span class="badge bg-secondary">Step @_sharedIndex / @SharedMaxIndex</span>
+                </div>
+                <OilSpillTimeSlider MaxIndex="SharedMaxIndex"
+                                    CurrentIndex="_sharedIndex"
+                                    TooltipFormat="Step ${value}"
+                                    OnIndexChanged="OnSliderChanged" />
+            </div>
+        </div>
+
+        <div class="card mt-3 oilspill-panel">
+            <div class="card-header py-2 fw-semibold">Scenario Metrics</div>
+            <div class="card-body p-0">
+                <table class="table table-sm mb-0 oilspill-compare-table">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>@(_baseRun?.RunName ?? "Base")</th>
+                            <th>@(_altRun?.RunName ?? "Alternative")</th>
+                            <th>Difference</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Max slick area (km²)</td>
+                            <td>@_baseMetrics.MaxAreaSqKm.ToString("N3")</td>
+                            <td>@_altMetrics.MaxAreaSqKm.ToString("N3")</td>
+                            <td>@FormatDiff(_altMetrics.MaxAreaSqKm - _baseMetrics.MaxAreaSqKm, "N3")</td>
+                        </tr>
+                        <tr>
+                            <td>Total drift distance (km)</td>
+                            <td>@_baseMetrics.TotalDriftDistanceKm.ToString("N2")</td>
+                            <td>@_altMetrics.TotalDriftDistanceKm.ToString("N2")</td>
+                            <td>@FormatDiff(_altMetrics.TotalDriftDistanceKm - _baseMetrics.TotalDriftDistanceKm, "N2")</td>
+                        </tr>
+                        <tr>
+                            <td>Shoreline impact</td>
+                            <td>@FormatImpact(_baseMetrics)</td>
+                            <td>@FormatImpact(_altMetrics)</td>
+                            <td>@ImpactComparison()</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>

@@ -68,6 +68,13 @@ namespace AlgoaBayBMT.Data
         public DbSet<ISGOTTChecklistStageResponse> ISGOTTChecklistStageResponses => Set<ISGOTTChecklistStageResponse>();
         public DbSet<ISGOTTChecklistItemResponse> ISGOTTChecklistItemResponses => Set<ISGOTTChecklistItemResponse>();
 
+        // Emergency Management - Oil Spill Modelling & Response
+        public DbSet<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident> OilSpillIncidents => Set<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident>();
+        public DbSet<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun> OilSpillModelRuns => Set<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun>();
+        public DbSet<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillTrajectoryPoint> OilSpillTrajectoryPoints => Set<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillTrajectoryPoint>();
+        public DbSet<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillResponseAction> OilSpillResponseActions => Set<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillResponseAction>();
+        public DbSet<AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm> IncidentForms => Set<AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
@@ -136,6 +143,74 @@ namespace AlgoaBayBMT.Data
             ConfigureBunkeringModuleEntities(builder);
             ConfigureCrewingEntities(builder);
             ConfigureBillingEntities(builder);
+            ConfigureOilSpillEntities(builder);
+        }
+
+        private static void ConfigureOilSpillEntities(ModelBuilder builder)
+        {
+            builder.Entity<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident>(entity =>
+            {
+                entity.ToTable("OilSpillIncidents");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.SpillName).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+                entity.HasIndex(x => x.Status);
+                entity.HasIndex(x => x.BunkeringOperationId);
+                entity.HasOne(x => x.Operation)
+                    .WithMany()
+                    .HasForeignKey(x => x.BunkeringOperationId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasMany(x => x.ModelRuns)
+                    .WithOne(x => x.Spill)
+                    .HasForeignKey(x => x.SpillId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasMany(x => x.ResponseActions)
+                    .WithOne(x => x.Spill)
+                    .HasForeignKey(x => x.SpillId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun>(entity =>
+            {
+                entity.ToTable("OilSpillModelRuns");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.RunName).HasMaxLength(200).IsRequired();
+                entity.HasIndex(x => x.SpillId);
+                entity.HasMany(x => x.TrajectoryPoints)
+                    .WithOne(x => x.ModelRun)
+                    .HasForeignKey(x => x.ModelRunId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillTrajectoryPoint>(entity =>
+            {
+                entity.ToTable("OilSpillTrajectoryPoints");
+                entity.HasKey(x => x.Id);
+                entity.HasIndex(x => new { x.ModelRunId, x.Timestamp });
+            });
+
+            builder.Entity<AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillResponseAction>(entity =>
+            {
+                entity.ToTable("OilSpillResponseActions");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.Description).HasMaxLength(500).IsRequired();
+                entity.Property(x => x.PerformedBy).HasMaxLength(100).IsRequired();
+                entity.HasIndex(x => x.SpillId);
+            });
+
+            builder.Entity<AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm>(entity =>
+            {
+                entity.ToTable("IncidentForms");
+                entity.HasKey(x => x.Id);
+                entity.Property(x => x.CreatedBy).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.ExportFilePath).HasMaxLength(400);
+                entity.HasIndex(x => x.IncidentId);
+                entity.HasIndex(x => new { x.IncidentId, x.FormType });
+                entity.HasOne(x => x.Spill)
+                    .WithMany(x => x.Forms)
+                    .HasForeignKey(x => x.IncidentId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
         }
 
         private static void ConfigureBunkeringModuleEntities(ModelBuilder builder)

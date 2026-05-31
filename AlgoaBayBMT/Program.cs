@@ -1,6 +1,7 @@
 ﻿using AlgoaBayBMT.Components;
 using AlgoaBayBMT.Components.Account;
 using AlgoaBayBMT.Data;
+using AlgoaBayBMT.Emergency.OilSpill;
 using AlgoaBayBMT.Services;
 using AlgoaBayBMT.Services.Interfaces;
 using AlgoaBayBMT.Shared.Security;
@@ -84,6 +85,10 @@ builder.Services.AddScoped<IISGOTTChecklistService, ISGOTTChecklistService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddScoped<IRegulatoryReportingService, RegulatoryReportingService>();
+
+// Emergency Management - Oil Spill Modelling & Response
+builder.Services.AddOilSpillModule();
+
 builder.Services.AddHostedService<AlgoaBayBMT.Services.Background.CertificateExpiryWatcher>();
 builder.Services.AddHostedService<AlgoaBayBMT.Services.Background.NotificationDispatcher>();
 builder.Services.AddHostedService<AlgoaBayBMT.Services.Background.ComplianceRevalidator>();

@@ -1,0 +1,138 @@
+@page "/emergency/oilspill/new"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Report Oil Spill</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="mb-3">
+        <button type="button" class="btn btn-link px-0" @onclick="BackToDashboard">&larr; Back to dashboard</button>
+    </div>
+
+    <h1 class="h4 mb-1">Report New Oil Spill</h1>
+    <div class="text-muted mb-3">Capture a new oil spill incident in Algoa Bay.</div>
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
+    }
+
+    <EditForm Model="_request" OnValidSubmit="CreateSpillAsync">
+        <DataAnnotationsValidator />
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Spill Name</label>
+                <InputText class="form-control" @bind-Value="_request.SpillName" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Spill Start Time</label>
+                <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="_request.SpillStartTime" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Product Type</label>
+                <InputSelect class="form-select" @bind-Value="_request.ProductType">
+                    @foreach (var product in Enum.GetValues<OilSpillProductType>())
+                    {
+                        <option value="@product">@product</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Source Type</label>
+                <InputSelect class="form-select" @bind-Value="_request.SourceType">
+                    @foreach (var source in Enum.GetValues<OilSpillSourceType>())
+                    {
+                        <option value="@source">@source</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Estimated Volume (m³)</label>
+                <InputNumber class="form-control" @bind-Value="_request.EstimatedVolume" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Release Rate (m³/h)</label>
+                <InputNumber class="form-control" @bind-Value="_releaseRate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Latitude</label>
+                <InputNumber class="form-control" @bind-Value="_request.Latitude" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Longitude</label>
+                <InputNumber class="form-control" @bind-Value="_request.Longitude" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bunkering Operation Id</label>
+                <InputNumber class="form-control" @bind-Value="_bunkeringOperationId" />
+                <div class="form-text">Optional — links the spill to a bunkering operation.</div>
+            </div>
+        </div>
+
+        <div class="mt-3">
+            <button type="submit" class="btn btn-danger" disabled="@_saving">
+                @(_saving ? "Reporting…" : "Report Spill")
+            </button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "operationId")]
+    public int? OperationId { get; set; }
+
+    private bool _saving;
+    private bool _isError;
+    private string? _message;
+    private double? _releaseRate;
+    private int? _bunkeringOperationId;
+    private CreateOilSpillRequest _request = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _request = new CreateOilSpillRequest
+        {
+            SpillName = string.Empty,
+            SpillStartTime = DateTime.Now,
+            ProductType = OilSpillProductType.Unknown,
+            SourceType = OilSpillSourceType.Unknown,
+            BunkeringOperationId = OperationId
+        };
+
+        _bunkeringOperationId = OperationId;
+
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _request.CreatedBy = auth.User.Identity?.Name ?? "Unknown";
+    }
+
+    private async Task CreateSpillAsync()
+    {
+        _saving = true;
+        _isError = false;
+        _message = null;
+
+        try
+        {
+            _request.ReleaseRate = _releaseRate;
+            _request.BunkeringOperationId = _bunkeringOperationId;
+
+            var spill = await OilSpillService.CreateSpillAsync(_request);
+            NavigationManager.NavigateTo($"/emergency/oilspill/{spill.Id}");
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = $"Failed to report spill: {ex.Message}";
+            _saving = false;
+        }
+    }
+
+    private void BackToDashboard() => NavigationManager.NavigateTo("/emergency/oilspill");
+}

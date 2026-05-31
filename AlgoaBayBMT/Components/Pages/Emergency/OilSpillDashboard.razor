@@ -1,0 +1,76 @@
+@page "/emergency/oilspill"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject NavigationManager NavigationManager
+
+<PageTitle>Oil Spill Modelling &amp; Response</PageTitle>
+
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">Oil Spill Modelling &amp; Response</h1>
+            <div class="text-muted">Active oil spill incidents in Algoa Bay.</div>
+        </div>
+        <button type="button" class="btn btn-danger" @onclick="ReportNewSpill">Report New Spill</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Loading active spills…</div>
+    }
+    else if (_spills.Count == 0)
+    {
+        <div class="alert alert-success">No active oil spill incidents.</div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Spill Name</th>
+                        <th>Product</th>
+                        <th class="text-end">Est. Volume (m³)</th>
+                        <th>Status</th>
+                        <th>Start Time</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var spill in _spills)
+                    {
+                        <tr>
+                            <td>@spill.SpillName</td>
+                            <td>@spill.ProductType</td>
+                            <td class="text-end">@spill.EstimatedVolume.ToString("N1")</td>
+                            <td><span class="badge bg-warning text-dark">@spill.Status</span></td>
+                            <td>@spill.SpillStartTime.ToString("dd MMM yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => OpenSpill(spill.Id)">Open</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private IReadOnlyList<OilSpillIncident> _spills = new List<OilSpillIncident>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _spills = await OilSpillService.GetActiveSpillsAsync();
+        _loading = false;
+    }
+
+    private void OpenSpill(int id) => NavigationManager.NavigateTo($"/emergency/oilspill/{id}");
+
+    private void ReportNewSpill() => NavigationManager.NavigateTo("/emergency/oilspill/new");
+}

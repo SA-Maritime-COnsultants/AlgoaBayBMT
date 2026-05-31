@@ -1,0 +1,199 @@
+@page "/emergency/oilspill/{SpillId:int}/visualize"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@namespace AlgoaBayBMT.Components.Pages.Emergency
+
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillResponseService OilSpillResponseService
+@inject IOilSpillExportService OilSpillExportService
+@inject ICoastlineService CoastlineService
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Oil Spill Visualiser</PageTitle>
+
+<div class="container-fluid py-3 oilspill-visualizer">
+    <div class="mb-3">
+        <button type="button" class="btn btn-link px-0" @onclick="BackToDetail">&larr; Back to spill</button>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="alert alert-info">Loading…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="alert alert-warning">Oil spill incident @SpillId was not found.</div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+            <div>
+                <h1 class="h4 mb-1">Oil Spill Visualiser</h1>
+                <div class="text-muted">@_spill.SpillName</div>
+            </div>
+
+            <div class="oilspill-toolbar d-flex flex-wrap align-items-center gap-3">
+                <div class="oilspill-run-selector">
+                    <label class="form-label small mb-1">Model Run</label>
+                    <SfDropDownList TValue="int?" TItem="OilSpillModelRun" DataSource="_modelRuns"
+                                    Value="_selectedRunId" Placeholder="Select a run" Width="260px">
+                        <DropDownListFieldSettings Value="Id" Text="RunName" />
+                        <DropDownListEvents TValue="int?" TItem="OilSpillModelRun"
+                                            ValueChange="OnRunChanged" />
+                    </SfDropDownList>
+                </div>
+
+                <div class="oilspill-layer-toggles">
+                    <label class="form-label small mb-1 d-block">Layers</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <SfCheckBox TChecked="bool" Checked="_showTrajectory"
+                                    CheckedChanged="OnTrajectoryToggled" Label="Trajectory" />
+                        <SfCheckBox TChecked="bool" Checked="_showSlick"
+                                    CheckedChanged="OnSlickToggled" Label="Slick Area" />
+                        <SfCheckBox TChecked="bool" Checked="_showActions"
+                                    CheckedChanged="OnActionsToggled" Label="Response Actions" />
+                        <SfCheckBox TChecked="bool" Checked="_showCumulative"
+                                    CheckedChanged="OnCumulativeToggled" Label="Cumulative footprint" />
+                    </div>
+                </div>
+
+                <div class="oilspill-playback">
+                    <label class="form-label small mb-1 d-block">Playback</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <SfButton CssClass="@(_isPlaying ? "e-danger" : "e-success")"
+                                  IconCss="@(_isPlaying ? "e-icons e-pause" : "e-icons e-play")"
+                                  Content="@(_isPlaying ? "Pause" : "Play")"
+                                  Disabled="@(_trajectory.Count < 2)" OnClick="TogglePlay" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-refresh"
+                                  Content="Replay" Disabled="@(_trajectory.Count < 2)"
+                                  OnClick="ReplayAsync" />
+                        <SfButton CssClass="e-warning" IconCss="e-icons e-recurrence"
+                                  Content="Regenerate" Disabled="@(SelectedRun is null || _regenerating)"
+                                  OnClick="RegenerateRunAsync">
+                        </SfButton>
+                    </div>
+                </div>
+
+                <div class="oilspill-exports">
+                    <label class="form-label small mb-1 d-block">Export</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-image"
+                                  Content="Map PNG" Disabled="@(_trajectory.Count == 0 || _exporting)"
+                                  OnClick="ExportMapSnapshotAsync" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-file-document"
+                                  Content="SITREP PDF" Disabled="@(SelectedRun is null || _exporting)"
+                                  OnClick="ExportSitrepAsync" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-export"
+                                  Content="Run Summary" Disabled="@(SelectedRun is null || _exporting)"
+                                  OnClick="ExportRunSummaryAsync" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-comparison"
+                                  Content="Compare" Disabled="@(_modelRuns.Count < 2)"
+                                  OnClick="GoToComparison" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (_shorelineImpactDetected && _shorelineImpactIndex is int impactStep
+            && impactStep >= 0 && impactStep < _trajectory.Count)
+        {
+            <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+                <span class="e-icons e-warning"></span>
+                <span>
+                    <strong>Shoreline Impact Detected</strong>
+                    at @_trajectory[impactStep].Timestamp.ToString("dd MMM yyyy HH:mm")
+                    (step @impactStep). The animation continues so you can review the full spread.
+                </span>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_exportMessage))
+        {
+            <div class="alert alert-info py-2" role="alert">@_exportMessage</div>
+        }
+
+        @if (_modelRuns.Count == 0)
+        {
+            <div class="alert alert-secondary">
+                This spill has no model runs yet.
+                <a href="@($"/emergency/oilspill/{SpillId}/model")">Create one</a> to visualise its trajectory.
+            </div>
+        }
+        else
+        {
+            <div class="row g-3 oilspill-visualizer-body">
+                <div class="col-12">
+                    <div class="card h-100 oilspill-panel">
+                        <div class="card-header py-2 fw-semibold">Trajectory Map</div>
+                        <div class="oilspill-response-panel border-bottom px-3 py-2">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <span class="fw-semibold small text-uppercase text-muted">Response measures</span>
+                                <SfCheckBox TChecked="bool" Checked="_showBooms"
+                                            CheckedChanged="OnBoomsToggled" Label="Booms" />
+                                <SfCheckBox TChecked="bool" Checked="_showSkimmers"
+                                            CheckedChanged="OnSkimmersToggled" Label="Skimmers" />
+                                <SfCheckBox TChecked="bool" Checked="_showDispersants"
+                                            CheckedChanged="OnDispersantsToggled" Label="Dispersants" />
+                                <SfCheckBox TChecked="bool" Checked="_showShorelineProtection"
+                                            CheckedChanged="OnShorelineProtectionToggled" Label="Shoreline protection" />
+                            </div>
+                            <div class="d-flex flex-wrap align-items-center gap-3 mt-2 small">
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#fd7e14;"></span> Boom
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch rounded-circle" style="background:#0d6efd;"></span> Skimmer
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:rgba(128,0,128,0.5);border:1px solid #800080;"></span> Dispersant
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#198754;"></span> Shoreline protection
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#6c757d;"></span> Aerial recon
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body oilspill-map-host">
+                            <div id="oilspill-map-capture">
+                                <OilSpillMap Trajectory="_trajectory"
+                                             Actions="_actions"
+                                             HighlightIndex="_currentIndex"
+                                             CurrentTime="CurrentTime"
+                                             ShowTrajectory="_showTrajectory"
+                                             ShowSlick="_showSlick"
+                                             ShowActions="_showActions"
+                                             ShowCumulative="_showCumulative"
+                                             ShowBooms="_showBooms"
+                                             ShowSkimmers="_showSkimmers"
+                                             ShowDispersants="_showDispersants"
+                                             ShowShorelineProtection="_showShorelineProtection"
+                                             ShorelineImpact="_shorelineImpactDetected"
+                                             ImpactIndex="_shorelineImpactIndex"
+                                             ProductType="@(_spill?.ProductType ?? OilSpillProductType.Unknown)" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3 oilspill-panel">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">Time-step</span>
+                        <span class="badge bg-secondary">@CurrentTimeLabel</span>
+                    </div>
+                    <OilSpillTimeSlider MaxIndex="MaxIndex"
+                                        CurrentIndex="_currentIndex"
+                                        TooltipFormat="Step ${value}"
+                                        OnIndexChanged="OnSliderChanged" />
+                </div>
+            </div>
+        }
+    }
+</div>
