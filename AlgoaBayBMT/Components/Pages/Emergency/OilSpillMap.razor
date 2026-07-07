@@ -2,14 +2,27 @@
 @using AlgoaBayBMT.Emergency.OilSpill.Visualization
 @using Syncfusion.Blazor.Maps
 
-<div class="oilspill-map">
+<div class="oilspill-map @(PlacementMode ? "oilspill-map--placing" : null)">
     @if (MapPoints.Count == 0)
     {
         <div class="alert alert-secondary mb-0">No trajectory data to display on the map.</div>
     }
     else
     {
+        @* Vessel identity badge: plain HTML overlay (not part of the Syncfusion render tree) so it
+           can show the vessel icon/name persistently without relying on a MarkerTemplate, which is
+           prone to ArgumentOutOfRangeException crashes in Syncfusion's MarkerRenderer when the
+           templated marker's DataSource is rebuilt (e.g. on every trajectory switch). *@
+        @if (!string.IsNullOrWhiteSpace(VesselName))
+        {
+            <div class="oilspill-vessel-badge">
+                <span aria-hidden="true">🚢</span>
+                <span>@VesselName — spill origin</span>
+            </div>
+        }
+
         <SfMaps @ref="_mapsRef" Height="100%" Width="100%">
+            <MapsEvents OnClick="HandleMapClick" />
             <MapsZoomSettings Enable="true" ZoomFactor="@_zoomFactor" MinZoom="3" MaxZoom="18">
                 <MapsCenterPosition Latitude="@_centerLat" Longitude="@_centerLon" />
             </MapsZoomSettings>
@@ -87,9 +100,23 @@
                     }
 
                     <MapsMarkerSettings>
-                        @* Origin marker *@
+                        @* Pending measure pin: where the user just clicked while placing a measure.
+                           Uses a plain Shape marker (not a template) - templated markers whose
+                           DataSource toggles between empty/non-empty were the suspected cause of an
+                           ArgumentOutOfRangeException in Syncfusion's MarkerRenderer. *@
+                        @if (_pendingMarker.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_pendingMarker" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Pentagon" Fill="#b02a37" Height="22" Width="22"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Origin marker: distinct navy circle at the spill start position. The vessel
+                           name/icon is shown as an HTML badge above the map instead of an on-map
+                           MarkerTemplate (see the vessel badge above) to avoid the same renderer
+                           crash risk. *@
                         <MapsMarker Visible="true" DataSource="_originMarker" TValue="OilSpillMapPoint"
-                                    Shape="MarkerType.Circle" Fill="#198754" Height="16" Width="16"
+                                    Shape="MarkerType.Circle" Fill="#0d3b66" Height="24" Width="24"
                                     AnimationDuration="0" />
 
                         @* Time-step markers *@

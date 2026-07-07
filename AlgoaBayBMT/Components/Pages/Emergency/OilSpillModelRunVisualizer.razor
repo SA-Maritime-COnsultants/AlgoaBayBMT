@@ -106,9 +106,9 @@
             <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
                 <span class="e-icons e-warning"></span>
                 <span>
-                    <strong>Shoreline Impact Detected</strong>
-                    at @_trajectory[impactStep].Timestamp.ToString("dd MMM yyyy HH:mm")
-                    (step @impactStep). The animation continues so you can review the full spread.
+                    <strong>Shoreline Impact</strong>
+                    at @_trajectory[impactStep].Timestamp.ToString("dd MMM yyyy HH:mm").
+                    The simulation halts here — the modelled plume has reached the coast.
                 </span>
             </div>
         }
@@ -149,6 +149,13 @@
                             @if (_showMeasurePanel)
                             {
                                 <div class="oilspill-measure-form border rounded mt-2 p-3 bg-white">
+                                    <div class="alert alert-primary d-flex align-items-center gap-2 py-2 px-3 mb-3" role="alert">
+                                        <span class="e-icons e-location" aria-hidden="true"></span>
+                                        <span class="small">
+                                            <strong>Click the map</strong> to drop this measure where you want it, then set
+                                            its details below and <strong>Save</strong>. The latitude/longitude update as you click.
+                                        </span>
+                                    </div>
                                     <div class="row g-2">
                                         <div class="col-12 col-md-4">
                                             <label class="form-label small mb-1">Action type</label>
@@ -203,7 +210,8 @@
                                         <SfButton CssClass="e-outline" Content="Cancel"
                                                   Disabled="@_savingMeasure" OnClick="ToggleMeasurePanel" />
                                         <span class="text-muted small">
-                                            Tip: defaults to the current playback position. Saving re-runs the model.
+                                            Position: @_measure.Latitude.ToString("0.#####"), @_measure.Longitude.ToString("0.#####").
+                                            Saving re-runs the model with this measure applied.
                                         </span>
                                     </div>
                                 </div>
@@ -234,6 +242,7 @@
                             <div id="oilspill-map-capture">
                                 <OilSpillMap Trajectory="_trajectory"
                                              Actions="_actions"
+                                             VesselName="@VesselName"
                                              HighlightIndex="_currentIndex"
                                              CurrentTime="CurrentTime"
                                              ShowTrajectory="_showTrajectory"
@@ -247,6 +256,9 @@
                                              ShowTimeLabels="_showTimeLabels"
                                              ShorelineImpact="_shorelineImpactDetected"
                                              ImpactIndex="_shorelineImpactIndex"
+                                             PlacementMode="_showMeasurePanel"
+                                             PendingMeasure="PendingMeasure"
+                                             OnMapClick="OnMapMeasureClick"
                                              ProductType="@(_spill?.ProductType ?? OilSpillProductType.Unknown)" />
                             </div>
                         </div>

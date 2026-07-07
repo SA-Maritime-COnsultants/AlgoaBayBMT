@@ -12,15 +12,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AlgoaBayBMT.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260527195914_AddedBunkeringModule")]
-    partial class AddedBunkeringModule
+    [Migration("20260706135525_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -184,6 +184,280 @@ namespace AlgoaBayBMT.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ExportFilePath")
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<int>("FormType")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IncidentId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsLinkedToSitrep")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("JsonData")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("LastUpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("OperationalPeriodId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PersonName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IncidentId");
+
+                    b.HasIndex("IncidentId", "FormType");
+
+                    b.HasIndex("IncidentId", "FormType", "OperationalPeriodId");
+
+                    b.ToTable("IncidentForms", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("BunkeringOperationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Commander")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double>("EstimatedVolume")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<int>("ProductType")
+                        .HasColumnType("int");
+
+                    b.Property<double?>("ReleaseRate")
+                        .HasColumnType("float");
+
+                    b.Property<int>("SourceType")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SpillEndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SpillName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("SpillStartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BunkeringOperationId");
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("OilSpillIncidents", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("CurrentDirection")
+                        .HasColumnType("float");
+
+                    b.Property<double>("CurrentSpeed")
+                        .HasColumnType("float");
+
+                    b.Property<double>("DurationHours")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RunName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("ShorelineImpactIndex")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ShorelineImpactTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SpillId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("TideState")
+                        .HasColumnType("int");
+
+                    b.Property<int>("TimeStepMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<double>("WindDirection")
+                        .HasColumnType("float");
+
+                    b.Property<double>("WindSpeed")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpillId");
+
+                    b.ToTable("OilSpillModelRuns", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillResponseAction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ActionType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("EndTime")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("GeometryGeoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double?>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PerformedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<double?>("RadiusMeters")
+                        .HasColumnType("float");
+
+                    b.Property<int>("SpillId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartTime")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpillId");
+
+                    b.ToTable("OilSpillResponseActions", (string)null);
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillTrajectoryPoint", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<double>("AreaSqM")
+                        .HasColumnType("float");
+
+                    b.Property<string>("CumulativePolygonGeoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<int>("ModelRunId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PolygonGeoJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double?>("ThicknessMm")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModelRunId", "Timestamp");
+
+                    b.ToTable("OilSpillTrajectoryPoints", (string)null);
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.Lesson", b =>
@@ -3215,6 +3489,60 @@ namespace AlgoaBayBMT.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
                 });
 
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.IncidentForm", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", "Spill")
+                        .WithMany("Forms")
+                        .HasForeignKey("IncidentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Spill");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Shared.Models.BunkeringOperation", "Operation")
+                        .WithMany()
+                        .HasForeignKey("BunkeringOperationId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Operation");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", "Spill")
+                        .WithMany("ModelRuns")
+                        .HasForeignKey("SpillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Spill");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillResponseAction", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", "Spill")
+                        .WithMany("ResponseActions")
+                        .HasForeignKey("SpillId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Spill");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillTrajectoryPoint", b =>
+                {
+                    b.HasOne("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun", "ModelRun")
+                        .WithMany("TrajectoryPoints")
+                        .HasForeignKey("ModelRunId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ModelRun");
+                });
+
             modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.LessonContentItem", b =>
                 {
                     b.HasOne("AlgoaBayBMT.Models.Authoring.Lesson", "Lesson")
@@ -4078,6 +4406,20 @@ namespace AlgoaBayBMT.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillIncident", b =>
+                {
+                    b.Navigation("Forms");
+
+                    b.Navigation("ModelRuns");
+
+                    b.Navigation("ResponseActions");
+                });
+
+            modelBuilder.Entity("AlgoaBayBMT.Emergency.OilSpill.Models.OilSpillModelRun", b =>
+                {
+                    b.Navigation("TrajectoryPoints");
                 });
 
             modelBuilder.Entity("AlgoaBayBMT.Models.Authoring.Lesson", b =>

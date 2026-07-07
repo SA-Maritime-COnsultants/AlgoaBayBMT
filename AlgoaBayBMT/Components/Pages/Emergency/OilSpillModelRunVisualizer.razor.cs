@@ -76,6 +76,15 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         private OilSpillModelRun? SelectedRun =>
             _selectedRunId is int id ? _modelRuns.FirstOrDefault(r => r.Id == id) : null;
 
+        /// <summary>
+        /// Vessel name shown at the spill origin. Resolved from the linked bunkering operation's
+        /// customer vessel when available, otherwise falls back to the spill name.
+        /// </summary>
+        private string VesselName =>
+            _spill?.Operation?.CustomerVessel?.Name is { Length: > 0 } vessel
+                ? vessel
+                : (_spill?.SpillName ?? "Spill origin");
+
         private string CurrentTimeLabel =>
             _currentIndex >= 0 && _currentIndex < _chartPoints.Count
                 ? _chartPoints[_currentIndex].TimeLabel
@@ -399,6 +408,13 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             StateHasChanged();
         }
 
+        /// <summary>
+        /// Location of the response measure currently being placed, surfaced on the map as a pin so
+        /// the user can see where it will be deployed before saving. Null while the panel is closed.
+        /// </summary>
+        private (double Latitude, double Longitude)? PendingMeasure =>
+            _showMeasurePanel ? (_measure.Latitude, _measure.Longitude) : null;
+
         private void ToggleMeasurePanel()
         {
             _showMeasurePanel = !_showMeasurePanel;
@@ -407,6 +423,24 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
                 PrepareMeasureDefaults();
             }
 
+            StateHasChanged();
+        }
+
+        /// <summary>
+        /// Handles a click on the trajectory map while the measure panel is open: positions the
+        /// pending measure at the clicked coordinate so measures can be deployed by pointing at the
+        /// chart instead of typing latitude/longitude.
+        /// </summary>
+        private void OnMapMeasureClick((double Latitude, double Longitude) location)
+        {
+            if (!_showMeasurePanel)
+            {
+                return;
+            }
+
+            _measure.Latitude = Math.Round(location.Latitude, 5);
+            _measure.Longitude = Math.Round(location.Longitude, 5);
+            _measureMessage = $"Measure positioned at {_measure.Latitude:0.#####}, {_measure.Longitude:0.#####}.";
             StateHasChanged();
         }
 

@@ -39,6 +39,13 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         /// Returns the original polygon when no coastline is loaded or the clip fails.
         /// </summary>
         string? ClipToWater(string? polygonGeoJson);
+
+        /// <summary>
+        /// Returns the representative geographic point where the supplied slick polygon overlaps
+        /// land (i.e. the shoreline-impact location), or null when the slick does not reach the
+        /// coast or no coastline is loaded.
+        /// </summary>
+        (double Latitude, double Longitude)? LandfallPoint(string? polygonGeoJson);
     }
 
     public sealed class CoastlineService : ICoastlineService
@@ -151,6 +158,44 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             catch
             {
                 return polygonGeoJson;
+            }
+        }
+
+        public (double Latitude, double Longitude)? LandfallPoint(string? polygonGeoJson)
+        {
+            if (_land is null || _land.IsEmpty || string.IsNullOrWhiteSpace(polygonGeoJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                var slick = _reader.Read<Geometry>(polygonGeoJson);
+                if (slick is null || slick.IsEmpty || !_land.Intersects(slick))
+                {
+                    return null;
+                }
+
+                // The part of the slick lying over land is the impacted area; its interior point
+                // is a stable, guaranteed-on-geometry estimate of the shoreline-impact location.
+                var overlap = _land.Intersection(slick);
+                if (overlap is null || overlap.IsEmpty)
+                {
+                    return null;
+                }
+
+                var point = overlap.InteriorPoint;
+                if (point is null || point.IsEmpty)
+                {
+                    return null;
+                }
+
+                // NTS coordinates are (X = longitude, Y = latitude).
+                return (point.Y, point.X);
+            }
+            catch
+            {
+                return null;
             }
         }
 

@@ -13,6 +13,9 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         /// <summary>Response actions with coordinates to plot.</summary>
         [Parameter] public IReadOnlyList<OilSpillResponseAction> Actions { get; set; } = new List<OilSpillResponseAction>();
 
+        /// <summary>Vessel name shown against the ship icon at the spill origin.</summary>
+        [Parameter] public string? VesselName { get; set; }
+
         /// <summary>Index of the time-step to highlight (null = none).</summary>
         [Parameter] public int? HighlightIndex { get; set; }
 
@@ -46,8 +49,30 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         /// <summary>When true a small "T+Xh" time label is drawn at each plume centroid.</summary>
         [Parameter] public bool ShowTimeLabels { get; set; } = true;
 
+        /// <summary>
+        /// When true the map is in "placement" mode: a map click reports its geographic coordinate
+        /// through <see cref="OnMapClick"/> so a response measure can be dropped where the user
+        /// clicks instead of typing latitude/longitude by hand.
+        /// </summary>
+        [Parameter] public bool PlacementMode { get; set; }
+
+        /// <summary>
+        /// Raised with the (latitude, longitude) of a map click while <see cref="PlacementMode"/> is
+        /// active. The visualiser uses this to position a pending response measure.
+        /// </summary>
+        [Parameter] public EventCallback<(double Latitude, double Longitude)> OnMapClick { get; set; }
+
+        /// <summary>
+        /// Location of a not-yet-saved response measure (e.g. the point the user just clicked). When
+        /// set a distinct crosshair pin is drawn so the placement is visible before saving.
+        /// </summary>
+        [Parameter] public (double Latitude, double Longitude)? PendingMeasure { get; set; }
+
+        private List<OilSpillMapPoint> _pendingMarker = new();
+
         private SfMaps? _mapsRef;
         private int? _renderedHighlightIndex;
+        private (double Latitude, double Longitude)? _renderedPendingMeasure;
         private bool _refreshQueued;
 
         // Backing fields bound by the razor markup.
@@ -106,6 +131,7 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             BuildPolygon();
             BuildResponseGeometry();
             BuildTimeLabels();
+            BuildPendingMarker();
             ComputeCenter();
 
             // Queue a Maps redraw whenever the highlighted timestep changes so the
@@ -114,6 +140,30 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             {
                 _refreshQueued = true;
             }
+
+            // Also redraw when the pending measure pin moves (each map click while placing) so the
+            // crosshair follows the click on the rendered SVG.
+            if (!NullableCoordEquals(PendingMeasure, _renderedPendingMeasure))
+            {
+                _refreshQueued = true;
+            }
+        }
+
+        private static bool NullableCoordEquals(
+            (double Latitude, double Longitude)? a, (double Latitude, double Longitude)? b)
+        {
+            if (a is null && b is null)
+            {
+                return true;
+            }
+
+            if (a is null || b is null)
+            {
+                return false;
+            }
+
+            return a.Value.Latitude.Equals(b.Value.Latitude)
+                && a.Value.Longitude.Equals(b.Value.Longitude);
         }
 
         protected override void OnAfterRender(bool firstRender)
@@ -122,6 +172,7 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             {
                 _refreshQueued = false;
                 _renderedHighlightIndex = HighlightIndex;
+                _renderedPendingMeasure = PendingMeasure;
 
                 try
                 {
@@ -132,6 +183,47 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
                     // Circuit/JS interop not available (e.g. during teardown) - ignore.
                 }
             }
+        }
+
+        /// <summary>
+        /// Builds the single pending-measure marker (the point the user just clicked while placing a
+        /// response measure) so it can be drawn as a crosshair pin before the measure is saved.
+        /// </summary>
+        private void BuildPendingMarker()
+        {
+            var pending = new List<OilSpillMapPoint>();
+            if (PendingMeasure is { } p && IsFinite(p.Latitude) && IsFinite(p.Longitude))
+            {
+                pending.Add(new OilSpillMapPoint
+                {
+                    Latitude = p.Latitude,
+                    Longitude = p.Longitude,
+                    Label = "New measure",
+                    Tooltip = "Pending response measure — click Save to apply"
+                });
+            }
+
+            _pendingMarker = pending;
+        }
+
+        /// <summary>
+        /// Handles a click on the map. In placement mode the clicked geographic coordinate is passed
+        /// up to the visualiser so the response-measure form can be positioned by pointing at the
+        /// chart instead of typing coordinates.
+        /// </summary>
+        private async Task HandleMapClick(MouseEventArgs args)
+        {
+            if (!PlacementMode || !OnMapClick.HasDelegate)
+            {
+                return;
+            }
+
+            if (!IsFinite(args.Latitude) || !IsFinite(args.Longitude))
+            {
+                return;
+            }
+
+            await OnMapClick.InvokeAsync((args.Latitude, args.Longitude));
         }
 
         private void BuildMarkers()
@@ -149,7 +241,20 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
 
             if (MapPoints.Count > 0)
             {
-                origin.Add(MapPoints[0]);
+                // Origin marker carries the vessel name so the map template can label the ship
+                // icon at the spill start position.
+                var start = MapPoints[0];
+                origin.Add(new OilSpillMapPoint
+                {
+                    Index = start.Index,
+                    Latitude = start.Latitude,
+                    Longitude = start.Longitude,
+                    Label = string.IsNullOrWhiteSpace(VesselName) ? "Spill origin" : VesselName!,
+                    Tooltip = string.IsNullOrWhiteSpace(VesselName)
+                        ? start.Tooltip
+                        : $"{VesselName} — spill origin",
+                    AreaSqM = start.AreaSqM
+                });
 
                 // All points except origin up to (and including) the cut-off are step markers.
                 for (var i = 1; i <= lastIndex; i++)

@@ -219,7 +219,6 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             // from scratch using polygon intersection against the coastline.
             run.ShorelineImpactIndex = null;
             run.ShorelineImpactTime = null;
-            var shorelineImpactRecorded = false;
 
             // Semi-diurnal tide period (~12.42 h) drives the oscillating tidal stream.
             const double TidalPeriodSeconds = 12.42 * 3600.0;
@@ -270,8 +269,8 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 var timeFactor = Math.Log(1.0 + step);
                 var effectiveArea = area * spreadFactor * Math.Max(timeFactor, 1.0);
 
-                // The slick ring is needed both for response-measure interaction tests and for
-                // coastline (landfall) intersection, so compute it once up-front for this step.
+                // The slick ring is needed for the response-measure interaction tests, so compute
+                // it once up-front for this step.
                 var slick = OilSpillGeometry.ParsePolygon(BuildSlickPolygonGeoJson(
                     currentLat, currentLon, effectiveArea, driftDirectionDeg, aspectRatio));
 
@@ -314,47 +313,58 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                     }
                 }
 
-                // --- Landfall detection (polygon intersection with coastline) ---
-                // Test the UNCLIPPED slick against the in-memory coastline polygons. Record the
-                // first timestep that reaches the shore unless an active response measure is
-                // currently delaying impact. The loop continues so the animation never stops
-                // abruptly at landfall.
-                if (!shorelineImpactRecorded && !shorelineImpactDelayed
-                    && coastline is not null && coastline.HasCoastline
-                    && coastline.IntersectsLand(slick))
-                {
-                    shorelineImpactRecorded = true;
-                    run.ShorelineImpactIndex = step;
-                    run.ShorelineImpactTime = timestamp;
-                }
-
-                // Build the instantaneous slick polygon for this step and accumulate the
-                // cumulative footprint (union of all steps so far) using NetTopologySuite.
-                var instantaneousPolygon = BuildSlickPolygonGeoJson(
+                // Build the instantaneous slick polygon (unclipped) for this step. It is used both
+                // for landfall detection against the coastline and, after clipping to water, for
+                // rendering.
+                var rawSlickGeoJson = BuildSlickPolygonGeoJson(
                     currentLat, currentLon, effectiveArea, driftDirectionDeg, aspectRatio);
+
+                // --- Landfall detection (polygon intersection with coastline) ---
+                // When the UNCLIPPED slick reaches the shore (and no active response measure is
+                // currently delaying impact) resolve the exact shoreline-impact location so the
+                // plume, impact marker and reported position all sit on the coast rather than on
+                // the drifting centroid.
+                (double Latitude, double Longitude)? landfall = null;
+                if (!shorelineImpactDelayed && coastline is not null && coastline.HasCoastline)
+                {
+                    landfall = coastline.LandfallPoint(rawSlickGeoJson);
+                }
 
                 // Clip the slick to water so it stops at (and spreads along) the coastline instead
                 // of bleeding inland. Falls back to the raw polygon when no coastline is loaded.
-                if (coastline is not null)
-                {
-                    instantaneousPolygon = coastline.ClipToWater(instantaneousPolygon);
-                }
+                var instantaneousPolygon = coastline is not null
+                    ? coastline.ClipToWater(rawSlickGeoJson)
+                    : rawSlickGeoJson;
 
                 cumulativePolygon = coastline is not null
                     ? coastline.Union(cumulativePolygon, instantaneousPolygon)
                     : instantaneousPolygon;
 
+                // On landfall, snap the recorded position to the shoreline-impact point so the
+                // trajectory ends exactly where the slick meets the coast.
+                var pointLat = landfall?.Latitude ?? currentLat;
+                var pointLon = landfall?.Longitude ?? currentLon;
+
                 points.Add(new OilSpillTrajectoryPoint
                 {
                     ModelRunId = run.Id,
                     Timestamp = timestamp,
-                    Latitude = currentLat,
-                    Longitude = currentLon,
+                    Latitude = pointLat,
+                    Longitude = pointLon,
                     AreaSqM = area,
                     ThicknessMm = null,
                     PolygonGeoJson = instantaneousPolygon,
                     CumulativePolygonGeoJson = cumulativePolygon
                 });
+
+                // Stop the simulation at first shoreline impact: the slick has reached the coast,
+                // so no further drift is modelled. The impacted step is the final trajectory point.
+                if (landfall is not null)
+                {
+                    run.ShorelineImpactIndex = points.Count - 1;
+                    run.ShorelineImpactTime = timestamp;
+                    break;
+                }
 
                 // Advect the centroid for the next step using this step's instantaneous drift.
                 var dx = driftX * stepSeconds; // meters east

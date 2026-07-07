@@ -55,6 +55,8 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             return await context.OilSpillIncidents
                 .Include(s => s.ModelRuns)
                 .Include(s => s.ResponseActions)
+                .Include(s => s.Operation)
+                    .ThenInclude(o => o.CustomerVessel)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == id);
         }

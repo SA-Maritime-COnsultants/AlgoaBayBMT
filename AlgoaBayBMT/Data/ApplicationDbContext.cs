@@ -239,6 +239,9 @@ namespace AlgoaBayBMT.Data
                 entity.HasOne(x => x.BunkerFuel).WithMany().HasForeignKey(x => x.BunkerFuelId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasMany(x => x.PumpingIntervals).WithOne(x => x.BunkeringOperation).HasForeignKey(x => x.BunkeringOperationId).OnDelete(DeleteBehavior.Cascade);
                 entity.HasMany(x => x.ISGOTTStageResponses).WithOne(x => x.BunkeringOperation).HasForeignKey(x => x.BunkeringOperationId).OnDelete(DeleteBehavior.Cascade);
+                // Vessel has a global soft-delete query filter; mirror it here since both vessel
+                // navigations are required, so a deleted vessel doesn't leave a dangling required reference.
+                entity.HasQueryFilter(x => !x.BunkerVessel!.IsDeleted && !x.CustomerVessel!.IsDeleted);
             });
 
             builder.Entity<BunkeringOperationPumpingInterval>(entity =>
@@ -253,6 +256,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.Visibility).HasMaxLength(120);
                 entity.Property(x => x.Notes).HasMaxLength(1000);
                 entity.HasOne(x => x.BunkerFuel).WithMany().HasForeignKey(x => x.BunkerFuelId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasQueryFilter(x => !x.BunkeringOperation!.BunkerVessel!.IsDeleted && !x.BunkeringOperation!.CustomerVessel!.IsDeleted);
             });
 
             builder.Entity<ISGOTTStageTemplate>(entity =>
@@ -280,6 +284,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.CompletedByUserId).HasMaxLength(450).IsRequired();
                 entity.HasOne(x => x.StageTemplate).WithMany().HasForeignKey(x => x.StageTemplateId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasMany(x => x.ItemResponses).WithOne(x => x.StageResponse).HasForeignKey(x => x.StageResponseId).OnDelete(DeleteBehavior.Cascade);
+                entity.HasQueryFilter(x => !x.BunkeringOperation!.BunkerVessel!.IsDeleted && !x.BunkeringOperation!.CustomerVessel!.IsDeleted);
             });
 
             builder.Entity<ISGOTTChecklistItemResponse>(entity =>
@@ -290,6 +295,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.TextValue).HasMaxLength(2000);
                 entity.Property(x => x.NumericValue).HasPrecision(18, 3);
                 entity.HasOne(x => x.ItemTemplate).WithMany().HasForeignKey(x => x.ItemTemplateId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasQueryFilter(x => !x.StageResponse!.BunkeringOperation!.BunkerVessel!.IsDeleted && !x.StageResponse!.BunkeringOperation!.CustomerVessel!.IsDeleted);
             });
         }
 
