@@ -6,11 +6,15 @@
 @inject IOilSpillExportService OilSpillExportService
 @inject IJSRuntime JS
 
-@if (Form is not null)
-{
-    <SfCard CssClass="pf-card-shell abmt-panel-3d">
-        <CardHeader Title="@($"Edit {FormTitle(Form.FormType)}")" SubTitle="Complete the form fields and save or export to PDF." />
-        <CardContent>
+<SfDialog Width="900px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true"
+          Visible="@(Form is not null)" VisibleChanged="OnDialogVisibleChanged">
+    <DialogTemplates>
+        <Header>@(Form is not null ? $"Edit {FormTitle(Form.FormType)}" : string.Empty)</Header>
+        <Content>
+            @if (Form is not null)
+            {
+            <div class="page-subtitle" style="margin-bottom:1rem;">Complete the form fields and save or export to PDF.</div>
+
             @if (!string.IsNullOrEmpty(_message))
             {
                 <div class="pf-alert pf-status-message" role="alert">@_message</div>
@@ -142,9 +146,10 @@
                 <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-file-document" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="ExportAsync">Export PDF</SfButton>
                 <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="SaveAsync">Save</SfButton>
             </div>
-        </CardContent>
-    </SfCard>
-}
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
 
 @code {
     /// <summary>The form being edited. When null the editor renders nothing.</summary>
@@ -251,6 +256,15 @@
     {
         _loadedFormId = -1;
         await OnCancel.InvokeAsync();
+    }
+
+    /// <summary>Fires when the dialog is dismissed via the close icon, Escape, or overlay click — treat it the same as Cancel.</summary>
+    private async Task OnDialogVisibleChanged(bool visible)
+    {
+        if (!visible && Form is not null)
+        {
+            await OnCancelAsync();
+        }
     }
 
     private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, JsonOptions);

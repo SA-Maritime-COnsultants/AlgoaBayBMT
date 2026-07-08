@@ -1707,19 +1707,24 @@ h1:focus {
 }
 
 .auth-surface-header {
-    background: linear-gradient(135deg, var(--pf-primary), var(--pf-primary-2));
-    color: #fff;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset;
+    color: #1a3a4a;
     padding: 1.1rem 1.25rem;
 }
 
 .auth-surface-title {
     font-size: 1.05rem;
     font-weight: 700;
+    color: #1a3a4a;
 }
 
 .auth-surface-subtitle {
     margin-top: 0.2rem;
-    color: rgba(255,255,255,0.82);
+    color: rgba(26, 58, 74, 0.72);
     font-size: 0.9rem;
 }
 

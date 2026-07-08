@@ -140,47 +140,58 @@
 
                 <div class="row g-4">
                     <div class="col-lg-8">
-                        <div class="pf-grid-actions pf-grid-actions--compact" style="margin-bottom:0.75rem; flex-wrap:wrap;">
-                            <SfButton CssClass="@TabButtonClass(FormsTab.ICS201)" OnClick="() => _activeTab = FormsTab.ICS201">ICS-201 Briefing</SfButton>
-                            <SfButton CssClass="@TabButtonClass(FormsTab.ICS214)" OnClick="() => _activeTab = FormsTab.ICS214">ICS-214 Activity Log</SfButton>
-                            <SfButton CssClass="@TabButtonClass(FormsTab.ICS204)" OnClick="() => _activeTab = FormsTab.ICS204">ICS-204 Assignments</SfButton>
-                            <SfButton CssClass="@TabButtonClass(FormsTab.ICS209)" OnClick="() => _activeTab = FormsTab.ICS209">ICS-209 Status</SfButton>
-                        </div>
-
-                        @switch (_activeTab)
-                        {
-                            case FormsTab.ICS201:
-                                <div class="page-header" style="margin-bottom:0.5rem;">
-                                    <div class="page-subtitle">Incident Briefings</div>
-                                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs201Async">New Form</SfButton>
-                                </div>
-                                @RenderFormGrid(FormsOf(IncidentFormType.ICS201))
-                                break;
-
-                            case FormsTab.ICS214:
-                                <div class="page-header" style="margin-bottom:0.5rem;">
-                                    <div class="page-subtitle">Activity Log Entries</div>
-                                    <div class="pf-grid-actions pf-grid-actions--compact">
-                                        <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-export" IconPosition="IconPosition.Left" Disabled="@(_busy || FormsOf(IncidentFormType.ICS214).Count == 0)" OnClick="ExportConsolidated214Async">Export Consolidated Log</SfButton>
-                                        <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs214EntryAsync">New Entry</SfButton>
-                                    </div>
-                                </div>
-                                @RenderActivityGrid(FormsOf(IncidentFormType.ICS214))
-                                break;
-
-                            case FormsTab.ICS204:
-                                <div class="page-header" style="margin-bottom:0.5rem;">
-                                    <div class="page-subtitle">Assignment Lists</div>
-                                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs204Async">New Form</SfButton>
-                                </div>
-                                @RenderFormGrid(FormsOf(IncidentFormType.ICS204))
-                                break;
-
-                            case FormsTab.ICS209:
-                                <div class="page-subtitle" style="margin-bottom:0.5rem;">Status Summary</div>
-                                @RenderFormGrid(FormsOf(IncidentFormType.ICS209))
-                                break;
-                        }
+                        <SfTab CssClass="pf-manage-tabset">
+                            <TabItems>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-201 Briefing"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-header" style="margin-bottom:0.5rem;">
+                                            <div class="page-subtitle">Incident Briefings</div>
+                                            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs201Async">New Form</SfButton>
+                                        </div>
+                                        @RenderFormGrid(FormsOf(IncidentFormType.ICS201))
+                                    </ContentTemplate>
+                                </TabItem>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-214 Activity Log"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-header" style="margin-bottom:0.5rem;">
+                                            <div class="page-subtitle">Activity Log Entries</div>
+                                            <div class="pf-grid-actions pf-grid-actions--compact">
+                                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-export" IconPosition="IconPosition.Left" Disabled="@(_busy || FormsOf(IncidentFormType.ICS214).Count == 0)" OnClick="ExportConsolidated214Async">Export Consolidated Log</SfButton>
+                                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs214EntryAsync">New Entry</SfButton>
+                                            </div>
+                                        </div>
+                                        @RenderActivityGrid(FormsOf(IncidentFormType.ICS214))
+                                    </ContentTemplate>
+                                </TabItem>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-204 Assignments"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-header" style="margin-bottom:0.5rem;">
+                                            <div class="page-subtitle">Assignment Lists</div>
+                                            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs204Async">New Form</SfButton>
+                                        </div>
+                                        @RenderFormGrid(FormsOf(IncidentFormType.ICS204))
+                                    </ContentTemplate>
+                                </TabItem>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-209 Status"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-subtitle" style="margin-bottom:0.5rem;">Status Summary</div>
+                                        @RenderFormGrid(FormsOf(IncidentFormType.ICS209))
+                                    </ContentTemplate>
+                                </TabItem>
+                            </TabItems>
+                        </SfTab>
                     </div>
                     <div class="col-lg-4">
                         <div class="page-subtitle" style="margin-bottom:0.5rem;">Reports</div>
@@ -200,17 +211,12 @@
                         </div>
                     </div>
                 </div>
-
-                @if (_editingForm is not null)
-                {
-                    <div class="mt-4">
-                        <IncidentFormEditor Form="_editingForm"
-                                            OnSaved="OnFormSavedAsync"
-                                            OnCancel="OnFormEditCancelled" />
-                    </div>
-                }
             </CardContent>
         </SfCard>
+
+        <IncidentFormEditor Form="_editingForm"
+                            OnSaved="OnFormSavedAsync"
+                            OnCancel="OnFormEditCancelled" />
     }
 </div>
 
@@ -345,18 +351,12 @@
     private bool _busy;
     private string? _formsMessage;
 
-    private FormsTab _activeTab = FormsTab.ICS201;
     private IncidentForm? _editingForm;
-
-    private enum FormsTab { ICS201, ICS214, ICS204, ICS209 }
 
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
     private IReadOnlyList<IncidentForm> FormsOf(IncidentFormType type) =>
         _forms.Where(f => f.FormType == type).ToList();
-
-    private string TabButtonClass(FormsTab tab) =>
-        _activeTab == tab ? "pf-training-page-action-btn crew-action-btn-blue" : "pf-training-page-action-btn crew-action-btn-teal";
 
     private static Ics214EntryPayload ParseActivity(IncidentForm form)
     {
@@ -559,7 +559,6 @@
 
             await ReloadFormsAsync();
             _editingForm = form;
-            _activeTab = FormsTab.ICS201;
         }
         finally
         {
@@ -590,7 +589,6 @@
 
             await ReloadFormsAsync();
             _editingForm = form;
-            _activeTab = FormsTab.ICS204;
         }
         finally
         {
@@ -616,7 +614,6 @@
 
             await ReloadFormsAsync();
             _editingForm = form;
-            _activeTab = FormsTab.ICS214;
         }
         finally
         {
