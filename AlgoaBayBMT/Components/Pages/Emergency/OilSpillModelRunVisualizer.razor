@@ -15,26 +15,26 @@
 
 <PageTitle>Oil Spill Visualiser</PageTitle>
 
-<div class="container-fluid py-3 oilspill-visualizer">
-    <div class="mb-3">
-        <button type="button" class="btn btn-link px-0" @onclick="BackToDetail">&larr; Back to spill</button>
-    </div>
-
+<div class="page-shell pf-training-admin-shell oilspill-visualizer">
     @if (_loading)
     {
-        <div class="alert alert-info">Loading…</div>
+        <div class="pf-alert pf-status-message" role="alert">Loading…</div>
     }
     else if (_spill is null)
     {
-        <div class="alert alert-warning">Oil spill incident @SpillId was not found.</div>
+        <div class="pf-alert pf-alert--warning-strong" role="alert">Oil spill incident @SpillId was not found.</div>
     }
     else
     {
-        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+        <div class="page-header">
             <div>
-                <h1 class="h4 mb-1">Oil Spill Visualiser</h1>
-                <div class="text-muted">@_spill.SpillName</div>
+                <h1 class="page-title pf-training-heading">Oil Spill Visualiser</h1>
+                <div class="page-subtitle">@_spill.SpillName</div>
             </div>
+            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToDetail">Back to Spill</SfButton>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
 
             <div class="oilspill-toolbar d-flex flex-wrap align-items-center gap-3">
                 <div class="oilspill-run-selector">
@@ -103,7 +103,7 @@
         @if (_shorelineImpactDetected && _shorelineImpactIndex is int impactStep
             && impactStep >= 0 && impactStep < _trajectory.Count)
         {
-            <div class="alert alert-danger d-flex align-items-center gap-2" role="alert">
+            <div class="pf-alert pf-alert--warning-strong d-flex align-items-center gap-2" role="alert">
                 <span class="e-icons e-warning"></span>
                 <span>
                     <strong>Shoreline Impact</strong>
@@ -115,12 +115,12 @@
 
         @if (!string.IsNullOrEmpty(_exportMessage))
         {
-            <div class="alert alert-info py-2" role="alert">@_exportMessage</div>
+            <div class="pf-alert pf-status-message" role="alert">@_exportMessage</div>
         }
 
         @if (_modelRuns.Count == 0)
         {
-            <div class="alert alert-secondary">
+            <div class="pf-alert pf-status-message" role="alert">
                 This spill has no model runs yet.
                 <a href="@($"/emergency/oilspill/{SpillId}/model")">Create one</a> to visualise its trajectory.
             </div>

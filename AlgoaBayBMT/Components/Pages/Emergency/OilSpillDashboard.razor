@@ -9,54 +9,64 @@
 
 <PageTitle>Oil Spill Modelling &amp; Response</PageTitle>
 
-<div class="container-fluid py-3">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
         <div>
-            <h1 class="h3 mb-1">Oil Spill Modelling &amp; Response</h1>
-            <div class="text-muted">Active oil spill incidents in Algoa Bay.</div>
+            <h1 class="page-title pf-training-heading">Oil Spill Modelling &amp; Response</h1>
+            <div class="page-subtitle">Active oil spill incidents in Algoa Bay.</div>
         </div>
-        <button type="button" class="btn btn-danger" @onclick="ReportNewSpill">Report New Spill</button>
+        <SfButton CssClass="pf-training-page-action-btn crew-action-btn-red" IconCss="e-icons e-warning" IconPosition="IconPosition.Left" OnClick="ReportNewSpill">Report New Spill</SfButton>
     </div>
 
     @if (_loading)
     {
-        <div class="alert alert-info">Loading active spills…</div>
-    }
-    else if (_spills.Count == 0)
-    {
-        <div class="alert alert-success">No active oil spill incidents.</div>
+        <div class="pf-alert pf-status-message" role="alert">Loading active spills…</div>
     }
     else
     {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead>
-                    <tr>
-                        <th>Spill Name</th>
-                        <th>Product</th>
-                        <th class="text-end">Est. Volume (m³)</th>
-                        <th>Status</th>
-                        <th>Start Time</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var spill in _spills)
-                    {
-                        <tr>
-                            <td>@spill.SpillName</td>
-                            <td>@spill.ProductType</td>
-                            <td class="text-end">@spill.EstimatedVolume.ToString("N1")</td>
-                            <td><span class="badge bg-warning text-dark">@spill.Status</span></td>
-                            <td>@spill.SpillStartTime.ToString("dd MMM yyyy HH:mm")</td>
-                            <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-primary" @onclick="() => OpenSpill(spill.Id)">Open</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Active Incidents" SubTitle="Open an incident to manage model runs, response actions and IMS forms." />
+            <CardContent>
+                @if (_spills.Count == 0)
+                {
+                    <div class="pf-alert pf-status-message" role="alert">No active oil spill incidents.</div>
+                }
+                else
+                {
+                    <div class="pf-training-responsive-grid">
+                        <SfGrid DataSource="@_spills" TValue="OilSpillIncident" AllowPaging="true" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
+                            <GridPageSettings PageSize="12" />
+                            <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                            <GridColumns>
+                                <GridColumn Field="@nameof(OilSpillIncident.SpillName)" HeaderText="Spill Name" Width="220" />
+                                <GridColumn Field="@nameof(OilSpillIncident.ProductType)" HeaderText="Product" Width="140" />
+                                <GridColumn HeaderText="Est. Volume (m³)" Width="150" TextAlign="TextAlign.Right">
+                                    <Template>@((context as OilSpillIncident)?.EstimatedVolume.ToString("N1"))</Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var s = context as OilSpillIncident; }
+                                        <span class="ab-badge @(s?.Status == OilSpillStatus.Active ? "ab-badge-inactive" : "ab-badge-active")">@s?.Status</span>
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn Field="@nameof(OilSpillIncident.SpillStartTime)" HeaderText="Start Time" Width="170" Format="dd MMM yyyy HH:mm" Type="ColumnType.DateTime" />
+                                <GridColumn HeaderText="Actions" Width="110" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var s = context as OilSpillIncident; }
+                                        @if (s is not null)
+                                        {
+                                            <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                                <span class="pf-icon-action" title="Open Incident"><SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-eye" OnClick="@(() => OpenSpill(s.Id))" /></span>
+                                            </div>
+                                        }
+                                    </Template>
+                                </GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    </div>
+                }
+            </CardContent>
+        </SfCard>
     }
 </div>
 

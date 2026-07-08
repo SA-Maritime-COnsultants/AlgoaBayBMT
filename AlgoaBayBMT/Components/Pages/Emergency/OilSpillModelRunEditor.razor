@@ -12,85 +12,58 @@
 
 <PageTitle>@(_isEdit ? "Edit Oil Spill Model Run" : "New Oil Spill Model Run")</PageTitle>
 
-<div class="container-fluid py-3">
-    <div class="mb-3">
-        <button type="button" class="btn btn-link px-0" @onclick="BackToDetail">&larr; Back to spill</button>
-    </div>
-
+<div class="page-shell pf-training-admin-shell">
     @if (_loading)
     {
-        <div class="alert alert-info">Loading…</div>
+        <div class="pf-alert pf-status-message" role="alert">Loading…</div>
     }
     else if (_spill is null)
     {
-        <div class="alert alert-warning">Oil spill incident @SpillId was not found.</div>
+        <div class="pf-alert pf-alert--warning-strong" role="alert">Oil spill incident @SpillId was not found.</div>
     }
     else
     {
-        <h1 class="h4 mb-1">@(_isEdit ? "Edit Model Run" : "New Model Run")</h1>
-        <div class="text-muted mb-3">@_spill.SpillName</div>
+        <div class="page-header">
+            <div>
+                <h1 class="page-title pf-training-heading">@(_isEdit ? "Edit Model Run" : "New Model Run")</h1>
+                <div class="page-subtitle">@_spill.SpillName</div>
+            </div>
+            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToDetail">Back to Spill</SfButton>
+        </div>
 
         @if (!string.IsNullOrWhiteSpace(_message))
         {
-            <div class="alert @(_isError ? "alert-danger" : "alert-success")">@_message</div>
+            <div class="pf-alert @(_isError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@_message</div>
         }
 
-        <EditForm Model="_request" OnValidSubmit="RunModelAsync">
-            <DataAnnotationsValidator />
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">Run Name</label>
-                    <InputText class="form-control" @bind-Value="_request.RunName" />
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label">Start Time</label>
-                    <InputDate Type="InputDateType.DateTimeLocal" class="form-control" @bind-Value="_request.StartTime" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Duration (hours)</label>
-                    <InputNumber class="form-control" @bind-Value="_request.DurationHours" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Time Step (minutes)</label>
-                    <InputNumber class="form-control" @bind-Value="_request.TimeStepMinutes" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Tide State</label>
-                    <InputSelect class="form-select" @bind-Value="_request.TideState">
-                        @foreach (var tide in Enum.GetValues<OilSpillTideState>())
-                        {
-                            <option value="@tide">@tide</option>
-                        }
-                    </InputSelect>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Wind Speed (m/s)</label>
-                    <InputNumber class="form-control" @bind-Value="_request.WindSpeed" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Wind Direction (°)</label>
-                    <InputNumber class="form-control" @bind-Value="_request.WindDirection" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Current Speed (m/s)</label>
-                    <InputNumber class="form-control" @bind-Value="_request.CurrentSpeed" />
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Current Direction (°)</label>
-                    <InputNumber class="form-control" @bind-Value="_request.CurrentDirection" />
-                </div>
-                <div class="col-12">
-                    <label class="form-label">Notes</label>
-                    <InputTextArea class="form-control" rows="2" @bind-Value="_request.Notes" />
-                </div>
-            </div>
-
-            <div class="mt-3">
-                <button type="submit" class="btn btn-primary" disabled="@_running">
-                    @(_running ? "Running model…" : _isEdit ? "Save & Re-run Model" : "Run Model")
-                </button>
-            </div>
-        </EditForm>
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Model Run Parameters" SubTitle="Simulation window, metocean forcing and tide state." />
+            <CardContent>
+                <EditForm Model="_request" OnValidSubmit="RunModelAsync" FormName="oil-spill-model-run-form">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="pf-form-grid">
+                        <div class="pf-col-6"><label class="pf-field-label">Run Name</label><SfTextBox @bind-Value="_request.RunName" /></div>
+                        <div class="pf-col-6"><label class="pf-field-label">Start Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="_request.StartTime" Format="dd MMM yyyy HH:mm" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Duration (hours)</label><SfNumericTextBox TValue="double" @bind-Value="_request.DurationHours" Min="0" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Time Step (minutes)</label><SfNumericTextBox TValue="int" @bind-Value="_request.TimeStepMinutes" Min="1" /></div>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Tide State</label>
+                            <SfDropDownList TValue="OilSpillTideState" TItem="OilSpillTideState" DataSource="@(Enum.GetValues<OilSpillTideState>())" @bind-Value="_request.TideState" />
+                        </div>
+                        <div class="pf-col-3"><label class="pf-field-label">Wind Speed (m/s)</label><SfNumericTextBox TValue="double" @bind-Value="_request.WindSpeed" Min="0" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Wind Direction (°)</label><SfNumericTextBox TValue="double" @bind-Value="_request.WindDirection" Min="0" Max="360" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Current Speed (m/s)</label><SfNumericTextBox TValue="double" @bind-Value="_request.CurrentSpeed" Min="0" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Current Direction (°)</label><SfNumericTextBox TValue="double" @bind-Value="_request.CurrentDirection" Min="0" Max="360" /></div>
+                        <div class="pf-col-12"><label class="pf-field-label">Notes</label><SfTextBox Multiline="true" @bind-Value="_request.Notes" /></div>
+                    </div>
+                    <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                        <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="BackToDetail">Cancel</SfButton>
+                        <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-play" IconPosition="IconPosition.Left" type="submit" Disabled="@_running">@(_running ? "Running model…" : _isEdit ? "Save & Re-run Model" : "Run Model")</SfButton>
+                    </div>
+                </EditForm>
+            </CardContent>
+        </SfCard>
     }
 </div>
 

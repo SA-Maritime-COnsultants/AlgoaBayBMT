@@ -502,9 +502,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .training-card .e-card-header {
-    padding: 0.875rem 1rem 0;
-    background: linear-gradient(180deg, #f8fafc 0%, #f0f4f7 100%);
-    border-bottom: 1px solid var(--color-border-light);
+    padding: 0.6875rem 1rem;
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset;
 }
 
 .training-card-header {
@@ -512,7 +513,6 @@ h1, h2, h3, h4, h5, h6 {
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    padding-bottom: 0.75rem;
 }
 
 .category-badge.e-badge {
@@ -770,10 +770,9 @@ h1, h2, h3, h4, h5, h6 {
     background: var(--color-white);
     border: 1px solid var(--color-border);
     border-radius: var(--radius);
-    box-shadow: var(--shadow-panel);
-    /* 3D raised top border */
-    border-top: 4px solid var(--color-primary-navy);
-    box-shadow: var(--shadow-header);
+    /* 3D raised top border — teal accent to match panel headers app-wide */
+    border-top: 4px solid #15635d;
+    box-shadow: 0 2px 6px rgba(11,44,61,0.07), 0 1px 2px rgba(11,44,61,0.06), 0 8px 18px rgba(15, 35, 56, 0.10);
 }
 
 .compliance-section .section-heading {
@@ -792,17 +791,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .compliance-accordion .e-acrdn-header {
-    background: linear-gradient(180deg, #f8fafc 0%, #f0f4f7 100%) !important;
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset;
     font-family: var(--font-heading);
     font-weight: 700;
     font-size: 0.8125rem;
-    color: #2f4f4f !important;
+    color: #1a3a4a !important;
     padding: 0.875rem 1.1rem;
     transition: background var(--transition);
 }
 
 .compliance-accordion .e-acrdn-header:hover {
-    background: rgba(31,111,139,0.06) !important;
+    background: linear-gradient(180deg, #ddecf0 0%, #cee5eb 52%, #bcdbe3 100%) !important;
 }
 
 .compliance-accordion .e-acrdn-panel .e-acrdn-content { padding: 0; }

@@ -8,145 +8,142 @@
 
 @if (Form is not null)
 {
-    <div class="card border-primary shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <span class="fw-semibold">Edit @FormTitle(Form.FormType)</span>
-            <button type="button" class="btn-close btn-close-white" @onclick="OnCancelAsync"></button>
-        </div>
-        <div class="card-body">
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="@($"Edit {FormTitle(Form.FormType)}")" SubTitle="Complete the form fields and save or export to PDF." />
+        <CardContent>
             @if (!string.IsNullOrEmpty(_message))
             {
-                <div class="alert alert-info py-2">@_message</div>
+                <div class="pf-alert pf-status-message" role="alert">@_message</div>
             }
 
-            <div class="row g-3">
+            <div class="pf-form-grid">
                 @switch (Form.FormType)
                 {
                     case IncidentFormType.ICS201:
-                        <div class="col-md-6">
-                            <label class="form-label">Incident name</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Incident name</label>
                             <SfTextBox @bind-Value="_ics201.IncidentName" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Commander</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Commander</label>
                             <SfTextBox @bind-Value="_ics201.Commander" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Incident start time</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Incident start time</label>
                             <SfDateTimePicker TValue="DateTime" @bind-Value="_ics201.IncidentStartTime" />
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Source type</label>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Source type</label>
                             <SfTextBox @bind-Value="_ics201.SourceType" />
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Product type</label>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Product type</label>
                             <SfTextBox @bind-Value="_ics201.ProductType" />
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Estimated volume (m³)</label>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Estimated volume (m³)</label>
                             <SfNumericTextBox TValue="double" @bind-Value="_ics201.EstimatedVolume" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Current situation</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Current situation</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics201.CurrentSituation" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Initial objectives</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Initial objectives</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics201.InitialObjectives" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Safety message</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Safety message</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics201.SafetyMessage" />
                         </div>
                         break;
 
                     case IncidentFormType.ICS204:
-                        <div class="col-md-6">
-                            <label class="form-label">Incident name</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Incident name</label>
                             <SfTextBox @bind-Value="_ics204.IncidentName" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Division</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Division</label>
                             <SfTextBox @bind-Value="_ics204.Division" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Branch / group</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Branch / group</label>
                             <SfTextBox @bind-Value="_ics204.BranchOrGroup" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Operations leader</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Operations leader</label>
                             <SfTextBox @bind-Value="_ics204.OperationsLeader" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Operational period start</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Operational period start</label>
                             <SfDateTimePicker TValue="DateTime" @bind-Value="_ics204.OperationalPeriodStart" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Operational period end</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Operational period end</label>
                             <SfDateTimePicker TValue="DateTime?" @bind-Value="_ics204.OperationalPeriodEnd" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Resources</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Resources</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics204.Resources" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Assignment</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Assignment</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics204.Assignment" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Special instructions</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Special instructions</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics204.SpecialInstructions" />
                         </div>
                         break;
 
                     case IncidentFormType.ICS214:
-                        <div class="col-md-6">
-                            <label class="form-label">Date / time</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Date / time</label>
                             <SfDateTimePicker TValue="DateTime" @bind-Value="_ics214.Timestamp" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Person</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Person</label>
                             <SfTextBox @bind-Value="_ics214.PersonName" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Activity</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Activity</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics214.Activity" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Notes</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Notes</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics214.Notes" />
                         </div>
                         break;
 
                     case IncidentFormType.ICS209:
-                        <div class="col-md-6">
-                            <label class="form-label">Commander</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Commander</label>
                             <SfTextBox @bind-Value="_ics209.Commander" />
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Status</label>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Status</label>
                             <SfTextBox @bind-Value="_ics209.Status" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Situation summary</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Situation summary</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics209.SituationSummary" />
                         </div>
-                        <div class="col-12">
-                            <label class="form-label">Planned actions</label>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Planned actions</label>
                             <SfTextBox Multiline="true" @bind-Value="_ics209.PlannedActions" />
                         </div>
                         break;
                 }
             </div>
 
-            <div class="mt-3 d-flex gap-2">
-                <SfButton CssClass="e-primary" Disabled="_busy" @onclick="SaveAsync">Save</SfButton>
-                <SfButton CssClass="e-outline" Disabled="_busy" @onclick="ExportAsync">Export PDF</SfButton>
-                <SfButton CssClass="e-flat" Disabled="_busy" @onclick="OnCancelAsync">Cancel</SfButton>
+            <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="OnCancelAsync">Cancel</SfButton>
+                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-file-document" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="ExportAsync">Export PDF</SfButton>
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="SaveAsync">Save</SfButton>
             </div>
-        </div>
-    </div>
+        </CardContent>
+    </SfCard>
 }
 
 @code {

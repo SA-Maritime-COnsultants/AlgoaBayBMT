@@ -13,33 +13,33 @@
 
 <PageTitle>Oil Spill Scenario Comparison</PageTitle>
 
-<div class="container-fluid py-3 oilspill-visualizer">
-    <div class="mb-3">
-        <button type="button" class="btn btn-link px-0" @onclick="BackToVisualizer">&larr; Back to visualiser</button>
-    </div>
-
+<div class="page-shell pf-training-admin-shell oilspill-visualizer">
     @if (_loading)
     {
-        <div class="alert alert-info">Loading…</div>
+        <div class="pf-alert pf-status-message" role="alert">Loading…</div>
     }
     else if (_spill is null)
     {
-        <div class="alert alert-warning">Oil spill incident @SpillId was not found.</div>
+        <div class="pf-alert pf-alert--warning-strong" role="alert">Oil spill incident @SpillId was not found.</div>
     }
     else if (_modelRuns.Count < 2)
     {
-        <div class="alert alert-secondary">
+        <div class="pf-alert pf-status-message" role="alert">
             Scenario comparison needs at least two model runs.
             <a href="@($"/emergency/oilspill/{SpillId}/model")">Create another run</a> to compare scenarios.
         </div>
     }
     else
     {
-        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+        <div class="page-header">
             <div>
-                <h1 class="h4 mb-1">Scenario Comparison</h1>
-                <div class="text-muted">@_spill.SpillName — base vs alternative run</div>
+                <h1 class="page-title pf-training-heading">Scenario Comparison</h1>
+                <div class="page-subtitle">@_spill.SpillName — base vs alternative run</div>
             </div>
+            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToVisualizer">Back to Visualiser</SfButton>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
 
             <div class="oilspill-toolbar d-flex flex-wrap align-items-end gap-3">
                 <div>
