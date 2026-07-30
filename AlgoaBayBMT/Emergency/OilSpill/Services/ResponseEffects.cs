@@ -21,6 +21,9 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         public bool HasAny => _booms.Count > 0 || _dispersants.Count > 0 || _skimmers.Count > 0
             || _shorelineProtection.Count > 0;
 
+        /// <summary>An empty effect set — used to model the Baseline (WITHOUT measures) scenario.</summary>
+        public static ResponseEffects None { get; } = new();
+
         public static ResponseEffects FromActions(IReadOnlyList<OilSpillResponseAction>? actions)
         {
             var effects = new ResponseEffects();

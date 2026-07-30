@@ -13,20 +13,13 @@ namespace AlgoaBayBMT.Data
         public DbSet<TrainingLesson> Lessons => Set<TrainingLesson>();
         public DbSet<LessonBlock> LessonBlocks => Set<LessonBlock>();
         public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
-        public DbSet<Assessment> Assessments => Set<Assessment>();
-        public DbSet<AssessmentQuestion> AssessmentQuestions => Set<AssessmentQuestion>();
-        public DbSet<AssessmentOption> AssessmentOptions => Set<AssessmentOption>();
         public DbSet<CourseAudienceRule> CourseAudienceRules => Set<CourseAudienceRule>();
         public DbSet<UserTrainingAssignment> UserTrainingAssignments => Set<UserTrainingAssignment>();
         public DbSet<UserLessonProgress> UserLessonProgress => Set<UserLessonProgress>();
         public DbSet<UserCourseProgress> UserCourseProgress => Set<UserCourseProgress>();
-        public DbSet<AssessmentAttempt> AssessmentAttempts => Set<AssessmentAttempt>();
-        public DbSet<AssessmentResponse> AssessmentResponses => Set<AssessmentResponse>();
         public DbSet<CourseCompletionRecord> CourseCompletionRecords => Set<CourseCompletionRecord>();
         public DbSet<TrainingCertificate> TrainingCertificates => Set<TrainingCertificate>();
         public DbSet<TrainingAuditLog> TrainingAuditLogs => Set<TrainingAuditLog>();
-        public DbSet<TrainingKnowledgeCheckQuestion> TrainingKnowledgeCheckQuestions => Set<TrainingKnowledgeCheckQuestion>();
-        public DbSet<TrainingKnowledgeCheckOption> TrainingKnowledgeCheckOptions => Set<TrainingKnowledgeCheckOption>();
         public DbSet<TrainingCourseAssessment> TrainingCourseAssessments => Set<TrainingCourseAssessment>();
         public DbSet<TrainingQuestionBankQuestion> TrainingQuestionBankQuestions => Set<TrainingQuestionBankQuestion>();
         public DbSet<TrainingQuestionBankOption> TrainingQuestionBankOptions => Set<TrainingQuestionBankOption>();
@@ -429,8 +422,11 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ValidityMonths).HasDefaultValue(12);
                 entity.Property(x => x.IsMandatory).HasDefaultValue(true);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.Property(x => x.IsDeleted).HasDefaultValue(false);
+                entity.Property(x => x.DeletedByUserId).HasMaxLength(450);
                 entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
                 entity.Property(x => x.UpdatedByUserId).HasMaxLength(450);
+                entity.HasIndex(x => x.IsDeleted);
                 entity.HasOne(x => x.CurrentVersion)
                     .WithMany()
                     .HasForeignKey(x => x.CurrentVersionId)
@@ -459,7 +455,9 @@ namespace AlgoaBayBMT.Data
             {
                 entity.ToTable("Modules");
                 entity.HasKey(x => x.ModuleId);
-                entity.HasIndex(x => new { x.CourseVersionId, x.OrderIndex }).IsUnique();
+                // Non-unique: ordering is compacted by the service's reindex logic, and a
+                // unique index makes swap-based reordering throw transient constraint violations.
+                entity.HasIndex(x => new { x.CourseVersionId, x.OrderIndex });
                 entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.Description).HasMaxLength(1000);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
@@ -480,7 +478,7 @@ namespace AlgoaBayBMT.Data
             {
                 entity.ToTable("Lessons");
                 entity.HasKey(x => x.LessonId);
-                entity.HasIndex(x => new { x.ModuleId, x.OrderIndex }).IsUnique();
+                entity.HasIndex(x => new { x.ModuleId, x.OrderIndex });
                 entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.Summary).HasMaxLength(1000);
                 entity.Property(x => x.IsPreview).HasDefaultValue(false);
@@ -495,7 +493,7 @@ namespace AlgoaBayBMT.Data
             {
                 entity.ToTable("LessonBlocks");
                 entity.HasKey(x => x.LessonBlockId);
-                entity.HasIndex(x => new { x.LessonId, x.OrderIndex }).IsUnique();
+                entity.HasIndex(x => new { x.LessonId, x.OrderIndex });
                 entity.Property(x => x.Title).HasMaxLength(200);
                 entity.Property(x => x.Subtitle).HasMaxLength(300);
                 entity.Property(x => x.ThumbnailUrl).HasMaxLength(500);
@@ -512,33 +510,6 @@ namespace AlgoaBayBMT.Data
                     .WithMany(x => x.LessonBlocks)
                     .HasForeignKey(x => x.MediaAssetId)
                     .OnDelete(DeleteBehavior.SetNull);
-            });
-
-            builder.Entity<TrainingKnowledgeCheckQuestion>(entity =>
-            {
-                entity.ToTable("TrainingKnowledgeCheckQuestions");
-                entity.HasKey(x => x.TrainingKnowledgeCheckQuestionId);
-                entity.HasIndex(x => new { x.TrainingLessonId, x.OrderIndex }).IsUnique();
-                entity.Property(x => x.Prompt).IsRequired();
-                entity.Property(x => x.Points).HasPrecision(8, 2).HasDefaultValue(1m);
-                entity.Property(x => x.IsActive).HasDefaultValue(true);
-                entity.HasOne(x => x.Lesson)
-                    .WithMany(x => x.KnowledgeCheckQuestions)
-                    .HasForeignKey(x => x.TrainingLessonId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            builder.Entity<TrainingKnowledgeCheckOption>(entity =>
-            {
-                entity.ToTable("TrainingKnowledgeCheckOptions");
-                entity.HasKey(x => x.TrainingKnowledgeCheckOptionId);
-                entity.HasIndex(x => new { x.TrainingKnowledgeCheckQuestionId, x.OrderIndex }).IsUnique();
-                entity.Property(x => x.OptionText).HasMaxLength(1000).IsRequired();
-                entity.Property(x => x.IsCorrect).HasDefaultValue(false);
-                entity.HasOne(x => x.Question)
-                    .WithMany(x => x.Options)
-                    .HasForeignKey(x => x.TrainingKnowledgeCheckQuestionId)
-                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<TrainingCourseAssessment>(entity =>
@@ -568,6 +539,11 @@ namespace AlgoaBayBMT.Data
                     .WithMany(x => x.QuestionBankQuestions)
                     .HasForeignKey(x => x.TrainingModuleId)
                     .OnDelete(DeleteBehavior.SetNull);
+                // Lesson-scoped question bank: TrainingLessonId is a soft reference (indexed, no FK)
+                // so the end-of-lesson quiz can draw a random subset specific to that lesson. A hard
+                // FK to Lessons would introduce multiple cascade paths (SQL Server error 1785) because
+                // the question already reaches Lessons via Assessment -> Course -> Version -> Module.
+                entity.HasIndex(x => x.TrainingLessonId);
             });
 
             builder.Entity<TrainingQuestionBankOption>(entity =>
@@ -593,48 +569,6 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ContentType).HasMaxLength(100).IsRequired();
                 entity.Property(x => x.UploadedByUserId).HasMaxLength(450);
                 entity.Property(x => x.HashSha256).HasMaxLength(128);
-            });
-
-            builder.Entity<Assessment>(entity =>
-            {
-                entity.ToTable("Assessments");
-                entity.HasKey(x => x.AssessmentId);
-                entity.HasIndex(x => x.LessonId).IsUnique();
-                entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
-                entity.Property(x => x.PassMarkPercent).HasPrecision(5, 2).HasDefaultValue(80m);
-                entity.Property(x => x.MaxAttempts).HasDefaultValue(3);
-                entity.Property(x => x.ShowFeedbackAfterSubmit).HasDefaultValue(true);
-                entity.Property(x => x.IsActive).HasDefaultValue(true);
-                entity.HasOne(x => x.Lesson)
-                    .WithOne(x => x.Assessment)
-                    .HasForeignKey<Assessment>(x => x.LessonId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            builder.Entity<AssessmentQuestion>(entity =>
-            {
-                entity.ToTable("AssessmentQuestions");
-                entity.HasKey(x => x.AssessmentQuestionId);
-                entity.HasIndex(x => new { x.AssessmentId, x.OrderIndex });
-                entity.Property(x => x.PromptMarkdown).IsRequired();
-                entity.Property(x => x.Points).HasPrecision(8, 2).HasDefaultValue(1m);
-                entity.HasOne(x => x.Assessment)
-                    .WithMany(x => x.Questions)
-                    .HasForeignKey(x => x.AssessmentId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            builder.Entity<AssessmentOption>(entity =>
-            {
-                entity.ToTable("AssessmentOptions");
-                entity.HasKey(x => x.AssessmentOptionId);
-                entity.HasIndex(x => new { x.AssessmentQuestionId, x.OrderIndex });
-                entity.Property(x => x.OptionText).HasMaxLength(1000).IsRequired();
-                entity.Property(x => x.IsCorrect).HasDefaultValue(false);
-                entity.HasOne(x => x.AssessmentQuestion)
-                    .WithMany(x => x.Options)
-                    .HasForeignKey(x => x.AssessmentQuestionId)
-                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             builder.Entity<CourseAudienceRule>(entity =>
@@ -758,43 +692,6 @@ namespace AlgoaBayBMT.Data
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            builder.Entity<AssessmentAttempt>(entity =>
-            {
-                entity.ToTable("AssessmentAttempts");
-                entity.HasKey(x => x.AssessmentAttemptId);
-                entity.HasIndex(x => new { x.AssessmentId, x.UserId, x.AttemptNumber }).IsUnique();
-                entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
-                entity.Property(x => x.ScorePercent).HasPrecision(5, 2);
-                entity.Property(x => x.Passed).HasDefaultValue(false);
-                entity.HasOne(x => x.Assessment)
-                    .WithMany(x => x.Attempts)
-                    .HasForeignKey(x => x.AssessmentId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne<ApplicationUser>()
-                    .WithMany()
-                    .HasForeignKey(x => x.UserId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            builder.Entity<AssessmentResponse>(entity =>
-            {
-                entity.ToTable("AssessmentResponses");
-                entity.HasKey(x => x.AssessmentResponseId);
-                entity.Property(x => x.AwardedPoints).HasPrecision(8, 2);
-                entity.HasOne(x => x.AssessmentAttempt)
-                    .WithMany(x => x.Responses)
-                    .HasForeignKey(x => x.AssessmentAttemptId)
-                    .OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne(x => x.AssessmentQuestion)
-                    .WithMany(x => x.Responses)
-                    .HasForeignKey(x => x.AssessmentQuestionId)
-                    .OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne(x => x.SelectedOption)
-                    .WithMany(x => x.Responses)
-                    .HasForeignKey(x => x.SelectedOptionId)
-                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             builder.Entity<CourseCompletionRecord>(entity =>

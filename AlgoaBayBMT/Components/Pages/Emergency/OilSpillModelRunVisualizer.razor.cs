@@ -24,6 +24,14 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         private List<OilSpillResponseAction> _actions = new();
         private List<OilSpillChartPoint> _chartPoints = new();
 
+        // Dual-scenario state: every run stores a Baseline (WITHOUT measures) prediction and,
+        // when response measures are deployed, a Mitigated (WITH measures) prediction.
+        private OilSpillScenarioKind _activeScenario = OilSpillScenarioKind.Baseline;
+        private List<OilSpillTrajectoryPoint> _baselineTrajectory = new();
+        private List<OilSpillTrajectoryPoint> _mitigatedTrajectory = new();
+        private bool _showComparisonOverlay = true;
+        private ScenarioEffectiveness? _effectiveness;
+
         private int _currentIndex;
         private bool _showTrajectory = true;
         private bool _showSlick = true;
@@ -124,33 +132,172 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         {
             StopPlayback();
             _selectedRunId = runId;
-            _trajectory = (await OilSpillModelService.GetTrajectoryAsync(runId))
+
+            var run = _modelRuns.FirstOrDefault(r => r.Id == runId);
+
+            _baselineTrajectory = (await OilSpillModelService.GetTrajectoryAsync(
+                    runId, OilSpillScenarioKind.Baseline))
                 .OrderBy(p => p.Timestamp)
                 .ToList();
+
+            _mitigatedTrajectory = run?.HasMitigatedScenario == true
+                ? (await OilSpillModelService.GetTrajectoryAsync(
+                        runId, OilSpillScenarioKind.Mitigated))
+                    .OrderBy(p => p.Timestamp)
+                    .ToList()
+                : new List<OilSpillTrajectoryPoint>();
+
+            // Default to the WITH-measures view when it exists — that is the operational
+            // prediction — while the overlay keeps the WITHOUT-measures footprint visible.
+            _activeScenario = _mitigatedTrajectory.Count > 0
+                ? OilSpillScenarioKind.Mitigated
+                : OilSpillScenarioKind.Baseline;
+
+            ApplyScenario();
+            BuildEffectiveness(run);
+        }
+
+        /// <summary>True when the selected run stores a WITH-measures (Mitigated) prediction.</summary>
+        private bool HasMitigated =>
+            SelectedRun?.HasMitigatedScenario == true && _mitigatedTrajectory.Count > 0;
+
+        /// <summary>
+        /// Points the playback state at the active scenario's trajectory and restores that
+        /// scenario's shoreline-impact result (falling back to a coastline scan for legacy runs
+        /// generated before impact metadata was persisted).
+        /// </summary>
+        private void ApplyScenario()
+        {
+            _trajectory = _activeScenario == OilSpillScenarioKind.Mitigated
+                && _mitigatedTrajectory.Count > 0
+                ? _mitigatedTrajectory
+                : _baselineTrajectory;
+
             _chartPoints = OilSpillVisualizationBuilder.BuildChartPoints(_trajectory);
             _currentIndex = 0;
 
-            // Restore any previously recorded shoreline impact for this run (flag only - the
-            // animation plays through the impact rather than stopping at it).
-            var run = _modelRuns.FirstOrDefault(r => r.Id == runId);
-            if (run?.ShorelineImpactIndex is int impactIndex
-                && impactIndex >= 0 && impactIndex <= MaxIndex)
+            var run = SelectedRun;
+            var impactIndex = _activeScenario == OilSpillScenarioKind.Mitigated
+                ? run?.MitigatedShorelineImpactIndex
+                : run?.ShorelineImpactIndex;
+
+            if (impactIndex is int idx && idx >= 0 && idx <= MaxIndex)
             {
                 _shorelineImpactDetected = true;
-                _shorelineImpactIndex = impactIndex;
+                _shorelineImpactIndex = idx;
             }
             else
             {
                 _shorelineImpactDetected = false;
                 _shorelineImpactIndex = null;
 
-                // Scan the whole trajectory up-front so an impact is surfaced immediately,
-                // even before the user presses Play.
+                // Legacy runs (generated before impact metadata was stored): scan the trajectory.
                 if (FindShorelineImpact(MaxIndex) is int detected)
                 {
-                    await ApplyShorelineImpactAsync(detected);
+                    _shorelineImpactDetected = true;
+                    _shorelineImpactIndex = detected;
                 }
             }
+        }
+
+        /// <summary>Switches between the WITHOUT- and WITH-measures predictions.</summary>
+        private void SetScenario(OilSpillScenarioKind scenario)
+        {
+            if (_activeScenario == scenario
+                || (scenario == OilSpillScenarioKind.Mitigated && !HasMitigated))
+            {
+                return;
+            }
+
+            StopPlayback();
+            _activeScenario = scenario;
+            ApplyScenario();
+            StateHasChanged();
+        }
+
+        private string ScenarioButtonClass(OilSpillScenarioKind scenario) =>
+            _activeScenario == scenario
+                ? "pf-training-page-action-btn crew-action-btn-blue"
+                : "pf-training-page-action-btn crew-action-btn-teal";
+
+        private void OnComparisonOverlayToggled(bool value)
+        {
+            _showComparisonOverlay = value;
+            StateHasChanged();
+        }
+
+        /// <summary>Impacted-coastline GeoJSON for the active scenario (red band on the map).</summary>
+        private string? ActiveImpactZoneGeoJson =>
+            _activeScenario == OilSpillScenarioKind.Mitigated
+                ? SelectedRun?.MitigatedShorelineImpactGeoJson
+                : SelectedRun?.ShorelineImpactGeoJson;
+
+        /// <summary>The other scenario's trajectory, overlaid on the map for comparison.</summary>
+        private IReadOnlyList<OilSpillTrajectoryPoint>? ComparisonTrajectory =>
+            HasMitigated
+                ? (_activeScenario == OilSpillScenarioKind.Mitigated
+                    ? _baselineTrajectory
+                    : _mitigatedTrajectory)
+                : null;
+
+        /// <summary>
+        /// True when the playhead has reached (or passed) the shoreline impact step, so the alert
+        /// banner appears at the moment of impact during playback.
+        /// </summary>
+        private bool ShowImpactAlert =>
+            _shorelineImpactDetected
+            && _shorelineImpactIndex is int idx
+            && _currentIndex >= idx;
+
+        /// <summary>BEFORE/AFTER effectiveness of the deployed measures for the selected run.</summary>
+        private sealed record ScenarioEffectiveness(
+            DateTime? BaselineImpactTime,
+            DateTime? MitigatedImpactTime,
+            double? LandfallDelayHours,
+            bool ImpactPrevented,
+            double BaselineFinalAreaSqKm,
+            double MitigatedFinalAreaSqKm,
+            double AreaReductionPercent,
+            double BaselineShoreKm,
+            double MitigatedShoreKm);
+
+        /// <summary>
+        /// Quantifies the WITH-measures prediction against the WITHOUT-measures baseline:
+        /// landfall delay/prevention, final slick-area reduction, and shoreline length spared.
+        /// </summary>
+        private void BuildEffectiveness(OilSpillModelRun? run)
+        {
+            if (run?.HasMitigatedScenario != true
+                || _baselineTrajectory.Count == 0
+                || _mitigatedTrajectory.Count == 0)
+            {
+                _effectiveness = null;
+                return;
+            }
+
+            var baselineImpact = run.ShorelineImpactTime;
+            var mitigatedImpact = run.MitigatedShorelineImpactTime;
+
+            double? delayHours = baselineImpact is not null && mitigatedImpact is not null
+                ? (mitigatedImpact.Value - baselineImpact.Value).TotalHours
+                : null;
+
+            var baselineArea = _baselineTrajectory[^1].AreaSqM / 1_000_000.0;
+            var mitigatedArea = _mitigatedTrajectory[^1].AreaSqM / 1_000_000.0;
+            var reduction = baselineArea > 0
+                ? Math.Max(0.0, (1.0 - (mitigatedArea / baselineArea)) * 100.0)
+                : 0.0;
+
+            _effectiveness = new ScenarioEffectiveness(
+                BaselineImpactTime: baselineImpact,
+                MitigatedImpactTime: mitigatedImpact,
+                LandfallDelayHours: delayHours,
+                ImpactPrevented: baselineImpact is not null && mitigatedImpact is null,
+                BaselineFinalAreaSqKm: baselineArea,
+                MitigatedFinalAreaSqKm: mitigatedArea,
+                AreaReductionPercent: reduction,
+                BaselineShoreKm: OilSpillGeometry.LineLengthKm(run.ShorelineImpactGeoJson),
+                MitigatedShoreKm: OilSpillGeometry.LineLengthKm(run.MitigatedShorelineImpactGeoJson));
         }
 
         /// <summary>
@@ -174,28 +321,6 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             }
 
             return null;
-        }
-
-        private async Task ApplyShorelineImpactAsync(int impactIndex)
-        {
-            // Record the impact and surface the alert, but keep the animation running so the
-            // user can watch the slick continue to spread along/onto the shoreline.
-            _shorelineImpactDetected = true;
-            _shorelineImpactIndex = impactIndex;
-
-            // Persist the impact on the run and update the in-memory copy.
-            if (_selectedRunId is int runId)
-            {
-                var impactTime = _trajectory[impactIndex].Timestamp;
-                await OilSpillModelService.RecordShorelineImpactAsync(runId, impactIndex, impactTime);
-
-                var run = _modelRuns.FirstOrDefault(r => r.Id == runId);
-                if (run is not null)
-                {
-                    run.ShorelineImpactIndex = impactIndex;
-                    run.ShorelineImpactTime = impactTime;
-                }
-            }
         }
 
         private async Task OnRunChanged(ChangeEventArgs<int?, OilSpillModelRun> args)
@@ -289,18 +414,15 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
                 _currentIndex = 0;
             }
 
-            // Surface an impact for the starting frame (flag only - playback still proceeds).
-            if (FindShorelineImpact(_currentIndex) is int startImpact)
-            {
-                await ApplyShorelineImpactAsync(startImpact);
-            }
-
             _isPlaying = true;
             _playCts = new CancellationTokenSource();
             var token = _playCts.Token;
 
             try
             {
+                // Drift stops at the shoreline impact; the frames after it model alongshore
+                // spreading at the landfall point, so playback runs to the trajectory's end and
+                // the impact alert surfaces the moment the playhead reaches the impact step.
                 while (!token.IsCancellationRequested && _currentIndex < MaxIndex)
                 {
                     await Task.Delay(FrameDelayMs, token);
@@ -311,15 +433,6 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
                     }
 
                     _currentIndex++;
-
-                    // Flag the shoreline impact when first reached but keep advancing the
-                    // animation - it now runs continuously until paused or the end is reached.
-                    if (!_shorelineImpactDetected
-                        && FindShorelineImpact(_currentIndex) is int impactIndex)
-                    {
-                        await ApplyShorelineImpactAsync(impactIndex);
-                    }
-
                     StateHasChanged();
                 }
             }

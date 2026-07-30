@@ -101,7 +101,7 @@ builder.Services.AddSingleton<IEmailSender<ApplicationUser>>(sp => sp.GetRequire
 
 var app = builder.Build();
 //Register Syncfusion license https://help.syncfusion.com/common/essential-studio/licensing/how-to-generate
-Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JHaF5cWWRCf1FpRmJGdld5fUVHYVZUTXxaS00DNHVRdkdlWXteeHVQR2BdUUB3XEJWYEo=");
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1JAaF5cX2pCd1p/TH5YfUNzdUVEY1ZUTXxaS1ZhSXxVdkJgWX9YcnNQRmNYVUJ9XEY=");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

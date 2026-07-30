@@ -46,6 +46,21 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Models
         AerialRecon
     }
 
+    /// <summary>
+    /// Which prediction scenario a trajectory point belongs to. Every model run always stores a
+    /// Baseline (WITHOUT response measures) trajectory; when response measures are deployed it
+    /// additionally stores a Mitigated (WITH measures) trajectory so the two predictions can be
+    /// compared before/after.
+    /// </summary>
+    public enum OilSpillScenarioKind
+    {
+        /// <summary>Prediction with no response measures applied (WITHOUT measures).</summary>
+        Baseline = 0,
+
+        /// <summary>Prediction with the deployed response measures applied (WITH measures).</summary>
+        Mitigated = 1
+    }
+
     /// <summary>Supported IMS/ICS incident-management form types.</summary>
     public enum IncidentFormType
     {

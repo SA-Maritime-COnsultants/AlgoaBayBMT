@@ -40,8 +40,8 @@ namespace AlgoaBayBMT.Services
 
             var dashboard = new TrainingDashboardModel
             {
-                TotalCourses = await dbContext.Courses.AsNoTracking().CountAsync(cancellationToken),
-                ActiveCourses = await dbContext.Courses.AsNoTracking().CountAsync(x => x.IsActive, cancellationToken),
+                TotalCourses = await dbContext.Courses.AsNoTracking().CountAsync(x => !x.IsDeleted, cancellationToken),
+                ActiveCourses = await dbContext.Courses.AsNoTracking().CountAsync(x => x.IsActive && !x.IsDeleted, cancellationToken),
                 PublishedCourses = await dbContext.CourseVersions.AsNoTracking().CountAsync(x => x.Status == CourseVersionStatus.Published, cancellationToken),
                 DraftCourses = await dbContext.CourseVersions.AsNoTracking().CountAsync(x => x.Status == CourseVersionStatus.Draft, cancellationToken),
                 TotalModules = await dbContext.Modules.AsNoTracking().CountAsync(cancellationToken),
@@ -91,15 +91,8 @@ namespace AlgoaBayBMT.Services
             await dbContext.TrainingQuestionBankOptions.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingQuestionBankQuestions.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingCourseAssessments.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.TrainingKnowledgeCheckOptions.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.TrainingKnowledgeCheckQuestions.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingCertificates.ExecuteDeleteAsync(cancellationToken);
             await dbContext.CourseCompletionRecords.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.AssessmentResponses.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.AssessmentAttempts.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.AssessmentOptions.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.AssessmentQuestions.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.Assessments.ExecuteDeleteAsync(cancellationToken);
             await dbContext.UserLessonProgress.ExecuteDeleteAsync(cancellationToken);
             await dbContext.UserCourseProgress.ExecuteDeleteAsync(cancellationToken);
             await dbContext.UserTrainingAssignments.ExecuteDeleteAsync(cancellationToken);
@@ -129,6 +122,7 @@ namespace AlgoaBayBMT.Services
 
             var courses = await dbContext.Courses
                 .AsNoTracking()
+                .Where(x => !x.IsDeleted)
                 .OrderBy(x => x.Title)
                 .Select(x => new TrainingCourseListItemModel
                 {
@@ -425,8 +419,12 @@ namespace AlgoaBayBMT.Services
             var isNewCourse = !model.CourseId.HasValue;
             if (model.CourseId.HasValue)
             {
-                course = await dbContext.Courses.FirstOrDefaultAsync(x => x.CourseId == model.CourseId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("Course not found.");
+                var existingCourse = await dbContext.Courses.FirstOrDefaultAsync(x => x.CourseId == model.CourseId.Value, cancellationToken);
+                if (existingCourse is null)
+                {
+                    return OperationResult<TrainingCourseEditModel>.Failure("Course not found. It may have been deleted.");
+                }
+                course = existingCourse;
                 course.UpdatedByUserId = changedByUserId;
                 course.UpdatedOnUtc = DateTime.UtcNow;
             }
@@ -520,6 +518,41 @@ namespace AlgoaBayBMT.Services
             await WriteAuditLogAsync(dbContext, "Course", course.CourseId.ToString(), isActive ? "Activate" : "Deactivate", changedByUserId, notes: course.Title, cancellationToken: cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
             return OperationResult.Success(isActive ? "Course activated." : "Course deactivated.");
+        }
+
+        public async Task<OperationResult> SoftDeleteCourseAsync(Guid courseId, string? changedByUserId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+            var course = await dbContext.Courses.FirstOrDefaultAsync(x => x.CourseId == courseId, cancellationToken);
+            if (course is null)
+            {
+                return OperationResult.Failure("Course not found.");
+            }
+
+            if (course.IsDeleted)
+            {
+                return OperationResult.Success("Course was already removed.");
+            }
+
+            // Soft delete: retain the row (and all its versions/modules/lessons/progress history)
+            // but hide it from the management and editing lists.
+            course.IsDeleted = true;
+            course.DeletedByUserId = changedByUserId;
+            course.DeletedOnUtc = DateTime.UtcNow;
+            course.UpdatedByUserId = changedByUserId;
+            course.UpdatedOnUtc = DateTime.UtcNow;
+
+            await WriteAuditLogAsync(dbContext, "Course", course.CourseId.ToString(), "Delete", changedByUserId, notes: course.Title, cancellationToken: cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to soft-delete course {CourseId}", courseId);
+                return OperationResult.Failure("The course could not be removed. Please try again.");
+            }
+            return OperationResult.Success("Course removed.");
         }
 
         public async Task<OperationResult<CourseVersion>> CreateNextCourseVersionAsync(Guid courseId, string? changedByUserId, CancellationToken cancellationToken = default)
@@ -821,8 +854,12 @@ namespace AlgoaBayBMT.Services
             TrainingModule module;
             if (model.ModuleId.HasValue)
             {
-                module = await dbContext.Modules.FirstOrDefaultAsync(x => x.ModuleId == model.ModuleId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("Module not found.");
+                var existingModule = await dbContext.Modules.FirstOrDefaultAsync(x => x.ModuleId == model.ModuleId.Value, cancellationToken);
+                if (existingModule is null)
+                {
+                    return OperationResult<TrainingModuleEditModel>.Failure("Module not found. It may have been deleted.");
+                }
+                module = existingModule;
             }
             else
             {
@@ -870,9 +907,17 @@ namespace AlgoaBayBMT.Services
             var versionId = module.CourseVersionId;
             dbContext.Modules.Remove(module);
             await WriteAuditLogAsync(dbContext, "Module", moduleId.ToString(), "Delete", changedByUserId, notes: module.Title, cancellationToken: cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexModulesAsync(dbContext, versionId, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await ReindexModulesAsync(dbContext, versionId, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to delete module {ModuleId}", moduleId);
+                return OperationResult.Failure("The module could not be deleted. Please try again.");
+            }
             return OperationResult.Success("Module deleted.");
         }
 
@@ -899,9 +944,17 @@ namespace AlgoaBayBMT.Services
 
             (modules[index].OrderIndex, modules[targetIndex].OrderIndex) = (modules[targetIndex].OrderIndex, modules[index].OrderIndex);
             await WriteAuditLogAsync(dbContext, "Module", moduleId.ToString(), "Reorder", changedByUserId, notes: module.Title, cancellationToken: cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexModulesAsync(dbContext, module.CourseVersionId, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await ReindexModulesAsync(dbContext, module.CourseVersionId, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to reorder module {ModuleId}", moduleId);
+                return OperationResult.Failure("The module order could not be updated. Please try again.");
+            }
             return OperationResult.Success("Module order updated.");
         }
 
@@ -912,8 +965,12 @@ namespace AlgoaBayBMT.Services
             TrainingLesson lesson;
             if (model.LessonId.HasValue)
             {
-                lesson = await dbContext.Lessons.FirstOrDefaultAsync(x => x.LessonId == model.LessonId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("Lesson not found.");
+                var existingLesson = await dbContext.Lessons.FirstOrDefaultAsync(x => x.LessonId == model.LessonId.Value, cancellationToken);
+                if (existingLesson is null)
+                {
+                    return OperationResult<TrainingLessonEditModel>.Failure("Lesson not found. It may have been deleted.");
+                }
+                lesson = existingLesson;
             }
             else
             {
@@ -958,9 +1015,17 @@ namespace AlgoaBayBMT.Services
             var moduleId = lesson.ModuleId;
             dbContext.Lessons.Remove(lesson);
             await WriteAuditLogAsync(dbContext, "Lesson", lessonId.ToString(), "Delete", changedByUserId, notes: lesson.Title, cancellationToken: cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexLessonsAsync(dbContext, moduleId, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await ReindexLessonsAsync(dbContext, moduleId, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to delete lesson {LessonId}", lessonId);
+                return OperationResult.Failure("The lesson could not be deleted. Please try again.");
+            }
             return OperationResult.Success("Lesson deleted.");
         }
 
@@ -987,9 +1052,17 @@ namespace AlgoaBayBMT.Services
 
             (lessons[index].OrderIndex, lessons[targetIndex].OrderIndex) = (lessons[targetIndex].OrderIndex, lessons[index].OrderIndex);
             await WriteAuditLogAsync(dbContext, "Lesson", lessonId.ToString(), "Reorder", changedByUserId, notes: lesson.Title, cancellationToken: cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexLessonsAsync(dbContext, lesson.ModuleId, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await ReindexLessonsAsync(dbContext, lesson.ModuleId, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to reorder lesson {LessonId}", lessonId);
+                return OperationResult.Failure("The lesson order could not be updated. Please try again.");
+            }
             return OperationResult.Success("Lesson order updated.");
         }
 
@@ -997,11 +1070,8 @@ namespace AlgoaBayBMT.Services
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-            if (model.BlockType == LessonBlockType.Assessment && !model.LinkedAssessmentId.HasValue)
-            {
-                return OperationResult<TrainingLessonBlockEditModel>.Failure("Select an assessment for this lesson block.");
-            }
-
+            // An Assessment block may be saved as a draft without a linked assessment; the learner
+            // runtime guards against a missing pool, so blocking the save here only stranded new blocks.
             if (model.LinkedAssessmentId.HasValue)
             {
                 model.LinkedAssessmentName = await dbContext.TrainingCourseAssessments
@@ -1018,8 +1088,12 @@ namespace AlgoaBayBMT.Services
             LessonBlock block;
             if (model.LessonBlockId.HasValue)
             {
-                block = await dbContext.LessonBlocks.FirstOrDefaultAsync(x => x.LessonBlockId == model.LessonBlockId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("Lesson block not found.");
+                var existingBlock = await dbContext.LessonBlocks.FirstOrDefaultAsync(x => x.LessonBlockId == model.LessonBlockId.Value, cancellationToken);
+                if (existingBlock is null)
+                {
+                    return OperationResult<TrainingLessonBlockEditModel>.Failure("Lesson content block not found. It may have been deleted.");
+                }
+                block = existingBlock;
             }
             else
             {
@@ -1095,6 +1169,20 @@ namespace AlgoaBayBMT.Services
                     .ToListAsync(cancellationToken)
                 : new List<TrainingModuleLookupModel>();
 
+            var moduleIdList = modules.Select(x => x.ModuleId).ToList();
+            var lessons = moduleIdList.Count == 0
+                ? new List<TrainingLessonLookupModel>()
+                : await dbContext.Lessons.AsNoTracking()
+                    .Where(x => moduleIdList.Contains(x.ModuleId))
+                    .OrderBy(x => x.OrderIndex)
+                    .Select(x => new TrainingLessonLookupModel
+                    {
+                        LessonId = x.LessonId,
+                        ModuleId = x.ModuleId,
+                        Name = x.Title
+                    })
+                    .ToListAsync(cancellationToken);
+
             var assessments = await dbContext.TrainingCourseAssessments.AsNoTracking()
                 .Where(x => x.TrainingCourseId == courseId)
                 .OrderBy(x => x.Name)
@@ -1125,6 +1213,7 @@ namespace AlgoaBayBMT.Services
                 PassMarkPercent = course.PassMarkPercent,
                 ValidityMonths = course.ValidityMonths,
                 Modules = modules,
+                Lessons = lessons,
                 Assessments = assessments.Select(x => new TrainingCourseAssessmentEditModel
                 {
                     TrainingCourseAssessmentId = x.TrainingCourseAssessmentId,
@@ -1144,6 +1233,7 @@ namespace AlgoaBayBMT.Services
                     TrainingCourseAssessmentId = x.TrainingCourseAssessmentId,
                     TrainingModuleId = x.TrainingModuleId,
                     QuestionType = x.QuestionType,
+                    TrainingLessonId = x.TrainingLessonId,
                     Prompt = x.Prompt,
                     ScenarioText = x.ScenarioText,
                     Explanation = x.Explanation,
@@ -1171,8 +1261,12 @@ namespace AlgoaBayBMT.Services
             TrainingCourseAssessment assessment;
             if (model.TrainingCourseAssessmentId.HasValue)
             {
-                assessment = await dbContext.TrainingCourseAssessments.FirstOrDefaultAsync(x => x.TrainingCourseAssessmentId == model.TrainingCourseAssessmentId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("Assessment not found.");
+                var existingAssessment = await dbContext.TrainingCourseAssessments.FirstOrDefaultAsync(x => x.TrainingCourseAssessmentId == model.TrainingCourseAssessmentId.Value, cancellationToken);
+                if (existingAssessment is null)
+                {
+                    return OperationResult<TrainingCourseAssessmentEditModel>.Failure("Assessment not found. It may have been deleted.");
+                }
+                assessment = existingAssessment;
             }
             else
             {
@@ -1206,10 +1300,14 @@ namespace AlgoaBayBMT.Services
             TrainingQuestionBankQuestion question;
             if (model.TrainingQuestionBankQuestionId.HasValue)
             {
-                question = await dbContext.TrainingQuestionBankQuestions
+                var existingQuestion = await dbContext.TrainingQuestionBankQuestions
                     .Include(x => x.Options)
-                    .FirstOrDefaultAsync(x => x.TrainingQuestionBankQuestionId == model.TrainingQuestionBankQuestionId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("Question bank question not found.");
+                    .FirstOrDefaultAsync(x => x.TrainingQuestionBankQuestionId == model.TrainingQuestionBankQuestionId.Value, cancellationToken);
+                if (existingQuestion is null)
+                {
+                    return OperationResult<TrainingQuestionBankQuestionEditModel>.Failure("Question bank item not found. It may have been deleted.");
+                }
+                question = existingQuestion;
             }
             else
             {
@@ -1223,6 +1321,7 @@ namespace AlgoaBayBMT.Services
 
             question.TrainingCourseAssessmentId = model.TrainingCourseAssessmentId;
             question.TrainingModuleId = model.TrainingModuleId;
+            question.TrainingLessonId = model.TrainingLessonId;
             question.QuestionType = model.QuestionType;
             question.Prompt = model.Prompt.Trim();
             question.ScenarioText = model.ScenarioText?.Trim();
@@ -1284,9 +1383,17 @@ namespace AlgoaBayBMT.Services
             var lessonId = block.LessonId;
             dbContext.LessonBlocks.Remove(block);
             await WriteAuditLogAsync(dbContext, "LessonBlock", lessonBlockId.ToString(), "Delete", changedByUserId, notes: block.Title, cancellationToken: cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexBlocksAsync(dbContext, lessonId, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await ReindexBlocksAsync(dbContext, lessonId, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to delete lesson block {LessonBlockId}", lessonBlockId);
+                return OperationResult.Failure("The content block could not be deleted. Please try again.");
+            }
             return OperationResult.Success("Lesson content block deleted.");
         }
 
@@ -1313,9 +1420,17 @@ namespace AlgoaBayBMT.Services
 
             (blocks[index].OrderIndex, blocks[targetIndex].OrderIndex) = (blocks[targetIndex].OrderIndex, blocks[index].OrderIndex);
             await WriteAuditLogAsync(dbContext, "LessonBlock", lessonBlockId.ToString(), "Reorder", changedByUserId, notes: block.Title, cancellationToken: cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexBlocksAsync(dbContext, block.LessonId, cancellationToken);
-            await dbContext.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await dbContext.SaveChangesAsync(cancellationToken);
+                await ReindexBlocksAsync(dbContext, block.LessonId, cancellationToken);
+                await dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (DbUpdateException ex)
+            {
+                logger.LogError(ex, "Failed to reorder lesson block {LessonBlockId}", lessonBlockId);
+                return OperationResult.Failure("The content block order could not be updated. Please try again.");
+            }
             return OperationResult.Success("Lesson content order updated.");
         }
 

@@ -136,19 +136,25 @@
                             <DataAnnotationsValidator />
                             <ValidationSummary class="validation-message" />
                             <div class="pf-form-grid">
-                                <div class="pf-col-4">
+                                <div class="pf-col-3">
                                     <label class="pf-field-label">Question Type</label>
                                     <SfDropDownList TValue="TrainingQuestionType" TItem="QuestionTypeOption" DataSource="@QuestionTypes" @bind-Value="QuestionEditor.QuestionType" Placeholder="Select type">
                                         <DropDownListFieldSettings Text="Text" Value="Value" />
                                     </SfDropDownList>
                                 </div>
-                                <div class="pf-col-4">
+                                <div class="pf-col-3">
                                     <label class="pf-field-label">Module</label>
-                                    <SfDropDownList TValue="Guid?" TItem="TrainingModuleLookupModel" DataSource="@PageModel.Modules" @bind-Value="QuestionEditor.TrainingModuleId" Placeholder="Course-wide question">
+                                    <SfDropDownList TValue="Guid?" TItem="TrainingModuleLookupModel" DataSource="@PageModel.Modules" @bind-Value="QuestionEditor.TrainingModuleId" Placeholder="Course-wide question" ShowClearButton="true" ValueChange="OnModuleChanged">
                                         <DropDownListFieldSettings Text="Name" Value="ModuleId" />
                                     </SfDropDownList>
                                 </div>
-                                <div class="pf-col-4">
+                                <div class="pf-col-3">
+                                    <label class="pf-field-label">Lesson</label>
+                                    <SfDropDownList TValue="Guid?" TItem="TrainingLessonLookupModel" DataSource="@FilteredLessons" @bind-Value="QuestionEditor.TrainingLessonId" Placeholder="Not lesson-specific" ShowClearButton="true">
+                                        <DropDownListFieldSettings Text="Name" Value="LessonId" />
+                                    </SfDropDownList>
+                                </div>
+                                <div class="pf-col-3">
                                     <label class="pf-field-label">Difficulty</label>
                                     <InputNumber @bind-Value="QuestionEditor.DifficultyLevel" class="form-control" />
                                 </div>
@@ -267,6 +273,22 @@
         new(TrainingQuestionType.TrueFalse, "True / False"),
         new(TrainingQuestionType.Scenario, "Scenario")
     ];
+
+    private IEnumerable<TrainingLessonLookupModel> FilteredLessons =>
+        QuestionEditor.TrainingModuleId is Guid moduleId
+            ? PageModel?.Lessons.Where(x => x.ModuleId == moduleId) ?? Enumerable.Empty<TrainingLessonLookupModel>()
+            : PageModel?.Lessons ?? Enumerable.Empty<TrainingLessonLookupModel>();
+
+    private void OnModuleChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, TrainingModuleLookupModel> args)
+    {
+        // If the chosen lesson no longer belongs to the selected module, clear it.
+        if (QuestionEditor.TrainingLessonId is Guid lessonId
+            && PageModel?.Lessons.FirstOrDefault(x => x.LessonId == lessonId) is { } lesson
+            && args.Value.HasValue && lesson.ModuleId != args.Value.Value)
+        {
+            QuestionEditor.TrainingLessonId = null;
+        }
+    }
 
     private IEnumerable<TrainingQuestionBankQuestionEditModel> FilteredQuestions =>
         SelectedAssessment?.TrainingCourseAssessmentId is Guid assessmentId
@@ -387,6 +409,7 @@
             TrainingQuestionBankQuestionId = question.TrainingQuestionBankQuestionId,
             TrainingCourseAssessmentId = question.TrainingCourseAssessmentId,
             TrainingModuleId = question.TrainingModuleId,
+            TrainingLessonId = question.TrainingLessonId,
             QuestionType = question.QuestionType,
             Prompt = question.Prompt,
             ScenarioText = question.ScenarioText,

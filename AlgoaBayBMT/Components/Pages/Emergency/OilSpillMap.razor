@@ -30,18 +30,104 @@
                 <MapsLayer TValue="string"
                            UrlTemplate="https://tile.openstreetmap.org/level/tileX/tileY.png">
 
-                    @* Slick polygon (sublayer) - rendered as a single polygon (largest ring) to
-                       avoid Syncfusion PolygonRenderer index errors that occur with @foreach loops
-                       inside MapsPolygons. For clipped/multi-polygon output the dominant water
-                       ring is used so the plume footprint is still visible. *@
-                    @if (ShowSlick && _polygonPoints.Count > 0)
+                    @* Slick footprint (sublayer). Rendered as up to five explicit rings — clipping
+                       the slick against the coastline can split it into several water-side pieces
+                       (e.g. either side of a harbour breakwater), and all of them must be shown
+                       for the footprint to read as one continuous slick. Indexed @if blocks are
+                       used instead of @foreach, which crashes Syncfusion's PolygonRenderer. *@
+                    @if (ShowSlick && _slickRings.Count > 0)
                     {
                         <MapsPolygons>
-                            <MapsPolygon Points="_polygonPoints"
+                            <MapsPolygon Points="@(_slickRings[0])"
                                          Fill="@SlickFillColor"
                                          BorderColor="@SlickBorderColor"
                                          BorderWidth="@(ShorelineImpact ? 2.5 : 1.5)" />
+                            @if (_slickRings.Count > 1)
+                            {
+                                <MapsPolygon Points="@(_slickRings[1])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                            @if (_slickRings.Count > 2)
+                            {
+                                <MapsPolygon Points="@(_slickRings[2])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                            @if (_slickRings.Count > 3)
+                            {
+                                <MapsPolygon Points="@(_slickRings[3])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                            @if (_slickRings.Count > 4)
+                            {
+                                <MapsPolygon Points="@(_slickRings[4])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
                         </MapsPolygons>
+                    }
+
+                    @* Comparison-scenario footprint (WITH measures overlaid on WITHOUT, or vice
+                       versa) in green so the effect of the deployed response measures is visible
+                       directly on the chart. *@
+                    @if (ShowComparison && _comparisonRings.Count > 0)
+                    {
+                        <MapsPolygons>
+                            <MapsPolygon Points="@(_comparisonRings[0])"
+                                         Fill="rgba(25, 135, 84, 0.22)"
+                                         BorderColor="#198754"
+                                         BorderWidth="2.5" />
+                            @if (_comparisonRings.Count > 1)
+                            {
+                                <MapsPolygon Points="@(_comparisonRings[1])"
+                                             Fill="rgba(25, 135, 84, 0.22)"
+                                             BorderColor="#198754"
+                                             BorderWidth="2" />
+                            }
+                            @if (_comparisonRings.Count > 2)
+                            {
+                                <MapsPolygon Points="@(_comparisonRings[2])"
+                                             Fill="rgba(25, 135, 84, 0.22)"
+                                             BorderColor="#198754"
+                                             BorderWidth="2" />
+                            }
+                        </MapsPolygons>
+                    }
+
+                    @* Potential shoreline impact zone: the stretch of coastline the modelled slick
+                       presses against, drawn as a thick red band along the shore. *@
+                    @if (_impactZoneLines.Count > 0)
+                    {
+                        <MapsNavigationLines>
+                            <MapsNavigationLine Visible="true"
+                                                Latitude="@_impactZoneLines[0].Latitudes"
+                                                Longitude="@_impactZoneLines[0].Longitudes"
+                                                Color="#dc3545" Width="6" Angle="0" />
+                        </MapsNavigationLines>
+                        @if (_impactZoneLines.Count > 1)
+                        {
+                            <MapsNavigationLines>
+                                <MapsNavigationLine Visible="true"
+                                                    Latitude="@_impactZoneLines[1].Latitudes"
+                                                    Longitude="@_impactZoneLines[1].Longitudes"
+                                                    Color="#dc3545" Width="6" Angle="0" />
+                            </MapsNavigationLines>
+                        }
+                        @if (_impactZoneLines.Count > 2)
+                        {
+                            <MapsNavigationLines>
+                                <MapsNavigationLine Visible="true"
+                                                    Latitude="@_impactZoneLines[2].Latitudes"
+                                                    Longitude="@_impactZoneLines[2].Longitudes"
+                                                    Color="#dc3545" Width="6" Angle="0" />
+                            </MapsNavigationLines>
+                        }
                     }
 
                     @* Trajectory polyline *@
@@ -119,11 +205,12 @@
                                     Shape="MarkerType.Circle" Fill="#0d3b66" Height="24" Width="24"
                                     AnimationDuration="0" />
 
-                        @* Time-step markers *@
+                        @* Time-step markers: small dots so the drift track reads as a path under
+                           the slick footprint rather than a chain of circles. *@
                         @if (ShowTrajectory)
                         {
                             <MapsMarker Visible="true" DataSource="_stepMarkers" TValue="OilSpillMapPoint"
-                                        Shape="MarkerType.Circle" Fill="#0d6efd" Height="10" Width="10"
+                                        Shape="MarkerType.Circle" Fill="#0d6efd" Height="6" Width="6"
                                         AnimationDuration="0" />
                         }
 

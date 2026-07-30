@@ -68,9 +68,11 @@
             _crewComplianceLink = $"/crewing/crew/{dashboard.CrewMemberId}";
             await InvokeAsync(StateHasChanged);
         }
-        catch
+        catch (Exception ex)
         {
-            // Non-critical — suppress errors so layout never blocks
+            // Non-critical — suppress errors so layout never blocks.
+            // This avoids crashing the shell when the database or identity state is temporarily unavailable.
+            Console.Error.WriteLine($"Crew compliance summary load failed: {ex}");
         }
     }
 

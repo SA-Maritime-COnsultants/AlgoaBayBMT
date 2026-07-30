@@ -35,6 +35,21 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         /// <summary>Trajectory index where the slick reaches the shoreline (null = none).</summary>
         [Parameter] public int? ImpactIndex { get; set; }
 
+        /// <summary>
+        /// GeoJSON line geometry of the impacted coastline stretch. Rendered as a thick red line
+        /// hugging the shore so the potential shoreline impact zone is explicit.
+        /// </summary>
+        [Parameter] public string? ImpactZoneGeoJson { get; set; }
+
+        /// <summary>
+        /// Optional second-scenario trajectory (e.g. the WITH-measures prediction overlaid on the
+        /// WITHOUT-measures one). Its cumulative footprint is drawn as a green comparison outline.
+        /// </summary>
+        [Parameter] public IReadOnlyList<OilSpillTrajectoryPoint>? ComparisonTrajectory { get; set; }
+
+        /// <summary>When true the comparison scenario footprint overlay is rendered.</summary>
+        [Parameter] public bool ShowComparison { get; set; }
+
         /// <summary>Spilled product type used to colour-code the slick polygon.</summary>
         [Parameter] public OilSpillProductType ProductType { get; set; } = OilSpillProductType.Unknown;
 
@@ -89,6 +104,8 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
 
         private List<Coordinate> _polygonPoints = new();
         private List<List<Coordinate>> _slickRings = new();
+        private List<List<Coordinate>> _comparisonRings = new();
+        private List<ResponseLine> _impactZoneLines = new();
         private double[] _polylineLat = Array.Empty<double>();
         private double[] _polylineLon = Array.Empty<double>();
         private List<OilSpillMapPoint> _polylinePoints = new();
@@ -129,6 +146,8 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             BuildMarkers();
             BuildPolyline();
             BuildPolygon();
+            BuildComparisonPolygon();
+            BuildImpactZone();
             BuildResponseGeometry();
             BuildTimeLabels();
             BuildPendingMarker();
@@ -235,9 +254,14 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
             var highlight = new List<OilSpillMapPoint>();
             var impact = new List<OilSpillMapPoint>();
 
-            // The animation runs continuously past a shoreline impact, so the full track is
-            // always plotted. The impact point is still highlighted with its own marker.
+            // Drift stops at shoreline impact, so the plotted track also stops there: any points
+            // after ImpactIndex are pinned at the landfall coordinate (alongshore-spreading steps)
+            // and would just stack markers on top of the impact zone.
             var lastIndex = MapPoints.Count - 1;
+            if (ImpactIndex is int cutoff && cutoff >= 0 && cutoff < MapPoints.Count)
+            {
+                lastIndex = cutoff;
+            }
 
             if (MapPoints.Count > 0)
             {
@@ -283,8 +307,13 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
 
         private void BuildPolyline()
         {
-            // The animation continues past shoreline impact, so the full track is drawn.
+            // The drift track ends at the shoreline impact (drift stops there); post-impact
+            // points repeat the landfall coordinate so they add nothing to the line.
             var visible = MapPoints;
+            if (ImpactIndex is int cutoff && cutoff >= 0 && cutoff < MapPoints.Count)
+            {
+                visible = MapPoints.Take(cutoff + 1).ToList();
+            }
 
             _polylinePoints = visible;
             _polylineLat = visible.Select(p => p.Latitude).ToArray();
@@ -353,6 +382,65 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
         }
 
         /// <summary>
+        /// Builds the comparison-scenario footprint rings (e.g. the WITH-measures prediction drawn
+        /// over the WITHOUT-measures slick). Uses the cumulative footprint at the matching playback
+        /// step so both scenarios are compared at the same simulated time.
+        /// </summary>
+        private void BuildComparisonPolygon()
+        {
+            _comparisonRings = new List<List<Coordinate>>();
+
+            if (!ShowComparison || ComparisonTrajectory is null || ComparisonTrajectory.Count == 0)
+            {
+                return;
+            }
+
+            var index = HighlightIndex is int idx && idx >= 0
+                ? Math.Min(idx, ComparisonTrajectory.Count - 1)
+                : ComparisonTrajectory.Count - 1;
+
+            var source = ComparisonTrajectory[index];
+            var geoJson = source.CumulativePolygonGeoJson ?? source.PolygonGeoJson;
+            if (string.IsNullOrWhiteSpace(geoJson))
+            {
+                return;
+            }
+
+            _comparisonRings = OilSpillGeometry.ParsePolygonRings(geoJson)
+                .Select(ring => ring
+                    .Where(p => IsFinite(p.Latitude) && IsFinite(p.Longitude)
+                                && Math.Abs(p.Latitude) <= 90 && Math.Abs(p.Longitude) <= 180)
+                    .Select(p => new Coordinate { Latitude = p.Latitude, Longitude = p.Longitude })
+                    .ToList())
+                .Where(ring => ring.Count >= 3 && IsRingNearOrigin(ring, source))
+                .ToList();
+        }
+
+        /// <summary>
+        /// Parses the impacted-coastline GeoJSON into renderable polylines so the potential
+        /// shoreline impact zone is drawn as a red band along the shore.
+        /// </summary>
+        private void BuildImpactZone()
+        {
+            var lines = new List<ResponseLine>();
+
+            foreach (var line in OilSpillGeometry.ParseLineStrings(ImpactZoneGeoJson))
+            {
+                var clean = line
+                    .Where(p => IsFinite(p.Latitude) && IsFinite(p.Longitude)
+                                && Math.Abs(p.Latitude) <= 90 && Math.Abs(p.Longitude) <= 180)
+                    .ToList();
+
+                if (clean.Count >= 2)
+                {
+                    lines.Add(ToResponseLine(clean));
+                }
+            }
+
+            _impactZoneLines = lines;
+        }
+
+        /// <summary>
         /// Builds the plume time labels ("T+Xh") positioned at each trajectory polygon centroid.
         /// One label per timestep up to (and including) the current playback index, so labels
         /// accumulate as the animation advances. Skipped entirely when ShowTimeLabels is false.
@@ -385,6 +473,18 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
                 if (!IsFinite(centroid.Latitude) || !IsFinite(centroid.Longitude))
                 {
                     continue;
+                }
+
+                // Skip labels that would sit on top of the previous one (e.g. the alongshore-
+                // spreading steps after landfall, which are pinned near the same centroid).
+                if (labels.Count > 0)
+                {
+                    var prev = labels[^1];
+                    if (Math.Abs(prev.Latitude - centroid.Latitude) < 0.002
+                        && Math.Abs(prev.Longitude - centroid.Longitude) < 0.002)
+                    {
+                        continue;
+                    }
                 }
 
                 var hours = (point.Timestamp - origin).TotalHours;

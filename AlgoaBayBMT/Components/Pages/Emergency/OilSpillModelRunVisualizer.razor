@@ -47,6 +47,27 @@
                     </SfDropDownList>
                 </div>
 
+                <div class="oilspill-scenario-toggle">
+                    <label class="form-label small mb-1 d-block">Prediction scenario</label>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <SfButton CssClass="@ScenarioButtonClass(OilSpillScenarioKind.Baseline)"
+                                  Content="Without measures"
+                                  OnClick="() => SetScenario(OilSpillScenarioKind.Baseline)" />
+                        <SfButton CssClass="@ScenarioButtonClass(OilSpillScenarioKind.Mitigated)"
+                                  Content="With measures"
+                                  Disabled="@(!HasMitigated)"
+                                  OnClick="() => SetScenario(OilSpillScenarioKind.Mitigated)" />
+                        <SfCheckBox TChecked="bool" Checked="_showComparisonOverlay"
+                                    CheckedChanged="OnComparisonOverlayToggled"
+                                    Disabled="@(!HasMitigated)"
+                                    Label="Overlay other scenario" />
+                    </div>
+                    @if (!HasMitigated)
+                    {
+                        <div class="form-text">Deploy a response measure to unlock the WITH-measures prediction.</div>
+                    }
+                </div>
+
                 <div class="oilspill-layer-toggles">
                     <label class="form-label small mb-1 d-block">Layers</label>
                     <div class="d-flex align-items-center gap-3">
@@ -100,16 +121,70 @@
             </div>
         </div>
 
-        @if (_shorelineImpactDetected && _shorelineImpactIndex is int impactStep
+        @if (ShowImpactAlert && _shorelineImpactIndex is int impactStep
             && impactStep >= 0 && impactStep < _trajectory.Count)
         {
             <div class="pf-alert pf-alert--warning-strong d-flex align-items-center gap-2" role="alert">
                 <span class="e-icons e-warning"></span>
                 <span>
                     <strong>Shoreline Impact</strong>
+                    (@(_activeScenario == OilSpillScenarioKind.Mitigated ? "WITH measures" : "WITHOUT measures") scenario)
                     at @_trajectory[impactStep].Timestamp.ToString("dd MMM yyyy HH:mm").
-                    The simulation halts here — the modelled plume has reached the coast.
+                    Seaward drift stops here — the frames that follow model the oil spreading along
+                    the coastline, and the red band marks the impacted shore.
                 </span>
+            </div>
+        }
+
+        @if (_effectiveness is { } eff)
+        {
+            <div class="oilspill-effectiveness card oilspill-panel mb-3">
+                <div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Response Measure Effectiveness — WITHOUT vs WITH measures</span>
+                    <span class="badge @(eff.ImpactPrevented || (eff.LandfallDelayHours ?? 0) > 0.05 || eff.AreaReductionPercent > 1 ? "bg-success" : "bg-secondary")">
+                        @(eff.ImpactPrevented
+                            ? "Impact prevented"
+                            : eff.LandfallDelayHours is double d && d > 0.05
+                                ? $"Landfall delayed {d:0.#} h"
+                                : eff.AreaReductionPercent > 1
+                                    ? "Slick reduced"
+                                    : "Limited effect")
+                    </span>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row g-2 text-center">
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small text-uppercase">Shoreline impact</div>
+                            <div class="fw-semibold">
+                                @(eff.BaselineImpactTime?.ToString("dd MMM HH:mm") ?? "None in window")
+                                <span class="text-muted">→</span>
+                                @(eff.ImpactPrevented
+                                    ? "Prevented"
+                                    : eff.MitigatedImpactTime?.ToString("dd MMM HH:mm") ?? "None in window")
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small text-uppercase">Final slick area</div>
+                            <div class="fw-semibold">
+                                @eff.BaselineFinalAreaSqKm.ToString("N3") km²
+                                <span class="text-muted">→</span>
+                                @eff.MitigatedFinalAreaSqKm.ToString("N3") km²
+                                @if (eff.AreaReductionPercent > 0.5)
+                                {
+                                    <span class="badge bg-success ms-1">−@eff.AreaReductionPercent.ToString("0.#")%</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small text-uppercase">Coastline impacted</div>
+                            <div class="fw-semibold">
+                                @eff.BaselineShoreKm.ToString("N2") km
+                                <span class="text-muted">→</span>
+                                @eff.MitigatedShoreKm.ToString("N2") km
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         }
 
@@ -236,6 +311,12 @@
                                 <span class="oilspill-legend-item">
                                     <span class="oilspill-legend-swatch" style="background:#6c757d;"></span> Aerial recon
                                 </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#dc3545;"></span> Shoreline impact zone
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:rgba(25,135,84,0.35);border:1px solid #198754;"></span> Comparison scenario
+                                </span>
                             </div>
                         </div>
                         <div class="card-body oilspill-map-host">
@@ -254,8 +335,11 @@
                                              ShowDispersants="_showDispersants"
                                              ShowShorelineProtection="_showShorelineProtection"
                                              ShowTimeLabels="_showTimeLabels"
-                                             ShorelineImpact="_shorelineImpactDetected"
+                                             ShorelineImpact="ShowImpactAlert"
                                              ImpactIndex="_shorelineImpactIndex"
+                                             ImpactZoneGeoJson="@ActiveImpactZoneGeoJson"
+                                             ComparisonTrajectory="ComparisonTrajectory"
+                                             ShowComparison="@(_showComparisonOverlay && HasMitigated)"
                                              PlacementMode="_showMeasurePanel"
                                              PendingMeasure="PendingMeasure"
                                              OnMapClick="OnMapMeasureClick"

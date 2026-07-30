@@ -553,13 +553,16 @@
             ErrorMessage = "Save the module before adding lessons.";
     }
 
-    private Task AddBlockOfType(LessonBlockType blockType)
+    private async Task AddBlockOfType(LessonBlockType blockType)
     {
+        if (_isDisposed) return;
         var lesson = SelectedLesson;
-        if (lesson?.LessonId is not Guid lessonId) { ErrorMessage = "Save the lesson before adding content blocks."; return Task.CompletedTask; }
-        foreach (var b in lesson.Blocks) b.IsExpanded = false;
-        _selectedBlockId = null;
-        lesson.Blocks.Add(new TrainingLessonBlockEditModel
+        if (lesson?.LessonId is not Guid lessonId) { ErrorMessage = "Save the lesson before adding content blocks."; return; }
+
+        // Persist the new block immediately so it is never held only in memory. Previously a
+        // new block lived in the lesson's in-memory list until saved; saving any *other* block
+        // reloaded the builder from the database and silently discarded the unsaved ones.
+        var model = new TrainingLessonBlockEditModel
         {
             UiKey = Guid.NewGuid(),
             LessonId = lessonId,
@@ -567,8 +570,16 @@
             BlockType = blockType,
             IsActive = true,
             IsExpanded = true
-        });
-        return Task.CompletedTask;
+        };
+        var result = await TrainingManagementService.SaveLessonBlockAsync(model, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded || result.Data?.LessonBlockId is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+        _selectedBlockId = result.Data.LessonBlockId;
+        await LoadBuilderAsync(focusLessonId: lessonId);
     }
 
     // ── Add-block dropdown ────────────────────────────────────────────────────

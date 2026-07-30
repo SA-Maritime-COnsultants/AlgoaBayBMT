@@ -64,36 +64,6 @@ namespace AlgoaBayBMT.Shared.Models
         public TrainingLesson? CurrentLesson { get; set; }
     }
 
-    public class AssessmentAttempt
-    {
-        public Guid AssessmentAttemptId { get; set; }
-        public Guid AssessmentId { get; set; }
-        public string UserId { get; set; } = string.Empty;
-        public int AttemptNumber { get; set; }
-        public DateTime StartedOnUtc { get; set; } = DateTime.UtcNow;
-        public DateTime? SubmittedOnUtc { get; set; }
-        public decimal? ScorePercent { get; set; }
-        public bool Passed { get; set; }
-
-        public Assessment? Assessment { get; set; }
-        public ICollection<AssessmentResponse> Responses { get; set; } = new List<AssessmentResponse>();
-    }
-
-    public class AssessmentResponse
-    {
-        public Guid AssessmentResponseId { get; set; }
-        public Guid AssessmentAttemptId { get; set; }
-        public Guid AssessmentQuestionId { get; set; }
-        public Guid? SelectedOptionId { get; set; }
-        public string? FreeTextAnswer { get; set; }
-        public bool? IsCorrect { get; set; }
-        public decimal? AwardedPoints { get; set; }
-
-        public AssessmentAttempt? AssessmentAttempt { get; set; }
-        public AssessmentQuestion? AssessmentQuestion { get; set; }
-        public AssessmentOption? SelectedOption { get; set; }
-    }
-
     public class CourseCompletionRecord
     {
         public Guid CourseCompletionRecordId { get; set; }

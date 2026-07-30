@@ -187,6 +187,117 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Visualization
         }
 
         /// <summary>
+        /// Parses GeoJSON line geometry (LineString, MultiLineString, or a GeometryCollection of
+        /// them) into a list of coordinate paths. Used to render the shoreline impact zone, which
+        /// NetTopologySuite may emit as any of these types. Returns an empty list on bad input.
+        /// </summary>
+        public static List<List<(double Latitude, double Longitude)>> ParseLineStrings(string? geoJson)
+        {
+            var lines = new List<List<(double Latitude, double Longitude)>>();
+            if (string.IsNullOrWhiteSpace(geoJson))
+            {
+                return lines;
+            }
+
+            try
+            {
+                using var document = JsonDocument.Parse(geoJson);
+                CollectLineStrings(document.RootElement, lines);
+            }
+            catch (JsonException)
+            {
+                // Malformed GeoJSON - return whatever was parsed.
+            }
+
+            return lines;
+        }
+
+        private static void CollectLineStrings(
+            JsonElement element, List<List<(double Latitude, double Longitude)>> lines)
+        {
+            var geometry = element;
+            if (element.ValueKind == JsonValueKind.Object
+                && element.TryGetProperty("geometry", out var geom))
+            {
+                geometry = geom;
+            }
+
+            if (geometry.ValueKind != JsonValueKind.Object
+                || !geometry.TryGetProperty("type", out var typeElement))
+            {
+                return;
+            }
+
+            var type = typeElement.GetString();
+
+            if (string.Equals(type, "GeometryCollection", StringComparison.OrdinalIgnoreCase))
+            {
+                if (geometry.TryGetProperty("geometries", out var geometries))
+                {
+                    foreach (var child in geometries.EnumerateArray())
+                    {
+                        CollectLineStrings(child, lines);
+                    }
+                }
+
+                return;
+            }
+
+            if (!geometry.TryGetProperty("coordinates", out var coordinates))
+            {
+                return;
+            }
+
+            if (string.Equals(type, "LineString", StringComparison.OrdinalIgnoreCase))
+            {
+                AddLine(lines, coordinates);
+            }
+            else if (string.Equals(type, "MultiLineString", StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (var line in coordinates.EnumerateArray())
+                {
+                    AddLine(lines, line);
+                }
+            }
+        }
+
+        private static void AddLine(
+            List<List<(double Latitude, double Longitude)>> lines, JsonElement line)
+        {
+            var points = new List<(double Latitude, double Longitude)>();
+            foreach (var pair in line.EnumerateArray())
+            {
+                // GeoJSON stores [longitude, latitude].
+                points.Add((pair[1].GetDouble(), pair[0].GetDouble()));
+            }
+
+            if (points.Count >= 2)
+            {
+                lines.Add(points);
+            }
+        }
+
+        /// <summary>
+        /// Total length in kilometres of GeoJSON line geometry (LineString/MultiLineString).
+        /// Used to quantify how much coastline the modelled slick impacts.
+        /// </summary>
+        public static double LineLengthKm(string? geoJson)
+        {
+            var total = 0.0;
+            foreach (var line in ParseLineStrings(geoJson))
+            {
+                for (var i = 1; i < line.Count; i++)
+                {
+                    total += HaversineDistance(
+                        line[i - 1].Latitude, line[i - 1].Longitude,
+                        line[i].Latitude, line[i].Longitude);
+                }
+            }
+
+            return total;
+        }
+
+        /// <summary>
         /// Parses a GeoJSON geometry of type Point, LineString, or Polygon into its geometry type
         /// and an ordered list of (latitude, longitude) coordinates. Returns a null type and empty
         /// list when the input is null/empty/unsupported.

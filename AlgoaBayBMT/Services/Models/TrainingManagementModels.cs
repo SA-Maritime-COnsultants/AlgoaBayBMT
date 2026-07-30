@@ -96,7 +96,8 @@ namespace AlgoaBayBMT.Services.Models
         [StringLength(50)]
         public string Code { get; set; } = string.Empty;
 
-        [Required]
+        // Not required for input: Title is the course name. Kept for backward compatibility;
+        // populated from Title by the service so the form only needs to bind Title.
         [StringLength(200)]
         public string Name { get; set; } = string.Empty;
 
@@ -369,6 +370,7 @@ namespace AlgoaBayBMT.Services.Models
         public Guid? TrainingQuestionBankQuestionId { get; set; }
         public Guid TrainingCourseAssessmentId { get; set; }
         public Guid? TrainingModuleId { get; set; }
+        public Guid? TrainingLessonId { get; set; }
         public TrainingQuestionType QuestionType { get; set; } = TrainingQuestionType.MultipleChoice;
 
         [Required]
@@ -405,12 +407,20 @@ namespace AlgoaBayBMT.Services.Models
         public decimal PassMarkPercent { get; set; }
         public int ValidityMonths { get; set; }
         public List<TrainingModuleLookupModel> Modules { get; set; } = new();
+        public List<TrainingLessonLookupModel> Lessons { get; set; } = new();
         public List<TrainingCourseAssessmentEditModel> Assessments { get; set; } = new();
         public List<TrainingQuestionBankQuestionEditModel> Questions { get; set; } = new();
     }
 
     public sealed class TrainingModuleLookupModel
     {
+        public Guid ModuleId { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    public sealed class TrainingLessonLookupModel
+    {
+        public Guid LessonId { get; set; }
         public Guid ModuleId { get; set; }
         public string Name { get; set; } = string.Empty;
     }

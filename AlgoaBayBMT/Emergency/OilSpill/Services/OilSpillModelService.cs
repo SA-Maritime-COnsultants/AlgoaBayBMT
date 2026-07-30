@@ -99,8 +99,35 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 await context.SaveChangesAsync();
             }
 
-            var points = GenerateTrajectory(run, spill, responseActions, _coastline);
-            context.OilSpillTrajectoryPoints.AddRange(points);
+            // Every run stores a Baseline (WITHOUT measures) prediction. When response measures
+            // with usable geometry are deployed, a second Mitigated (WITH measures) prediction is
+            // stored alongside it so the two scenarios can be compared before/after.
+            var effects = ResponseEffects.FromActions(responseActions);
+
+            var baseline = GenerateTrajectory(
+                run, spill, OilSpillScenarioKind.Baseline, ResponseEffects.None, _coastline);
+            run.ShorelineImpactIndex = baseline.ImpactIndex;
+            run.ShorelineImpactTime = baseline.ImpactTime;
+            run.ShorelineImpactGeoJson = baseline.ImpactZoneGeoJson;
+            context.OilSpillTrajectoryPoints.AddRange(baseline.Points);
+
+            run.HasMitigatedScenario = effects.HasAny;
+            if (effects.HasAny)
+            {
+                var mitigated = GenerateTrajectory(
+                    run, spill, OilSpillScenarioKind.Mitigated, effects, _coastline);
+                run.MitigatedShorelineImpactIndex = mitigated.ImpactIndex;
+                run.MitigatedShorelineImpactTime = mitigated.ImpactTime;
+                run.MitigatedShorelineImpactGeoJson = mitigated.ImpactZoneGeoJson;
+                context.OilSpillTrajectoryPoints.AddRange(mitigated.Points);
+            }
+            else
+            {
+                run.MitigatedShorelineImpactIndex = null;
+                run.MitigatedShorelineImpactTime = null;
+                run.MitigatedShorelineImpactGeoJson = null;
+            }
+
             await context.SaveChangesAsync();
 
             // Automation: refresh the ICS-209 status summary from the latest run so the SITREP
@@ -130,15 +157,34 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 .ToListAsync();
         }
 
-        public async Task<IReadOnlyList<OilSpillTrajectoryPoint>> GetTrajectoryAsync(int modelRunId)
+        public Task<IReadOnlyList<OilSpillTrajectoryPoint>> GetTrajectoryAsync(int modelRunId)
+            => GetTrajectoryAsync(modelRunId, OilSpillScenarioKind.Baseline);
+
+        public async Task<IReadOnlyList<OilSpillTrajectoryPoint>> GetTrajectoryAsync(
+            int modelRunId, OilSpillScenarioKind scenario)
         {
             await using var context = await _contextFactory.CreateDbContextAsync();
 
-            return await context.OilSpillTrajectoryPoints
-                .Where(t => t.ModelRunId == modelRunId)
+            var points = await context.OilSpillTrajectoryPoints
+                .Where(t => t.ModelRunId == modelRunId && t.Scenario == scenario)
                 .OrderBy(t => t.Timestamp)
                 .AsNoTracking()
                 .ToListAsync();
+
+            // Runs generated before the dual-scenario model stored a single unlabelled point set
+            // (persisted as Baseline). Fall back to it when a Mitigated set was requested but not
+            // stored, so older runs still visualise.
+            if (points.Count == 0 && scenario == OilSpillScenarioKind.Mitigated)
+            {
+                points = await context.OilSpillTrajectoryPoints
+                    .Where(t => t.ModelRunId == modelRunId
+                                && t.Scenario == OilSpillScenarioKind.Baseline)
+                    .OrderBy(t => t.Timestamp)
+                    .AsNoTracking()
+                    .ToListAsync();
+            }
+
+            return points;
         }
 
         public async Task<bool> DeleteModelRunAsync(int modelRunId)
@@ -172,11 +218,26 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             await context.SaveChangesAsync();
         }
 
-        private static List<OilSpillTrajectoryPoint> GenerateTrajectory(
+        /// <summary>The result of generating one scenario's trajectory.</summary>
+        private sealed record ScenarioResult(
+            List<OilSpillTrajectoryPoint> Points,
+            int? ImpactIndex,
+            DateTime? ImpactTime,
+            string? ImpactZoneGeoJson);
+
+        // After landfall the seaward drift stops; the slick then spreads along the coastline for
+        // up to this many hours (bounded by the remaining run duration).
+        private const double PostImpactSpreadHours = 6.0;
+        // Fractional area growth per hour of alongshore spreading, capped at 3x the impact area.
+        private const double PostImpactSpreadRatePerHour = 0.45;
+        private const double PostImpactMaxGrowth = 3.0;
+
+        private static ScenarioResult GenerateTrajectory(
             OilSpillModelRun run,
             OilSpillIncident spill,
-            IReadOnlyList<OilSpillResponseAction>? responseActions = null,
-            ICoastlineService? coastline = null)
+            OilSpillScenarioKind scenario,
+            ResponseEffects effects,
+            ICoastlineService? coastline)
         {
             var points = new List<OilSpillTrajectoryPoint>();
 
@@ -184,9 +245,6 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             var totalMinutes = run.DurationHours * 60.0;
             var stepCount = Math.Max(1, (int)Math.Floor(totalMinutes / timeStepMinutes));
             var stepSeconds = timeStepMinutes * 60.0;
-
-            // Precompute response-measure geometries for in-loop physical effects.
-            var effects = ResponseEffects.FromActions(responseActions);
 
             // Resolve wind and current vectors (meters/second) from speed + direction.
             // Direction is the bearing the vector points TOWARDS, in degrees clockwise from north.
@@ -215,10 +273,9 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
             // Running cumulative footprint (union of every instantaneous slick polygon so far).
             string? cumulativePolygon = null;
 
-            // First-landfall tracking. Reset here so a regenerated run recomputes impact timing
-            // from scratch using polygon intersection against the coastline.
-            run.ShorelineImpactIndex = null;
-            run.ShorelineImpactTime = null;
+            // First-landfall tracking for this scenario.
+            int? impactIndex = null;
+            DateTime? impactTime = null;
 
             // Semi-diurnal tide period (~12.42 h) drives the oscillating tidal stream.
             const double TidalPeriodSeconds = 12.42 * 3600.0;
@@ -348,6 +405,7 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 points.Add(new OilSpillTrajectoryPoint
                 {
                     ModelRunId = run.Id,
+                    Scenario = scenario,
                     Timestamp = timestamp,
                     Latitude = pointLat,
                     Longitude = pointLon,
@@ -357,12 +415,21 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                     CumulativePolygonGeoJson = cumulativePolygon
                 });
 
-                // Stop the simulation at first shoreline impact: the slick has reached the coast,
-                // so no further drift is modelled. The impacted step is the final trajectory point.
+                // First shoreline impact: seaward drift STOPS here. The oil does not keep drifting
+                // out at sea; instead it spreads along the coastline, so a bounded number of
+                // post-impact steps grow the slick isotropically at the landfall point and clip it
+                // to water — the visible footprint then elongates naturally along the shore.
                 if (landfall is not null)
                 {
-                    run.ShorelineImpactIndex = points.Count - 1;
-                    run.ShorelineImpactTime = timestamp;
+                    impactIndex = points.Count - 1;
+                    impactTime = timestamp;
+
+                    cumulativePolygon = AppendAlongshoreSpreading(
+                        points, run, scenario, effects, coastline,
+                        landfall.Value.Latitude, landfall.Value.Longitude,
+                        effectiveArea, area, timestamp, stepSeconds,
+                        remainingSteps: stepCount - step,
+                        timeStepMinutes, cumulativePolygon);
                     break;
                 }
 
@@ -377,7 +444,90 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
                 currentLon += RadToDeg(dLon);
             }
 
-            return points;
+            // Resolve the impacted stretch of coastline (drawn as the shoreline-impact zone).
+            var impactZone = impactIndex is not null && coastline is not null
+                ? coastline.ImpactZone(cumulativePolygon)
+                : null;
+
+            return new ScenarioResult(points, impactIndex, impactTime, impactZone);
+        }
+
+        /// <summary>
+        /// Models alongshore spreading after landfall: the centroid stays pinned at the landfall
+        /// point (drift has stopped), while the slick area keeps growing at a damped rate and is
+        /// clipped to water each step so the footprint spreads along the coastline. An active
+        /// shoreline-protection measure halves the spreading rate. Returns the updated cumulative
+        /// footprint.
+        /// </summary>
+        private static string? AppendAlongshoreSpreading(
+            List<OilSpillTrajectoryPoint> points,
+            OilSpillModelRun run,
+            OilSpillScenarioKind scenario,
+            ResponseEffects effects,
+            ICoastlineService? coastline,
+            double impactLat,
+            double impactLon,
+            double impactEffectiveArea,
+            double impactArea,
+            DateTime impactTimestamp,
+            double stepSeconds,
+            int remainingSteps,
+            double timeStepMinutes,
+            string? cumulativePolygon)
+        {
+            var spreadSteps = Math.Min(
+                Math.Max(0, remainingSteps),
+                (int)Math.Ceiling(PostImpactSpreadHours * 60.0 / Math.Max(1.0, timeStepMinutes)));
+
+            for (var s = 1; s <= spreadSteps; s++)
+            {
+                var timestamp = impactTimestamp.AddSeconds(s * stepSeconds);
+                var hoursSince = s * stepSeconds / 3600.0;
+
+                var rate = PostImpactSpreadRatePerHour;
+
+                // A deployed shoreline-protection measure at the impacted coast slows the
+                // alongshore spreading (oil is deflected/recovered at the barrier).
+                var probeRing = OilSpillGeometry.GenerateCirclePolygon(
+                    impactLat, impactLon,
+                    OilSpillGeometry.RadiusFromAreaMeters(impactEffectiveArea), 24);
+                if (effects.HasAny && effects.IsShorelineProtected(probeRing, timestamp))
+                {
+                    rate *= 0.5;
+                }
+
+                var growth = Math.Min(1.0 + (rate * hoursSince), PostImpactMaxGrowth);
+                var spreadEffectiveArea = impactEffectiveArea * growth;
+                var spreadArea = impactArea * growth;
+
+                // Isotropic (aspect 1) slick at the landfall point; clipping to water shapes it
+                // along the coastline in both directions.
+                var circleGeoJson = BuildSlickPolygonGeoJson(
+                    impactLat, impactLon, spreadEffectiveArea, driftDirectionDeg: 0.0, aspectRatio: 1.0);
+
+                var clipped = coastline is not null
+                    ? coastline.ClipToWater(circleGeoJson)
+                    : circleGeoJson;
+
+                cumulativePolygon = coastline is not null
+                    ? coastline.Union(cumulativePolygon, clipped)
+                    : clipped;
+
+                points.Add(new OilSpillTrajectoryPoint
+                {
+                    ModelRunId = run.Id,
+                    Scenario = scenario,
+                    Timestamp = timestamp,
+                    Latitude = impactLat,
+                    Longitude = impactLon,
+                    AreaSqM = spreadArea,
+                    ThicknessMm = null,
+                    PolygonGeoJson = clipped,
+                    CumulativePolygonGeoJson = cumulativePolygon
+                });
+            }
+
+            return cumulativePolygon;
         }
 
         /// <summary>

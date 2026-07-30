@@ -99,9 +99,27 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Models
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        // Shoreline impact results (populated when the slick reaches the coastline during playback).
+        // Shoreline impact results for the Baseline (WITHOUT measures) scenario. The index refers
+        // to the ordered Baseline trajectory; the simulation stops drifting at this step.
         public int? ShorelineImpactIndex { get; set; }
         public DateTime? ShorelineImpactTime { get; set; }
+
+        /// <summary>
+        /// GeoJSON line geometry of the coastline segment impacted by the Baseline slick footprint
+        /// (the "potential shoreline impact" zone drawn along the coast).
+        /// </summary>
+        public string? ShorelineImpactGeoJson { get; set; }
+
+        /// <summary>
+        /// True when this run also stored a Mitigated (WITH response measures) trajectory that can
+        /// be compared against the Baseline prediction.
+        /// </summary>
+        public bool HasMitigatedScenario { get; set; }
+
+        // Shoreline impact results for the Mitigated (WITH measures) scenario.
+        public int? MitigatedShorelineImpactIndex { get; set; }
+        public DateTime? MitigatedShorelineImpactTime { get; set; }
+        public string? MitigatedShorelineImpactGeoJson { get; set; }
 
         // Navigation
         public OilSpillIncident Spill { get; set; } = null!;
@@ -114,6 +132,13 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Models
 
         [Required]
         public int ModelRunId { get; set; }
+
+        /// <summary>
+        /// Scenario this point belongs to: Baseline (WITHOUT measures, always generated) or
+        /// Mitigated (WITH deployed response measures, generated when measures exist).
+        /// </summary>
+        [Required]
+        public OilSpillScenarioKind Scenario { get; set; } = OilSpillScenarioKind.Baseline;
 
         [Required]
         public DateTime Timestamp { get; set; }

@@ -56,6 +56,27 @@
         </DialogTemplates>
     </SfDialog>
 
+    <SfDialog Width="560px" CssClass="abmt-dialog pf-training-reset-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="ShowDeleteConfirmation">
+        <DialogTemplates>
+            <Header>Delete Course</Header>
+            <Content>
+                <div class="pf-training-reset-dialog-content">
+                    <p class="pf-training-reset-dialog-subtitle">
+                        Remove <strong>@(CourseToDelete?.Title)</strong> from the course list. The course and its history are retained in the database and can be restored later, but it will no longer appear here for editing.
+                    </p>
+                    <div class="pf-dialog-actions pf-dialog-actions--split pf-training-dialog-actions">
+                        <button class="btn btn-bmt btn-pastel-gray" @onclick="CancelDeletePrompt">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                        <button class="btn btn-bmt btn-pastel-red" @onclick="DeleteCourseAsync">
+                            <i class="bi bi-trash-fill me-2"></i>Delete Course
+                        </button>
+                    </div>
+                </div>
+            </Content>
+        </DialogTemplates>
+    </SfDialog>
+
     <div class="pf-training-dashboard-grid pf-training-dashboard-grid--compact">
         <SfCard CssClass="pf-card-shell pf-training-metric-card">
             <CardContent>
@@ -179,6 +200,11 @@
                                                     <span class="e-icons e-check" aria-hidden="true"></span>
                                                 </SfButton>
                                             </span>
+                                            <span class="pf-icon-action" title="Delete Course">
+                                                <SfButton CssClass="e-flat e-danger pf-btn-icon pf-btn-square abmt-grid-action-delete" OnClick="@(() => PromptDeleteCourse(course))" aria-label="Delete Course">
+                                                    <span class="e-icons e-trash" aria-hidden="true"></span>
+                                                </SfButton>
+                                            </span>
                                         </div>
                                     }
                                 </Template>
@@ -249,6 +275,8 @@
     private TrainingCourseEditModel? EditModel;
     private bool IsDialogVisible;
     private bool ShowResetConfirmation;
+    private bool ShowDeleteConfirmation;
+    private TrainingCourseListItemModel? CourseToDelete;
     private string? ErrorMessage;
     private string? CurrentUserId;
 
@@ -321,6 +349,40 @@
 
         await LoadCoursesAsync();
         await ShowSuccessToastAsync(result.Message ?? "Course version created.");
+    }
+
+    private void PromptDeleteCourse(TrainingCourseListItemModel course)
+    {
+        CourseToDelete = course;
+        ShowDeleteConfirmation = true;
+        ErrorMessage = null;
+    }
+
+    private void CancelDeletePrompt()
+    {
+        ShowDeleteConfirmation = false;
+        CourseToDelete = null;
+    }
+
+    private async Task DeleteCourseAsync()
+    {
+        if (CourseToDelete is null)
+        {
+            ShowDeleteConfirmation = false;
+            return;
+        }
+
+        var result = await TrainingManagementService.SoftDeleteCourseAsync(CourseToDelete.CourseId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        ShowDeleteConfirmation = false;
+        CourseToDelete = null;
+        await LoadCoursesAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Course removed.");
     }
 
     private void PromptResetTrainingData()

@@ -26,6 +26,11 @@ namespace AlgoaBayBMT.Shared.Models
         public string? UpdatedByUserId { get; set; }
         public DateTime? UpdatedOnUtc { get; set; }
 
+        // Soft delete: the course row is retained but hidden from the management/editing lists.
+        public bool IsDeleted { get; set; }
+        public string? DeletedByUserId { get; set; }
+        public DateTime? DeletedOnUtc { get; set; }
+
         public CourseVersion? CurrentVersion { get; set; }
         public ICollection<CourseVersion> Versions { get; set; } = new List<CourseVersion>();
         public ICollection<CourseAudienceRule> AudienceRules { get; set; } = new List<CourseAudienceRule>();
@@ -91,10 +96,8 @@ namespace AlgoaBayBMT.Shared.Models
 
         public TrainingModule? Module { get; set; }
         public ICollection<LessonBlock> LessonBlocks { get; set; } = new List<LessonBlock>();
-        public Assessment? Assessment { get; set; }
         public ICollection<UserLessonProgress> UserLessonProgressRecords { get; set; } = new List<UserLessonProgress>();
         public ICollection<UserCourseProgress> CurrentCourseProgressRecords { get; set; } = new List<UserCourseProgress>();
-        public ICollection<TrainingKnowledgeCheckQuestion> KnowledgeCheckQuestions { get; set; } = new List<TrainingKnowledgeCheckQuestion>();
     }
 
     public class LessonBlock
@@ -135,32 +138,6 @@ namespace AlgoaBayBMT.Shared.Models
         public ICollection<LessonBlock> LessonBlocks { get; set; } = new List<LessonBlock>();
     }
 
-    public class TrainingKnowledgeCheckQuestion
-    {
-        public Guid TrainingKnowledgeCheckQuestionId { get; set; }
-        public Guid TrainingLessonId { get; set; }
-        public TrainingQuestionType QuestionType { get; set; }
-        public string Prompt { get; set; } = string.Empty;
-        public string? Explanation { get; set; }
-        public int OrderIndex { get; set; }
-        public decimal Points { get; set; } = 1m;
-        public bool IsActive { get; set; } = true;
-
-        public TrainingLesson? Lesson { get; set; }
-        public ICollection<TrainingKnowledgeCheckOption> Options { get; set; } = new List<TrainingKnowledgeCheckOption>();
-    }
-
-    public class TrainingKnowledgeCheckOption
-    {
-        public Guid TrainingKnowledgeCheckOptionId { get; set; }
-        public Guid TrainingKnowledgeCheckQuestionId { get; set; }
-        public string OptionText { get; set; } = string.Empty;
-        public bool IsCorrect { get; set; }
-        public int OrderIndex { get; set; }
-
-        public TrainingKnowledgeCheckQuestion? Question { get; set; }
-    }
-
     public class TrainingCourseAssessment
     {
         public Guid TrainingCourseAssessmentId { get; set; }
@@ -183,6 +160,7 @@ namespace AlgoaBayBMT.Shared.Models
         public Guid TrainingQuestionBankQuestionId { get; set; }
         public Guid TrainingCourseAssessmentId { get; set; }
         public Guid? TrainingModuleId { get; set; }
+        public Guid? TrainingLessonId { get; set; }
         public TrainingQuestionType QuestionType { get; set; }
         public string Prompt { get; set; } = string.Empty;
         public string? ScenarioText { get; set; }
@@ -207,51 +185,6 @@ namespace AlgoaBayBMT.Shared.Models
 
         public TrainingQuestionBankQuestion? Question { get; set; }
         public ICollection<UserAssessmentResponse> Responses { get; set; } = new List<UserAssessmentResponse>();
-    }
-
-    public class Assessment
-    {
-        public Guid AssessmentId { get; set; }
-        public Guid LessonId { get; set; }
-        public string Title { get; set; } = string.Empty;
-        public string? Instructions { get; set; }
-        public decimal PassMarkPercent { get; set; } = 80m;
-        public int MaxAttempts { get; set; } = 3;
-        public bool RandomizeQuestions { get; set; }
-        public int? TimeLimitMinutes { get; set; }
-        public bool ShowFeedbackAfterSubmit { get; set; } = true;
-        public bool IsActive { get; set; } = true;
-
-        public TrainingLesson? Lesson { get; set; }
-        public ICollection<AssessmentQuestion> Questions { get; set; } = new List<AssessmentQuestion>();
-        public ICollection<AssessmentAttempt> Attempts { get; set; } = new List<AssessmentAttempt>();
-    }
-
-    public class AssessmentQuestion
-    {
-        public Guid AssessmentQuestionId { get; set; }
-        public Guid AssessmentId { get; set; }
-        public QuestionType QuestionType { get; set; }
-        public string PromptMarkdown { get; set; } = string.Empty;
-        public string? ExplanationMarkdown { get; set; }
-        public int OrderIndex { get; set; }
-        public decimal Points { get; set; } = 1m;
-
-        public Assessment? Assessment { get; set; }
-        public ICollection<AssessmentOption> Options { get; set; } = new List<AssessmentOption>();
-        public ICollection<AssessmentResponse> Responses { get; set; } = new List<AssessmentResponse>();
-    }
-
-    public class AssessmentOption
-    {
-        public Guid AssessmentOptionId { get; set; }
-        public Guid AssessmentQuestionId { get; set; }
-        public string OptionText { get; set; } = string.Empty;
-        public bool IsCorrect { get; set; }
-        public int OrderIndex { get; set; }
-
-        public AssessmentQuestion? AssessmentQuestion { get; set; }
-        public ICollection<AssessmentResponse> Responses { get; set; } = new List<AssessmentResponse>();
     }
 
     public class CourseAudienceRule

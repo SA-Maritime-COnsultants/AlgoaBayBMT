@@ -4,6 +4,7 @@ using AlgoaBayBMT.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace AlgoaBayBMT.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260709053349_TrainingConsolidation")]
+    partial class TrainingConsolidation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1230,13 +1233,6 @@ namespace AlgoaBayBMT.Migrations
                     b.Property<Guid?>("CurrentVersionId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<string>("DeletedByUserId")
-                        .HasMaxLength(450)
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("DeletedOnUtc")
-                        .HasColumnType("datetime2");
-
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
@@ -1248,11 +1244,6 @@ namespace AlgoaBayBMT.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(true);
-
-                    b.Property<bool>("IsDeleted")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
 
                     b.Property<bool>("IsMandatory")
                         .ValueGeneratedOnAdd()
@@ -1307,8 +1298,6 @@ namespace AlgoaBayBMT.Migrations
                         .IsUnique();
 
                     b.HasIndex("CurrentVersionId");
-
-                    b.HasIndex("IsDeleted");
 
                     b.ToTable("Courses", (string)null);
                 });

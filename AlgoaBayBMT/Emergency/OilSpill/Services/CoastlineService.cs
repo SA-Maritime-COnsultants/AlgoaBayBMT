@@ -46,6 +46,13 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         /// coast or no coastline is loaded.
         /// </summary>
         (double Latitude, double Longitude)? LandfallPoint(string? polygonGeoJson);
+
+        /// <summary>
+        /// Returns the stretch of coastline touched by the supplied slick footprint as GeoJSON
+        /// line geometry (LineString/MultiLineString), or null when the slick does not reach the
+        /// coast. This is the "potential shoreline impact" zone drawn along the shore.
+        /// </summary>
+        string? ImpactZone(string? slickGeoJson);
     }
 
     public sealed class CoastlineService : ICoastlineService
@@ -192,6 +199,44 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
 
                 // NTS coordinates are (X = longitude, Y = latitude).
                 return (point.Y, point.X);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public string? ImpactZone(string? slickGeoJson)
+        {
+            if (_land is null || _land.IsEmpty || string.IsNullOrWhiteSpace(slickGeoJson))
+            {
+                return null;
+            }
+
+            try
+            {
+                var slick = _reader.Read<Geometry>(slickGeoJson);
+                if (slick is null || slick.IsEmpty)
+                {
+                    return null;
+                }
+
+                // Buffer the slick slightly (~50 m in degrees) so a footprint clipped exactly to
+                // the waterline still registers the coastline segment it presses against.
+                var probe = slick.Buffer(0.0005);
+                var boundary = _land.Boundary;
+                if (boundary is null || boundary.IsEmpty || !boundary.Intersects(probe))
+                {
+                    return null;
+                }
+
+                var zone = boundary.Intersection(probe);
+                if (zone is null || zone.IsEmpty)
+                {
+                    return null;
+                }
+
+                return _writer.Write(zone);
             }
             catch
             {

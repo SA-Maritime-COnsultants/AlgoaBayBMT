@@ -18,7 +18,14 @@ namespace AlgoaBayBMT.Emergency.OilSpill.Services
         Task<OilSpillModelRun> RunModelAsync(OilSpillModelRunRequest request);
         Task<IReadOnlyList<OilSpillModelRun>> GetModelRunsForSpillAsync(int spillId);
         Task<OilSpillModelRun?> GetModelRunByIdAsync(int modelRunId);
+
+        /// <summary>Returns the Baseline (WITHOUT measures) trajectory for a run.</summary>
         Task<IReadOnlyList<OilSpillTrajectoryPoint>> GetTrajectoryAsync(int modelRunId);
+
+        /// <summary>Returns the trajectory for a specific scenario (Baseline or Mitigated).</summary>
+        Task<IReadOnlyList<OilSpillTrajectoryPoint>> GetTrajectoryAsync(
+            int modelRunId, OilSpillScenarioKind scenario);
+
         Task<bool> DeleteModelRunAsync(int modelRunId);
         Task RecordShorelineImpactAsync(int modelRunId, int impactIndex, DateTime impactTime);
     }
