@@ -1,0 +1,18 @@
+@if (!string.IsNullOrWhiteSpace(SourceUrl))
+{
+    <div class="pf-training-video-shell" @key="SourceUrl">
+        <video class="pf-training-scenario-video" controls src="@SourceUrl"></video>
+        <div class="pf-training-preview-file">
+            <a href="@SourceUrl" target="_blank" rel="noreferrer">Open video in a new tab</a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="pf-empty-state pf-empty-state--compact">No training video is available for this lesson block.</div>
+}
+
+@code {
+    [Parameter]
+    public string? SourceUrl { get; set; }
+}

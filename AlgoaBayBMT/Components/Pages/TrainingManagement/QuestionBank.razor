@@ -1,0 +1,528 @@
+@page "/training-management/question-bank/{CourseId:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using AlgoaBayBMT.Shared.Security
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Notifications
+
+@inject ITrainingManagementService TrainingManagementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Question Bank</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Question Bank</h1>
+            <div class="page-subtitle">Build a larger exam pool with multiple-choice, true/false, and scenario questions for randomized assessments.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <a class="e-btn" href="@($"/training-management/course-builder/{CourseId}")">Back to Builder</a>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    @if (PageModel is null)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardContent>
+                <div class="pf-empty-state">Loading question bank...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="pf-manage-overview pf-training-builder-overview">
+            <div class="pf-manage-overview-copy">
+                <h2 class="pf-manage-overview-title pf-training-heading">@PageModel.CourseTitle</h2>
+                <div class="pf-manage-overview-subtitle">@PageModel.CourseCode · Pass mark @PageModel.PassMarkPercent% · Validity @PageModel.ValidityMonths months</div>
+                <div class="pf-role-badge-list">
+                    <span class="e-badge pf-role-badge">@PageModel.Assessments.Count assessment(s)</span>
+                    <span class="e-badge pf-role-badge">@PageModel.Questions.Count question(s)</span>
+                    <span class="e-badge pf-role-badge">Randomised exams ready</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pf-training-builder-layout pf-training-builder-layout--triple">
+            <SfCard CssClass="pf-card-shell pf-training-tree-panel">
+                <CardHeader Title="Assessments" SubTitle="Configure final course assessments and question counts." />
+                <CardContent>
+                    <div class="pf-toolbar-row">
+                        <SfButton CssClass="e-primary" OnClick="CreateAssessment">New Assessment</SfButton>
+                    </div>
+                    @if (PageModel.Assessments.Count == 0)
+                    {
+                        <div class="pf-empty-state">No assessments configured yet.</div>
+                    }
+                    else
+                    {
+                        <div class="pf-authoring-item-list">
+                            @foreach (var assessment in PageModel.Assessments)
+                            {
+                                <button type="button" class="pf-training-tree-node @(SelectedAssessment?.TrainingCourseAssessmentId == assessment.TrainingCourseAssessmentId ? "is-selected" : string.Empty)" @onclick="() => SelectAssessment(assessment)">
+                                    <span class="pf-training-tree-label">@assessment.Name</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </CardContent>
+            </SfCard>
+
+            <div class="pf-training-editor-panel">
+                <SfCard CssClass="pf-card-shell pf-training-editor-card">
+                    <CardHeader Title="Assessment Settings" SubTitle="Set pass marks, random question counts, and attempt rules for the selected exam." />
+                    <CardContent>
+                        <EditForm Model="AssessmentEditor" OnValidSubmit="SaveAssessmentAsync" FormName="training-question-bank-assessment-form">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="validation-message" />
+                            <div class="pf-form-grid">
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Assessment Name</label>
+                                    <SfTextBox @bind-Value="AssessmentEditor.Name" Placeholder="Course final assessment" FloatLabelType="FloatLabelType.Never" />
+                                </div>
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Instructions</label>
+                                    <InputTextArea @bind-Value="AssessmentEditor.Instructions" class="form-control pf-textarea" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">Pass Mark %</label>
+                                    <InputNumber @bind-Value="AssessmentEditor.PassMarkPercent" class="form-control" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">Random Question Count</label>
+                                    <InputNumber @bind-Value="AssessmentEditor.RandomQuestionCount" class="form-control" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">Max Attempts</label>
+                                    <InputNumber @bind-Value="AssessmentEditor.MaxAttempts" class="form-control" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">Time Limit Minutes</label>
+                                    <InputNumber @bind-Value="AssessmentEditor.TimeLimitMinutes" class="form-control" />
+                                </div>
+                                <div class="pf-col-8">
+                                    <label class="pf-inline-check">
+                                        <InputCheckbox @bind-Value="AssessmentEditor.IsActive" />
+                                        <span>Assessment active</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="pf-dialog-actions">
+                                <SfButton type="button" OnClick="CreateAssessment">Reset</SfButton>
+                                <SfButton CssClass="e-primary" IsPrimary="true" type="submit">Save Assessment</SfButton>
+                            </div>
+                        </EditForm>
+                    </CardContent>
+                </SfCard>
+
+                <SfCard CssClass="pf-card-shell pf-training-editor-card">
+                    <CardHeader Title="Question Editor" SubTitle="Create exam questions and assign them to the selected assessment and module." />
+                    <CardContent>
+                        <EditForm Model="QuestionEditor" OnValidSubmit="SaveQuestionAsync" FormName="training-question-bank-question-form">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="validation-message" />
+                            <div class="pf-form-grid">
+                                <div class="pf-col-3">
+                                    <label class="pf-field-label">Question Type</label>
+                                    <SfDropDownList TValue="TrainingQuestionType" TItem="QuestionTypeOption" DataSource="@QuestionTypes" @bind-Value="QuestionEditor.QuestionType" Placeholder="Select type">
+                                        <DropDownListFieldSettings Text="Text" Value="Value" />
+                                    </SfDropDownList>
+                                </div>
+                                <div class="pf-col-3">
+                                    <label class="pf-field-label">Module</label>
+                                    <SfDropDownList TValue="Guid?" TItem="TrainingModuleLookupModel" DataSource="@PageModel.Modules" @bind-Value="QuestionEditor.TrainingModuleId" Placeholder="Course-wide question" ShowClearButton="true" ValueChange="OnModuleChanged">
+                                        <DropDownListFieldSettings Text="Name" Value="ModuleId" />
+                                    </SfDropDownList>
+                                </div>
+                                <div class="pf-col-3">
+                                    <label class="pf-field-label">Lesson</label>
+                                    <SfDropDownList TValue="Guid?" TItem="TrainingLessonLookupModel" DataSource="@FilteredLessons" @bind-Value="QuestionEditor.TrainingLessonId" Placeholder="Not lesson-specific" ShowClearButton="true">
+                                        <DropDownListFieldSettings Text="Name" Value="LessonId" />
+                                    </SfDropDownList>
+                                </div>
+                                <div class="pf-col-3">
+                                    <label class="pf-field-label">Difficulty</label>
+                                    <InputNumber @bind-Value="QuestionEditor.DifficultyLevel" class="form-control" />
+                                </div>
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Prompt</label>
+                                    <InputTextArea @bind-Value="QuestionEditor.Prompt" class="form-control pf-textarea pf-textarea--large" />
+                                </div>
+                                @if (QuestionEditor.QuestionType == TrainingQuestionType.Scenario)
+                                {
+                                    <div class="pf-col-12">
+                                        <label class="pf-field-label">Scenario Context</label>
+                                        <InputTextArea @bind-Value="QuestionEditor.ScenarioText" class="form-control pf-textarea pf-textarea--large" />
+                                    </div>
+                                }
+                                <div class="pf-col-12">
+                                    <label class="pf-field-label">Explanation</label>
+                                    <InputTextArea @bind-Value="QuestionEditor.Explanation" class="form-control pf-textarea" />
+                                </div>
+                                <div class="pf-col-3">
+                                    <label class="pf-field-label">Points</label>
+                                    <InputNumber @bind-Value="QuestionEditor.Points" class="form-control" />
+                                </div>
+                                <div class="pf-col-9">
+                                    <label class="pf-inline-check">
+                                        <InputCheckbox @bind-Value="QuestionEditor.IsActive" />
+                                        <span>Question active in exam pool</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="pf-authoring-item-list pf-question-bank-options-list">
+                                @foreach (var option in QuestionEditor.Options.OrderBy(x => x.OrderIndex))
+                                {
+                                    <div class="pf-question-bank-option-row" @key="GetOptionKey(option)">
+                                        <SfTextBox @bind-Value="option.OptionText" Placeholder="Enter option text" FloatLabelType="FloatLabelType.Never" />
+                                        <label class="pf-inline-check">
+                                            <InputCheckbox @bind-Value="option.IsCorrect" />
+                                            <span>Correct</span>
+                                        </label>
+                                    </div>
+                                }
+                            </div>
+
+                            <div class="pf-dialog-actions">
+                                <SfButton type="button" OnClick="CreateQuestion">Reset</SfButton>
+                                <SfButton CssClass="e-primary" IsPrimary="true" type="submit">Save Question</SfButton>
+                            </div>
+                        </EditForm>
+                    </CardContent>
+                </SfCard>
+            </div>
+
+            <SfCard CssClass="pf-card-shell pf-training-preview-panel">
+                <CardHeader Title="Question Pool Preview" SubTitle="Review the randomized exam bank with immediate edit access and module context." />
+                <CardContent>
+                    @if (PageModel.Questions.Count == 0)
+                    {
+                        <div class="pf-empty-state">No question bank items have been created yet.</div>
+                    }
+                    else
+                    {
+                        <div class="pf-authoring-item-list">
+                            @foreach (var question in FilteredQuestions)
+                            {
+                                <div class="pf-training-preview-block" @key="question.TrainingQuestionBankQuestionId">
+                                    <div class="pf-authoring-item-header">
+                                        <div>
+                                            <div class="pf-training-check-type">@question.QuestionType</div>
+                                            <h4>@question.Prompt</h4>
+                                        </div>
+                                        <div class="pf-grid-actions pf-grid-actions--compact">
+                                            <SfButton type="button" CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square" OnClick="@(() => EditQuestion(question))" title="Edit question" aria-label="Edit question">
+                                                <span class="e-icons e-edit" aria-hidden="true"></span>
+                                            </SfButton>
+                                            <SfButton type="button" CssClass="e-flat e-danger pf-btn-icon pf-btn-square" OnClick="@(() => DeleteQuestionAsync(question.TrainingQuestionBankQuestionId ?? Guid.Empty))" title="Delete question" aria-label="Delete question">
+                                                <span class="e-icons e-delete" aria-hidden="true"></span>
+                                            </SfButton>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(question.ScenarioText))
+                                    {
+                                        <div class="pf-training-check-context">@question.ScenarioText</div>
+                                    }
+                                    <div class="pf-authoring-item-preview">@question.Explanation</div>
+                                    <ul class="pf-training-slide-list">
+                                        @foreach (var option in question.Options.OrderBy(x => x.OrderIndex))
+                                        {
+                                            <li><strong>@(option.IsCorrect ? "✔" : "•")</strong> @option.OptionText</li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                        </div>
+                    }
+                </CardContent>
+            </SfCard>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid CourseId { get; set; }
+
+    private SfToast SuccessToast = default!;
+    private TrainingQuestionBankPageModel? PageModel;
+    private TrainingCourseAssessmentEditModel AssessmentEditor = new();
+    private TrainingQuestionBankQuestionEditModel QuestionEditor = new();
+    private TrainingCourseAssessmentEditModel? SelectedAssessment;
+    private string? ErrorMessage;
+    private string? CurrentUserId;
+
+    private IReadOnlyList<QuestionTypeOption> QuestionTypes =>
+    [
+        new(TrainingQuestionType.MultipleChoice, "Multiple Choice"),
+        new(TrainingQuestionType.TrueFalse, "True / False"),
+        new(TrainingQuestionType.Scenario, "Scenario")
+    ];
+
+    private IEnumerable<TrainingLessonLookupModel> FilteredLessons =>
+        QuestionEditor.TrainingModuleId is Guid moduleId
+            ? PageModel?.Lessons.Where(x => x.ModuleId == moduleId) ?? Enumerable.Empty<TrainingLessonLookupModel>()
+            : PageModel?.Lessons ?? Enumerable.Empty<TrainingLessonLookupModel>();
+
+    private void OnModuleChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<Guid?, TrainingModuleLookupModel> args)
+    {
+        // If the chosen lesson no longer belongs to the selected module, clear it.
+        if (QuestionEditor.TrainingLessonId is Guid lessonId
+            && PageModel?.Lessons.FirstOrDefault(x => x.LessonId == lessonId) is { } lesson
+            && args.Value.HasValue && lesson.ModuleId != args.Value.Value)
+        {
+            QuestionEditor.TrainingLessonId = null;
+        }
+    }
+
+    private IEnumerable<TrainingQuestionBankQuestionEditModel> FilteredQuestions =>
+        SelectedAssessment?.TrainingCourseAssessmentId is Guid assessmentId
+            ? PageModel?.Questions.Where(x => x.TrainingCourseAssessmentId == assessmentId) ?? Enumerable.Empty<TrainingQuestionBankQuestionEditModel>()
+            : PageModel?.Questions ?? Enumerable.Empty<TrainingQuestionBankQuestionEditModel>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync()).User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await LoadPageAsync();
+    }
+
+    private async Task LoadPageAsync()
+    {
+        PageModel = await TrainingManagementService.GetQuestionBankPageAsync(CourseId);
+        if (PageModel is null)
+        {
+            ErrorMessage = "The selected course question bank could not be loaded.";
+            return;
+        }
+
+        ErrorMessage = null;
+        SelectedAssessment ??= PageModel.Assessments.FirstOrDefault();
+        if (SelectedAssessment is not null)
+        {
+            AssessmentEditor = CloneAssessment(SelectedAssessment);
+            CreateQuestion();
+        }
+        else
+        {
+            CreateAssessment();
+            CreateQuestion();
+        }
+    }
+
+    private void SelectAssessment(TrainingCourseAssessmentEditModel assessment)
+    {
+        SelectedAssessment = assessment;
+        AssessmentEditor = CloneAssessment(assessment);
+        CreateQuestion();
+    }
+
+    private void CreateAssessment()
+    {
+        AssessmentEditor = new TrainingCourseAssessmentEditModel
+        {
+            TrainingCourseId = CourseId,
+            PassMarkPercent = PageModel?.PassMarkPercent ?? 80m,
+            RandomQuestionCount = 25,
+            MaxAttempts = 3,
+            IsActive = true
+        };
+        SelectedAssessment = null;
+    }
+
+    private void CreateQuestion()
+    {
+        QuestionEditor = new TrainingQuestionBankQuestionEditModel
+        {
+            TrainingCourseAssessmentId = SelectedAssessment?.TrainingCourseAssessmentId ?? AssessmentEditor.TrainingCourseAssessmentId ?? Guid.Empty,
+            QuestionType = TrainingQuestionType.MultipleChoice,
+            Points = 1m,
+            IsActive = true,
+            Options = BuildDefaultOptions(TrainingQuestionType.MultipleChoice)
+        };
+    }
+
+    private async Task SaveAssessmentAsync()
+    {
+        var result = await TrainingManagementService.SaveCourseAssessmentAsync(AssessmentEditor, CurrentUserId);
+        if (!result.Succeeded || result.Data is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        SelectedAssessment = result.Data;
+        await LoadPageAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Assessment saved.");
+    }
+
+    private async Task SaveQuestionAsync()
+    {
+        var assessmentId = SelectedAssessment?.TrainingCourseAssessmentId ?? AssessmentEditor.TrainingCourseAssessmentId;
+        if (!assessmentId.HasValue)
+        {
+            ErrorMessage = "Save the assessment before adding question bank items.";
+            return;
+        }
+
+        QuestionEditor.TrainingCourseAssessmentId = assessmentId.Value;
+        EnsureQuestionOptions();
+        var result = await TrainingManagementService.SaveQuestionBankQuestionAsync(QuestionEditor, CurrentUserId);
+        if (!result.Succeeded || result.Data is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadPageAsync();
+        CreateQuestion();
+        await ShowSuccessToastAsync(result.Message ?? "Question bank item saved.");
+    }
+
+    private void EditQuestion(TrainingQuestionBankQuestionEditModel question)
+    {
+        if (question.TrainingCourseAssessmentId != (SelectedAssessment?.TrainingCourseAssessmentId ?? Guid.Empty))
+        {
+            SelectedAssessment = PageModel?.Assessments.FirstOrDefault(x => x.TrainingCourseAssessmentId == question.TrainingCourseAssessmentId);
+            if (SelectedAssessment is not null)
+            {
+                AssessmentEditor = CloneAssessment(SelectedAssessment);
+            }
+        }
+
+        QuestionEditor = new TrainingQuestionBankQuestionEditModel
+        {
+            TrainingQuestionBankQuestionId = question.TrainingQuestionBankQuestionId,
+            TrainingCourseAssessmentId = question.TrainingCourseAssessmentId,
+            TrainingModuleId = question.TrainingModuleId,
+            TrainingLessonId = question.TrainingLessonId,
+            QuestionType = question.QuestionType,
+            Prompt = question.Prompt,
+            ScenarioText = question.ScenarioText,
+            Explanation = question.Explanation,
+            DifficultyLevel = question.DifficultyLevel,
+            Points = question.Points,
+            IsActive = question.IsActive,
+            Options = question.Options
+                .OrderBy(x => x.OrderIndex)
+                .Select(x => new TrainingQuestionBankOptionEditModel
+                {
+                    TrainingQuestionBankOptionId = x.TrainingQuestionBankOptionId,
+                    OptionText = x.OptionText,
+                    IsCorrect = x.IsCorrect,
+                    OrderIndex = x.OrderIndex
+                }).ToList()
+        };
+        EnsureQuestionOptions();
+    }
+
+    private async Task DeleteQuestionAsync(Guid questionId)
+    {
+        if (questionId == Guid.Empty)
+        {
+            return;
+        }
+
+        var result = await TrainingManagementService.DeleteQuestionBankQuestionAsync(questionId, CurrentUserId);
+        if (!result.Succeeded)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await LoadPageAsync();
+        CreateQuestion();
+        await ShowSuccessToastAsync(result.Message ?? "Question bank item deleted.");
+    }
+
+    private void EnsureQuestionOptions()
+    {
+        var requiredCount = QuestionEditor.QuestionType == TrainingQuestionType.TrueFalse ? 2 : 4;
+        var labels = QuestionEditor.QuestionType == TrainingQuestionType.TrueFalse
+            ? new[] { "True", "False" }
+            : new[] { "Option 1", "Option 2", "Option 3", "Option 4" };
+
+        QuestionEditor.Options = QuestionEditor.Options
+            .OrderBy(x => x.OrderIndex)
+            .Take(requiredCount)
+            .ToList();
+
+        while (QuestionEditor.Options.Count < requiredCount)
+        {
+            var nextIndex = QuestionEditor.Options.Count + 1;
+            QuestionEditor.Options.Add(new TrainingQuestionBankOptionEditModel
+            {
+                OptionText = labels[nextIndex - 1],
+                OrderIndex = nextIndex
+            });
+        }
+
+        for (var i = 0; i < QuestionEditor.Options.Count; i++)
+        {
+            QuestionEditor.Options[i].OrderIndex = i + 1;
+            if (QuestionEditor.QuestionType == TrainingQuestionType.TrueFalse && string.IsNullOrWhiteSpace(QuestionEditor.Options[i].OptionText))
+            {
+                QuestionEditor.Options[i].OptionText = labels[i];
+            }
+        }
+    }
+
+    private static List<TrainingQuestionBankOptionEditModel> BuildDefaultOptions(TrainingQuestionType questionType)
+    {
+        var labels = questionType == TrainingQuestionType.TrueFalse
+            ? new[] { "True", "False" }
+            : new[] { "Option 1", "Option 2", "Option 3", "Option 4" };
+
+        return labels.Select((label, index) => new TrainingQuestionBankOptionEditModel
+        {
+            OptionText = label,
+            OrderIndex = index + 1
+        }).ToList();
+    }
+
+    private static TrainingCourseAssessmentEditModel CloneAssessment(TrainingCourseAssessmentEditModel assessment) => new()
+    {
+        TrainingCourseAssessmentId = assessment.TrainingCourseAssessmentId,
+        TrainingCourseId = assessment.TrainingCourseId,
+        Name = assessment.Name,
+        Instructions = assessment.Instructions,
+        PassMarkPercent = assessment.PassMarkPercent,
+        RandomQuestionCount = assessment.RandomQuestionCount,
+        MaxAttempts = assessment.MaxAttempts,
+        TimeLimitMinutes = assessment.TimeLimitMinutes,
+        IsActive = assessment.IsActive,
+        QuestionBankCount = assessment.QuestionBankCount
+    };
+
+    private static string GetOptionKey(TrainingQuestionBankOptionEditModel option)
+        => option.TrainingQuestionBankOptionId?.ToString() ?? $"question-option-{option.OrderIndex}-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(option)}";
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        ErrorMessage = null;
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = message,
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 3500
+        });
+    }
+
+    private sealed record QuestionTypeOption(TrainingQuestionType Value, string Text);
+}

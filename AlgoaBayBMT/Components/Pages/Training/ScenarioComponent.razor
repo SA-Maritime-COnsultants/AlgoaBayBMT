@@ -1,0 +1,81 @@
+@using AlgoaBayBMT.Models.Training
+
+@if (Task is not null)
+{
+    var step = CurrentStep;
+
+    <div class="pf-training-scenario-card">
+        <div class="pf-training-scenario-header">
+            <span class="pf-training-check-type">Scenario Drill</span>
+            <h3>@Task.Title</h3>
+            <p>@Task.Description</p>
+        </div>
+
+        <div class="pf-training-scenario-step">
+            <h4>@step.Title</h4>
+            <p>@step.Prompt</p>
+            @if (!string.IsNullOrWhiteSpace(step.Guidance))
+            {
+                <div class="pf-training-check-context">@step.Guidance</div>
+            }
+            @if (!string.IsNullOrWhiteSpace(step.VideoUrl))
+            {
+                <video class="pf-training-scenario-video" controls>
+                    <source src="@step.VideoUrl" />
+                </video>
+            }
+
+            <div class="pf-training-check-options">
+                @foreach (var choice in step.Choices)
+                {
+                    <button type="button" class="pf-training-check-option pf-training-check-option--button" @onclick="() => ChooseAsync(choice)">
+                        <span>@choice.Text</span>
+                    </button>
+                }
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(LastFeedback))
+        {
+            <div class="pf-training-check-result is-correct">
+                <p>@LastFeedback</p>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private int CurrentStepIndex;
+    private string? LastFeedback;
+    private readonly List<string> SelectedChoiceIds = [];
+
+    [Parameter, EditorRequired]
+    public CompetencyTask Task { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<IReadOnlyList<string>> Completed { get; set; }
+
+    private ScenarioStep CurrentStep => Task.Steps[CurrentStepIndex];
+
+    private async Task ChooseAsync(ScenarioChoice choice)
+    {
+        SelectedChoiceIds.Add(choice.ChoiceId);
+        LastFeedback = choice.Feedback;
+
+        if (string.IsNullOrWhiteSpace(choice.NextStepId))
+        {
+            await Completed.InvokeAsync(SelectedChoiceIds.ToList());
+            return;
+        }
+
+        var nextIndex = Task.Steps.ToList().FindIndex(x => string.Equals(x.StepId, choice.NextStepId, StringComparison.OrdinalIgnoreCase));
+        if (nextIndex >= 0)
+        {
+            CurrentStepIndex = nextIndex;
+        }
+        else
+        {
+            await Completed.InvokeAsync(SelectedChoiceIds.ToList());
+        }
+    }
+}

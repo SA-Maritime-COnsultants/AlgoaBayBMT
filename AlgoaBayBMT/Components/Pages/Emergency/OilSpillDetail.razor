@@ -1,0 +1,707 @@
+@page "/emergency/oilspill/{Id:int}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using System.Text.Json
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillResponseService OilSpillResponseService
+@inject IIncidentFormService IncidentFormService
+@inject IOilSpillExportService OilSpillExportService
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Oil Spill Detail</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    @if (_loading)
+    {
+        <div class="pf-alert pf-status-message" role="alert">Loading spill…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">Oil spill incident @Id was not found.</div>
+    }
+    else
+    {
+        <div class="page-header">
+            <div>
+                <h1 class="page-title pf-training-heading">@_spill.SpillName</h1>
+                <div class="page-subtitle">Oil spill incident detail, model runs, response actions and IMS forms.</div>
+            </div>
+            <div class="pf-grid-actions pf-grid-actions--compact">
+                <span class="ab-badge @(_spill.Status == OilSpillStatus.Active ? "ab-badge-inactive" : "ab-badge-active")">@_spill.Status</span>
+                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToDashboard">Back to Dashboard</SfButton>
+            </div>
+        </div>
+
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Incident Summary" SubTitle="Key facts captured for this spill." />
+            <CardContent>
+                <div class="pf-form-grid">
+                    <div class="pf-col-3"><label class="pf-field-label">Product</label><div>@_spill.ProductType</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Source</label><div>@_spill.SourceType</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Est. Volume (m³)</label><div>@_spill.EstimatedVolume.ToString("N1")</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Release Rate</label><div>@(_spill.ReleaseRate?.ToString("N1") ?? "—")</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Start Time</label><div>@_spill.SpillStartTime.ToString("dd MMM yyyy HH:mm")</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">End Time</label><div>@(_spill.SpillEndTime?.ToString("dd MMM yyyy HH:mm") ?? "—")</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Position</label><div>@_spill.Latitude.ToString("F5"), @_spill.Longitude.ToString("F5")</div></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Bunkering Operation</label><div>@(_spill.BunkeringOperationId?.ToString() ?? "—")</div></div>
+                </div>
+            </CardContent>
+        </SfCard>
+
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Model Runs" SubTitle="Trajectory simulations for this incident." />
+            <CardContent>
+                <div class="pf-dialog-actions pf-grid-actions--compact" style="justify-content:flex-end; margin-bottom:0.75rem;">
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-eye" IconPosition="IconPosition.Left" Disabled="@(_runs.Count == 0)" OnClick="OpenVisualizer">Visualise</SfButton>
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="NewModelRun">New Model Run</SfButton>
+                </div>
+                @if (_runs.Count == 0)
+                {
+                    <div class="pf-alert pf-status-message" role="alert">No model runs yet.</div>
+                }
+                else
+                {
+                    <div class="pf-training-responsive-grid">
+                        <SfGrid DataSource="@_runs" TValue="OilSpillModelRun" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(OilSpillModelRun.RunName)" HeaderText="Run Name" Width="220" />
+                                <GridColumn Field="@nameof(OilSpillModelRun.StartTime)" HeaderText="Start Time" Width="170" Format="dd MMM yyyy HH:mm" Type="ColumnType.DateTime" />
+                                <GridColumn HeaderText="Duration (h)" Width="120" TextAlign="TextAlign.Right">
+                                    <Template>@((context as OilSpillModelRun)?.DurationHours.ToString("N1"))</Template>
+                                </GridColumn>
+                                <GridColumn HeaderText="Actions" Width="130" TextAlign="TextAlign.Center">
+                                    <Template>
+                                        @{ var run = context as OilSpillModelRun; }
+                                        @if (run is not null)
+                                        {
+                                            <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                                <span class="pf-icon-action" title="Visualise Run"><SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-eye" OnClick="@(() => VisualizeRun(run.Id))" /></span>
+                                                <span class="pf-icon-action" title="View / Edit Run"><SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" IconCss="e-icons e-edit" OnClick="@(() => ViewEditRun(run.Id))" /></span>
+                                            </div>
+                                        }
+                                    </Template>
+                                </GridColumn>
+                            </GridColumns>
+                        </SfGrid>
+                    </div>
+                }
+            </CardContent>
+        </SfCard>
+
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Response Actions" SubTitle="Containment, recovery and mitigation actions recorded for this spill." />
+            <CardContent>
+                @if (_actions.Count == 0)
+                {
+                    <div class="pf-alert pf-status-message" role="alert">No response actions recorded.</div>
+                }
+                else
+                {
+                    <div class="pf-training-responsive-grid">
+                        <SfGrid DataSource="@_actions" TValue="OilSpillResponseAction" AllowSorting="true" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
+                            <GridColumns>
+                                <GridColumn Field="@nameof(OilSpillResponseAction.ActionType)" HeaderText="Action" Width="160" />
+                                <GridColumn Field="@nameof(OilSpillResponseAction.Description)" HeaderText="Description" Width="300" />
+                                <GridColumn HeaderText="Period" Width="220">
+                                    <Template>
+                                        @{ var action = context as OilSpillResponseAction; }
+                                        @if (action is not null)
+                                        {
+                                            <span>@action.StartTime.ToString("dd MMM HH:mm") &ndash; @(action.EndTime?.ToString("dd MMM HH:mm") ?? "ongoing")</span>
+                                        }
+                                    </Template>
+                                </GridColumn>
+                                <GridColumn Field="@nameof(OilSpillResponseAction.PerformedBy)" HeaderText="Performed By" Width="180" />
+                            </GridColumns>
+                        </SfGrid>
+                    </div>
+                }
+            </CardContent>
+        </SfCard>
+
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Forms &amp; Reports" SubTitle="IMS/ICS incident forms and exportable reports." />
+            <CardContent>
+                <div class="pf-dialog-actions pf-grid-actions--compact" style="justify-content:flex-end; margin-bottom:0.75rem;">
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-file-document" IconPosition="IconPosition.Left" Disabled="@(_busy || _runs.Count == 0)" OnClick="GenerateSitrepAsync">Generate SITREP</SfButton>
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-export" IconPosition="IconPosition.Left" Disabled="@(_busy || _runs.Count == 0)" OnClick="ExportAllAsync">Export All (ZIP)</SfButton>
+                </div>
+
+                @if (!string.IsNullOrEmpty(_formsMessage))
+                {
+                    <div class="pf-alert pf-status-message" role="alert">@_formsMessage</div>
+                }
+
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <SfTab CssClass="pf-manage-tabset">
+                            <TabItems>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-201 Briefing"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-header" style="margin-bottom:0.5rem;">
+                                            <div class="page-subtitle">Incident Briefings</div>
+                                            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs201Async">New Form</SfButton>
+                                        </div>
+                                        @RenderFormGrid(FormsOf(IncidentFormType.ICS201))
+                                    </ContentTemplate>
+                                </TabItem>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-214 Activity Log"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-header" style="margin-bottom:0.5rem;">
+                                            <div class="page-subtitle">Activity Log Entries</div>
+                                            <div class="pf-grid-actions pf-grid-actions--compact">
+                                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-export" IconPosition="IconPosition.Left" Disabled="@(_busy || FormsOf(IncidentFormType.ICS214).Count == 0)" OnClick="ExportConsolidated214Async">Export Consolidated Log</SfButton>
+                                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs214EntryAsync">New Entry</SfButton>
+                                            </div>
+                                        </div>
+                                        @RenderActivityGrid(FormsOf(IncidentFormType.ICS214))
+                                    </ContentTemplate>
+                                </TabItem>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-204 Assignments"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-header" style="margin-bottom:0.5rem;">
+                                            <div class="page-subtitle">Assignment Lists</div>
+                                            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-green" IconCss="e-icons e-add" IconPosition="IconPosition.Left" Disabled="@_busy" OnClick="NewIcs204Async">New Form</SfButton>
+                                        </div>
+                                        @RenderFormGrid(FormsOf(IncidentFormType.ICS204))
+                                    </ContentTemplate>
+                                </TabItem>
+                                <TabItem>
+                                    <ChildContent>
+                                        <TabHeader Text="ICS-209 Status"></TabHeader>
+                                    </ChildContent>
+                                    <ContentTemplate>
+                                        <div class="page-subtitle" style="margin-bottom:0.5rem;">Status Summary</div>
+                                        @RenderFormGrid(FormsOf(IncidentFormType.ICS209))
+                                    </ContentTemplate>
+                                </TabItem>
+                            </TabItems>
+                        </SfTab>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="page-subtitle" style="margin-bottom:0.5rem;">Reports</div>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-12" style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>SITREP (PDF)</span>
+                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-file-document" Disabled="@(_busy || _runs.Count == 0)" OnClick="GenerateSitrepAsync">Generate</SfButton>
+                            </div>
+                            <div class="pf-col-12" style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>Run Summary (PDF)</span>
+                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-file-document" Disabled="@(_busy || _runs.Count == 0)" OnClick="DownloadRunSummaryAsync">Generate</SfButton>
+                            </div>
+                            <div class="pf-col-12" style="display:flex; justify-content:space-between; align-items:center;">
+                                <span>Incident Package (ZIP)</span>
+                                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-export" Disabled="@(_busy || _runs.Count == 0)" OnClick="ExportAllAsync">Export All</SfButton>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </SfCard>
+
+        <IncidentFormEditor Form="_editingForm"
+                            OnSaved="OnFormSavedAsync"
+                            OnCancel="OnFormEditCancelled" />
+    }
+</div>
+
+@{
+    RenderFragment RenderFormGrid(IReadOnlyList<IncidentForm> forms) =>
+    @<text>
+        @if (forms.Count == 0)
+        {
+            <div class="pf-alert pf-status-message" role="alert">No forms yet.</div>
+        }
+        else
+        {
+            <div class="pf-training-responsive-grid">
+                <SfGrid DataSource="@forms" TValue="IncidentForm" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
+                    <GridColumns>
+                        <GridColumn HeaderText="Status" Width="130" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                <span class="ab-badge @(form?.Status == IncidentFormStatus.Completed ? "ab-badge-active" : "ab-badge-inactive")">@form?.Status</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="SITREP" Width="130" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                <span class="ab-badge @(form?.IsLinkedToSitrep == true ? "ab-badge-active" : "ab-badge-inactive")">@(form?.IsLinkedToSitrep == true ? "Linked" : "Not linked")</span>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Updated" Width="150">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    <span>@((form.LastUpdatedAt ?? form.CreatedAt).ToString("dd MMM HH:mm"))</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Actions" Width="130" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                        <span class="pf-icon-action" title="Edit Form"><SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" IconCss="e-icons e-edit" OnClick="@(() => EditForm(form))" /></span>
+                                        <span class="pf-icon-action" title="Download PDF"><SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-file-document" Disabled="@_busy" OnClick="@(() => DownloadFormAsync(form.Id))" /></span>
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        }
+    </text>;
+
+    RenderFragment RenderActivityGrid(IReadOnlyList<IncidentForm> forms) =>
+    @<text>
+        @if (forms.Count == 0)
+        {
+            <div class="pf-alert pf-status-message" role="alert">No activity entries yet.</div>
+        }
+        else
+        {
+            <div class="pf-training-responsive-grid">
+                <SfGrid DataSource="@forms" TValue="IncidentForm" EnableHover="true" CssClass="pf-grid--compact pf-courses-grid">
+                    <GridColumns>
+                        <GridColumn HeaderText="Date/Time" Width="140">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    <span>@ParseActivity(form).Timestamp.ToString("dd MMM HH:mm")</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Person" Width="160">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    var entry = ParseActivity(form);
+                                    <span>@(string.IsNullOrWhiteSpace(entry.PersonName) ? form.PersonName : entry.PersonName)</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Activity" Width="240">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    <span>@ParseActivity(form).Activity</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Notes" Width="220">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    <span>@ParseActivity(form).Notes</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Actions" Width="130" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var form = context as IncidentForm; }
+                                @if (form is not null)
+                                {
+                                    <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                        <span class="pf-icon-action" title="Edit Entry"><SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit" IconCss="e-icons e-edit" OnClick="@(() => EditForm(form))" /></span>
+                                        <span class="pf-icon-action" title="Delete Entry"><SfButton CssClass="e-flat pf-btn-delete pf-btn-icon pf-btn-square" IconCss="e-icons e-trash" Disabled="@_busy" OnClick="@(() => DeleteFormAsync(form.Id))" /></span>
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        }
+    </text>;
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private bool _loading = true;
+    private OilSpillIncident? _spill;
+    private IReadOnlyList<OilSpillModelRun> _runs = new List<OilSpillModelRun>();
+    private IReadOnlyList<OilSpillResponseAction> _actions = new List<OilSpillResponseAction>();
+    private IReadOnlyList<IncidentForm> _forms = new List<IncidentForm>();
+
+    private bool _busy;
+    private string? _formsMessage;
+
+    private IncidentForm? _editingForm;
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private IReadOnlyList<IncidentForm> FormsOf(IncidentFormType type) =>
+        _forms.Where(f => f.FormType == type).ToList();
+
+    private static Ics214EntryPayload ParseActivity(IncidentForm form)
+    {
+        try
+        {
+            return JsonSerializer.Deserialize<Ics214EntryPayload>(form.JsonData, JsonOptions)
+                   ?? new Ics214EntryPayload();
+        }
+        catch (JsonException)
+        {
+            return new Ics214EntryPayload();
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _loading = true;
+        _spill = await OilSpillService.GetSpillByIdAsync(Id);
+
+        if (_spill is not null)
+        {
+            _runs = await OilSpillModelService.GetModelRunsForSpillAsync(Id);
+            _actions = await OilSpillResponseService.GetActionsForSpillAsync(Id);
+            _forms = await IncidentFormService.GetFormsForIncidentAsync(Id);
+        }
+
+        _loading = false;
+    }
+
+    private async Task ReloadFormsAsync()
+    {
+        _forms = await IncidentFormService.GetFormsForIncidentAsync(Id);
+        StateHasChanged();
+    }
+
+    private async Task<OilSpillRunSummary?> BuildLatestSummaryAsync()
+    {
+        if (_spill is null || _runs.Count == 0)
+        {
+            return null;
+        }
+
+        var run = _runs.OrderByDescending(r => r.CreatedAt).First();
+        var trajectory = await OilSpillModelService.GetTrajectoryAsync(run.Id);
+        return OilSpillRunSummary.Build(_spill, run, trajectory, _actions);
+    }
+
+    private async Task GenerateSitrepAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formsMessage = null;
+        try
+        {
+            // Refresh the ICS-209 so the SITREP reflects the latest run before exporting.
+            await IncidentFormService.SyncStatusSummaryAsync(Id);
+            await ReloadFormsAsync();
+
+            var summary = await BuildLatestSummaryAsync();
+            if (summary is null)
+            {
+                _formsMessage = "Add a model run before generating a SITREP.";
+                return;
+            }
+
+            var linked = await IncidentFormService.GetSitrepLinkedFormsAsync(Id);
+            var file = OilSpillExportService.GenerateSitrepPdf(summary, linked);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ExportAllAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        _formsMessage = null;
+        try
+        {
+            await IncidentFormService.SyncStatusSummaryAsync(Id);
+            await ReloadFormsAsync();
+
+            var summary = await BuildLatestSummaryAsync();
+            if (summary is null)
+            {
+                _formsMessage = "Add a model run before exporting the incident package.";
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateIncidentPackageZip(summary, _forms);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadRunSummaryAsync()
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var summary = await BuildLatestSummaryAsync();
+            if (summary is null)
+            {
+                _formsMessage = "Add a model run before generating a run summary.";
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateRunSummaryPdf(summary);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DownloadFormAsync(int formId)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var form = await IncidentFormService.GetFormByIdAsync(formId);
+            if (form is null)
+            {
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateFormPdf(form);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void EditForm(IncidentForm form)
+    {
+        _editingForm = form;
+    }
+
+    private void OnFormEditCancelled()
+    {
+        _editingForm = null;
+    }
+
+    private async Task OnFormSavedAsync()
+    {
+        await ReloadFormsAsync();
+        _formsMessage = "Form saved.";
+    }
+
+    private async Task NewIcs201Async()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var payload = new Ics201Payload
+            {
+                IncidentName = _spill.SpillName,
+                Commander = _spill.Commander ?? string.Empty,
+                IncidentStartTime = _spill.SpillStartTime,
+                SourceType = _spill.SourceType.ToString(),
+                ProductType = _spill.ProductType.ToString(),
+                EstimatedVolume = _spill.EstimatedVolume
+            };
+
+            var form = await IncidentFormService.CreateFormAsync(
+                Id, IncidentFormType.ICS201, JsonSerializer.Serialize(payload, JsonOptions),
+                _spill.CreatedBy, linkToSitrep: _spill.Status == OilSpillStatus.Active);
+
+            await ReloadFormsAsync();
+            _editingForm = form;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task NewIcs204Async()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var payload = new Ics204Payload
+            {
+                IncidentName = _spill.SpillName,
+                OperationsLeader = _spill.Commander ?? string.Empty,
+                OperationalPeriodStart = DateTime.UtcNow
+            };
+
+            var form = await IncidentFormService.CreateFormAsync(
+                Id, IncidentFormType.ICS204, JsonSerializer.Serialize(payload, JsonOptions),
+                _spill.CreatedBy, operationalPeriodId: DefaultOperationalPeriodId);
+
+            await ReloadFormsAsync();
+            _editingForm = form;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task NewIcs214EntryAsync()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var form = await IncidentFormService.AddActivityLogEntryAsync(
+                Id, personName: _spill.Commander ?? "Contributor",
+                activity: string.Empty, notes: null,
+                operationalPeriodId: DefaultOperationalPeriodId,
+                createdBy: _spill.CreatedBy);
+
+            await ReloadFormsAsync();
+            _editingForm = form;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task DeleteFormAsync(int formId)
+    {
+        if (_busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            if (_editingForm?.Id == formId)
+            {
+                _editingForm = null;
+            }
+            await IncidentFormService.DeleteFormAsync(formId);
+            await ReloadFormsAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ExportConsolidated214Async()
+    {
+        if (_spill is null || _busy)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var entries = FormsOf(IncidentFormType.ICS214);
+            if (entries.Count == 0)
+            {
+                _formsMessage = "No ICS-214 entries to export.";
+                return;
+            }
+
+            var file = OilSpillExportService.GenerateConsolidatedActivityLogPdf(
+                _spill.SpillName, DefaultOperationalPeriodId, entries);
+            await DownloadAsync(file);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private const int DefaultOperationalPeriodId = 1;
+
+    private async Task DownloadAsync(OilSpillExportFile file)
+    {
+        await JS.InvokeVoidAsync(
+            "oilSpillExport.downloadFile", file.FileName, file.ToBase64(), file.ContentType);
+    }
+
+    private static string FormLabel(IncidentFormType type) => type switch
+    {
+        IncidentFormType.ICS201 => "ICS-201 Briefing",
+        IncidentFormType.ICS204 => "ICS-204 Assignment List",
+        IncidentFormType.ICS209 => "ICS-209 Status Summary",
+        IncidentFormType.ICS214 => "ICS-214 Activity Log",
+        _ => type.ToString()
+    };
+
+    private static string StatusBadge(IncidentFormStatus status) => status switch
+    {
+        IncidentFormStatus.Completed => "bg-success",
+        IncidentFormStatus.Exported => "bg-info text-dark",
+        _ => "bg-secondary"
+    };
+
+    private void BackToDashboard() => NavigationManager.NavigateTo("/emergency/oilspill");
+
+    private void NewModelRun() => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/model");
+
+    private void OpenVisualizer() => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/visualize");
+
+    private void VisualizeRun(int runId) => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/visualize?runId={runId}");
+
+    private void ViewEditRun(int runId) => NavigationManager.NavigateTo($"/emergency/oilspill/{Id}/model?runId={runId}");
+}

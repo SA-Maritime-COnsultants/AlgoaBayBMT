@@ -1,0 +1,24 @@
+<div class="pf-flashcard-shell @(IsFlipped ? "is-flipped" : string.Empty)" @onclick="ToggleFlip">
+    <div class="pf-flashcard-inner">
+        <div class="pf-flashcard-face pf-flashcard-face--front">
+            <div class="pf-flashcard-label">Prompt</div>
+            <div class="pf-flashcard-text">@FrontText</div>
+        </div>
+        <div class="pf-flashcard-face pf-flashcard-face--back">
+            <div class="pf-flashcard-label">Answer</div>
+            <div class="pf-flashcard-text">@BackText</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool IsFlipped;
+
+    [Parameter, EditorRequired]
+    public string FrontText { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired]
+    public string BackText { get; set; } = string.Empty;
+
+    private void ToggleFlip() => IsFlipped = !IsFlipped;
+}

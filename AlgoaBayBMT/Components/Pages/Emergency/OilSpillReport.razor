@@ -1,0 +1,115 @@
+@page "/emergency/oilspill/new"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthState
+
+<PageTitle>Report Oil Spill</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Report New Oil Spill</h1>
+            <div class="page-subtitle">Capture a new oil spill incident in Algoa Bay.</div>
+        </div>
+        <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToDashboard">Back to Dashboard</SfButton>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(_message))
+    {
+        <div class="pf-alert @(_isError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@_message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Incident Details" SubTitle="Spill identification, product, volume and position." />
+        <CardContent>
+            <EditForm Model="_request" OnValidSubmit="CreateSpillAsync" FormName="oil-spill-report-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="pf-form-grid">
+                    <div class="pf-col-6"><label class="pf-field-label">Spill Name</label><SfTextBox @bind-Value="_request.SpillName" /></div>
+                    <div class="pf-col-6"><label class="pf-field-label">Spill Start Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="_request.SpillStartTime" Format="dd MMM yyyy HH:mm" /></div>
+                    <div class="pf-col-3">
+                        <label class="pf-field-label">Product Type</label>
+                        <SfDropDownList TValue="OilSpillProductType" TItem="OilSpillProductType" DataSource="@(Enum.GetValues<OilSpillProductType>())" @bind-Value="_request.ProductType" />
+                    </div>
+                    <div class="pf-col-3">
+                        <label class="pf-field-label">Source Type</label>
+                        <SfDropDownList TValue="OilSpillSourceType" TItem="OilSpillSourceType" DataSource="@(Enum.GetValues<OilSpillSourceType>())" @bind-Value="_request.SourceType" />
+                    </div>
+                    <div class="pf-col-3"><label class="pf-field-label">Estimated Volume (m³)</label><SfNumericTextBox TValue="double" @bind-Value="_request.EstimatedVolume" Min="0" /></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Release Rate (m³/h)</label><SfNumericTextBox TValue="double?" @bind-Value="_releaseRate" Min="0" /></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Latitude</label><SfNumericTextBox TValue="double" @bind-Value="_request.Latitude" Format="N5" Step="0.0001" /></div>
+                    <div class="pf-col-3"><label class="pf-field-label">Longitude</label><SfNumericTextBox TValue="double" @bind-Value="_request.Longitude" Format="N5" Step="0.0001" /></div>
+                    <div class="pf-col-3">
+                        <label class="pf-field-label">Bunkering Operation Id</label>
+                        <SfNumericTextBox TValue="int?" @bind-Value="_bunkeringOperationId" Min="0" />
+                        <div class="page-subtitle">Optional — links the spill to a bunkering operation.</div>
+                    </div>
+                </div>
+                <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="BackToDashboard">Cancel</SfButton>
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-warning" IconPosition="IconPosition.Left" type="submit" Disabled="@_saving">@(_saving ? "Reporting…" : "Report Spill")</SfButton>
+                </div>
+            </EditForm>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "operationId")]
+    public int? OperationId { get; set; }
+
+    private bool _saving;
+    private bool _isError;
+    private string? _message;
+    private double? _releaseRate;
+    private int? _bunkeringOperationId;
+    private CreateOilSpillRequest _request = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _request = new CreateOilSpillRequest
+        {
+            SpillName = string.Empty,
+            SpillStartTime = DateTime.Now,
+            ProductType = OilSpillProductType.Unknown,
+            SourceType = OilSpillSourceType.Unknown,
+            BunkeringOperationId = OperationId
+        };
+
+        _bunkeringOperationId = OperationId;
+
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _request.CreatedBy = auth.User.Identity?.Name ?? "Unknown";
+    }
+
+    private async Task CreateSpillAsync()
+    {
+        _saving = true;
+        _isError = false;
+        _message = null;
+
+        try
+        {
+            _request.ReleaseRate = _releaseRate;
+            _request.BunkeringOperationId = _bunkeringOperationId;
+
+            var spill = await OilSpillService.CreateSpillAsync(_request);
+            NavigationManager.NavigateTo($"/emergency/oilspill/{spill.Id}");
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = $"Failed to report spill: {ex.Message}";
+            _saving = false;
+        }
+    }
+
+    private void BackToDashboard() => NavigationManager.NavigateTo("/emergency/oilspill");
+}

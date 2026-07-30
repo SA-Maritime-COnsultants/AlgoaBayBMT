@@ -1,0 +1,297 @@
+@using System.Text.Json
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IIncidentFormService IncidentFormService
+@inject IOilSpillExportService OilSpillExportService
+@inject IJSRuntime JS
+
+<SfDialog Width="900px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true"
+          Visible="@(Form is not null)" VisibleChanged="OnDialogVisibleChanged">
+    <DialogTemplates>
+        <Header>@(Form is not null ? $"Edit {FormTitle(Form.FormType)}" : string.Empty)</Header>
+        <Content>
+            @if (Form is not null)
+            {
+            <div class="page-subtitle" style="margin-bottom:1rem;">Complete the form fields and save or export to PDF.</div>
+
+            @if (!string.IsNullOrEmpty(_message))
+            {
+                <div class="pf-alert pf-status-message" role="alert">@_message</div>
+            }
+
+            <div class="pf-form-grid">
+                @switch (Form.FormType)
+                {
+                    case IncidentFormType.ICS201:
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Incident name</label>
+                            <SfTextBox @bind-Value="_ics201.IncidentName" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Commander</label>
+                            <SfTextBox @bind-Value="_ics201.Commander" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Incident start time</label>
+                            <SfDateTimePicker TValue="DateTime" @bind-Value="_ics201.IncidentStartTime" />
+                        </div>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Source type</label>
+                            <SfTextBox @bind-Value="_ics201.SourceType" />
+                        </div>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Product type</label>
+                            <SfTextBox @bind-Value="_ics201.ProductType" />
+                        </div>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Estimated volume (m³)</label>
+                            <SfNumericTextBox TValue="double" @bind-Value="_ics201.EstimatedVolume" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Current situation</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics201.CurrentSituation" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Initial objectives</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics201.InitialObjectives" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Safety message</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics201.SafetyMessage" />
+                        </div>
+                        break;
+
+                    case IncidentFormType.ICS204:
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Incident name</label>
+                            <SfTextBox @bind-Value="_ics204.IncidentName" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Division</label>
+                            <SfTextBox @bind-Value="_ics204.Division" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Branch / group</label>
+                            <SfTextBox @bind-Value="_ics204.BranchOrGroup" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Operations leader</label>
+                            <SfTextBox @bind-Value="_ics204.OperationsLeader" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Operational period start</label>
+                            <SfDateTimePicker TValue="DateTime" @bind-Value="_ics204.OperationalPeriodStart" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Operational period end</label>
+                            <SfDateTimePicker TValue="DateTime?" @bind-Value="_ics204.OperationalPeriodEnd" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Resources</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics204.Resources" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Assignment</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics204.Assignment" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Special instructions</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics204.SpecialInstructions" />
+                        </div>
+                        break;
+
+                    case IncidentFormType.ICS214:
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Date / time</label>
+                            <SfDateTimePicker TValue="DateTime" @bind-Value="_ics214.Timestamp" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Person</label>
+                            <SfTextBox @bind-Value="_ics214.PersonName" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Activity</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics214.Activity" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Notes</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics214.Notes" />
+                        </div>
+                        break;
+
+                    case IncidentFormType.ICS209:
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Commander</label>
+                            <SfTextBox @bind-Value="_ics209.Commander" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Status</label>
+                            <SfTextBox @bind-Value="_ics209.Status" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Situation summary</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics209.SituationSummary" />
+                        </div>
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Planned actions</label>
+                            <SfTextBox Multiline="true" @bind-Value="_ics209.PlannedActions" />
+                        </div>
+                        break;
+                }
+            </div>
+
+            <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="OnCancelAsync">Cancel</SfButton>
+                <SfButton CssClass="pf-training-page-action-btn crew-action-btn-blue" IconCss="e-icons e-file-document" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="ExportAsync">Export PDF</SfButton>
+                <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" Disabled="_busy" @onclick="SaveAsync">Save</SfButton>
+            </div>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    /// <summary>The form being edited. When null the editor renders nothing.</summary>
+    [Parameter] public IncidentForm? Form { get; set; }
+
+    /// <summary>Raised after a successful save so the parent can refresh its grids.</summary>
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    /// <summary>Raised when the editor is dismissed.</summary>
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
+    private Ics201Payload _ics201 = new();
+    private Ics204Payload _ics204 = new();
+    private Ics214EntryPayload _ics214 = new();
+    private Ics209Payload _ics209 = new();
+
+    private bool _busy;
+    private string? _message;
+    private int _loadedFormId = -1;
+
+    protected override void OnParametersSet()
+    {
+        if (Form is null || Form.Id == _loadedFormId)
+        {
+            return;
+        }
+
+        _loadedFormId = Form.Id;
+        _message = null;
+
+        switch (Form.FormType)
+        {
+            case IncidentFormType.ICS201:
+                _ics201 = Deserialize<Ics201Payload>(Form.JsonData) ?? new Ics201Payload();
+                break;
+            case IncidentFormType.ICS204:
+                _ics204 = Deserialize<Ics204Payload>(Form.JsonData) ?? new Ics204Payload();
+                break;
+            case IncidentFormType.ICS214:
+                _ics214 = Deserialize<Ics214EntryPayload>(Form.JsonData) ?? new Ics214EntryPayload();
+                break;
+            case IncidentFormType.ICS209:
+                _ics209 = Deserialize<Ics209Payload>(Form.JsonData) ?? new Ics209Payload();
+                break;
+        }
+    }
+
+    private async Task SaveAsync()
+    {
+        if (Form is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            var json = Form.FormType switch
+            {
+                IncidentFormType.ICS201 => Serialize(_ics201),
+                IncidentFormType.ICS204 => Serialize(_ics204),
+                IncidentFormType.ICS214 => Serialize(_ics214),
+                IncidentFormType.ICS209 => Serialize(_ics209),
+                _ => Form.JsonData
+            };
+
+            await IncidentFormService.UpdateFormAsync(Form.Id, json, IncidentFormStatus.Completed);
+            Form.JsonData = json;
+            _message = "Saved.";
+            await OnSaved.InvokeAsync();
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task ExportAsync()
+    {
+        if (Form is null)
+        {
+            return;
+        }
+
+        _busy = true;
+        try
+        {
+            // Persist current edits first so the exported PDF reflects what is on screen.
+            await SaveAsync();
+            var fresh = await IncidentFormService.GetFormByIdAsync(Form.Id) ?? Form;
+            var file = OilSpillExportService.GenerateFormPdf(fresh);
+            await JS.InvokeVoidAsync(
+                "oilSpillExport.downloadFile", file.FileName, file.ToBase64(), file.ContentType);
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task OnCancelAsync()
+    {
+        _loadedFormId = -1;
+        await OnCancel.InvokeAsync();
+    }
+
+    /// <summary>Fires when the dialog is dismissed via the close icon, Escape, or overlay click — treat it the same as Cancel.</summary>
+    private async Task OnDialogVisibleChanged(bool visible)
+    {
+        if (!visible && Form is not null)
+        {
+            await OnCancelAsync();
+        }
+    }
+
+    private static string Serialize<T>(T value) => JsonSerializer.Serialize(value, JsonOptions);
+
+    private static T? Deserialize<T>(string json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return default;
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(json, JsonOptions);
+        }
+        catch (JsonException)
+        {
+            return default;
+        }
+    }
+
+    private static string FormTitle(IncidentFormType type) => type switch
+    {
+        IncidentFormType.ICS201 => "ICS-201 Incident Briefing",
+        IncidentFormType.ICS204 => "ICS-204 Assignment List",
+        IncidentFormType.ICS209 => "ICS-209 Incident Status Summary",
+        IncidentFormType.ICS214 => "ICS-214 Activity Log",
+        _ => type.ToString()
+    };
+}

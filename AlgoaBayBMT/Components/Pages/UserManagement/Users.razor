@@ -1,0 +1,784 @@
+@page "/user-management/users"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOrCompanyManager)]
+
+@using Syncfusion.Blazor.Notifications
+@using AlgoaBayBMT.Shared.Models
+@using Microsoft.EntityFrameworkCore
+
+@inject IUserManagementService UserManagementService
+@inject IApplicationEmailService EmailService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Manage Users</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Users</h1>
+            <div class="page-subtitle">Search the directory and manage activation, approval, profile, and role assignments.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+        <ToastPosition X="Right" Y="Top"></ToastPosition>
+    </SfToast>
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="User Directory" SubTitle="View and manage user profiles, approval state, crew metadata, and identity settings" />
+        <CardContent>
+            <div class="pf-toolbar-row">
+                <SfTextBox Placeholder="Search by name, email, country, cell number, role, or SID" @bind-Value="SearchTerm" />
+                <SfButton CssClass="abmt-btn-search" IconCss="e-icons e-search" OnClick="@(_ => LoadAsync())">Search</SfButton>
+                @if (IsAdmin)
+                {
+                    <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-add" OnClick="@(_ => OpenAddDialog())">Add User</SfButton>
+                }
+            </div>
+
+            <SfGrid DataSource="@UserItems" TValue="ApplicationUser" AllowPaging="true" AllowSorting="true" AllowFiltering="true" AllowResizing="true" EnableHover="true">
+                <GridPageSettings PageSize="12"></GridPageSettings>
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel"></GridFilterSettings>
+                <GridColumns>
+                    <GridColumn HeaderText="Name" Width="180">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span>@(user?.FullName ?? user?.Email)</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn Field="@nameof(ApplicationUser.Email)" HeaderText="Email" Width="220" />
+                    <GridColumn HeaderText="Country" Width="150">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span>@(user?.Country ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Crew" Width="95" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span class="badge @(user?.IsCrew == true ? "bg-primary" : "bg-secondary")">@(user?.IsCrew == true ? "Yes" : "No")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Rank" Width="150">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span>@(user?.CrewRank?.GetDisplayName() ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="SID Number" Width="150">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span>@(user?.SidNumber ?? "-")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Roles" Width="200">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            @if (user is not null && UserRoles.TryGetValue(user.Id, out var userRoles) && userRoles.Count > 0)
+                            {
+                                <div class="pf-role-badge-list">
+                                    @foreach (var role in userRoles)
+                                    {
+                                        <span class="e-badge pf-role-badge">@role.Replace("_", " ")</span>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">-</span>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Approved" Width="150">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            @if (user is not null)
+                            {
+                                <div class="pf-grid-toggle">
+                                    @if (IsAdmin)
+                                    {
+                                        <div class="pf-grid-toggle">
+                                            <SfButton CssClass="@(user.IsAccountApproved ? "pf-approval-btn pf-approval-btn--on" : "pf-approval-btn pf-approval-btn--off")"
+                                                      OnClick="@(_ => ToggleApprovalAsync(user, !user.IsAccountApproved))">
+                                                @(user.IsAccountApproved ? "✓ Approved" : "⏳ Pending")
+                                            </SfButton>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge @(user.IsAccountApproved ? "bg-success" : "bg-warning text-dark")">@(user.IsAccountApproved ? "Approved" : "Pending")</span>
+                                    }
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Email Confirmed" Width="135" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span class="badge @(user?.EmailConfirmed == true ? "bg-success" : "bg-secondary")">@(user?.EmailConfirmed == true ? "Yes" : "No")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Status" Width="120" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            <span class="badge @(user?.IsActive == true ? "bg-success" : "bg-secondary")">@(user?.IsActive == true ? "Active" : "Deactivated")</span>
+                        </Template>
+                    </GridColumn>
+                    <GridColumn HeaderText="Actions" Width="220" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{ var user = context as ApplicationUser; }
+                            @if (user is not null)
+                            {
+                                <div class="pf-grid-actions pf-grid-actions--compact pf-grid-actions--no-gap">
+                                    <span class="pf-icon-action" title="View Details">
+                                        <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square" IconCss="e-icons e-more-horizontal-1" OnClick="@(_ => OpenDetailsDialog(user))"><span class="visually-hidden">View Details</span></SfButton>
+                                    </span>
+                                    @if (IsAdmin)
+                                    {
+                                        <span class="pf-icon-action" title="Edit User">
+                                            <SfButton CssClass="e-flat e-primary pf-btn-edit pf-btn-icon pf-btn-square" IconCss="e-icons e-edit" OnClick="@(_ => OpenEditDialog(user))"><span class="visually-hidden">Edit User</span></SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="Allocate Roles">
+                                            <SfButton CssClass="e-flat pf-btn-roles pf-btn-icon pf-btn-square" IconCss="e-icons e-user" OnClick="@(_ => OpenRolesDialogAsync(user))"><span class="visually-hidden">Allocate Roles</span></SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="Assign Company">
+                                            <SfButton CssClass="e-flat pf-btn-details pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-office" OnClick="@(_ => OpenCompanyDialogAsync(user))"><span class="visually-hidden">Assign Company</span></SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="Re-send Welcome Email">
+                                            <SfButton CssClass="e-flat pf-btn-email pf-btn-icon pf-btn-square" IconCss="e-icons e-send" OnClick="@(_ => ResendWelcomeEmailAsync(user))"><span class="visually-hidden">Re-send Welcome Email</span></SfButton>
+                                        </span>
+                                        <span class="pf-icon-action" title="@(user.IsActive ? "Deactivate User" : "Activate User")">
+                                            <SfButton CssClass="@(user.IsActive ? "e-flat pf-btn-deactivate e-danger pf-btn-icon pf-btn-square" : "e-flat pf-btn-deactivate e-warning pf-btn-icon pf-btn-square")" IconCss="@(user.IsActive ? "e-icons e-eye-slash" : "e-icons e-eye")" OnClick="@(_ => ToggleActiveAsync(user))"><span class="visually-hidden">@(user.IsActive ? "Deactivate User" : "Activate User")</span></SfButton>
+                                        </span>
+                                        @if (!user.IsActive)
+                                        {
+                                            <span class="pf-icon-action" title="Delete Permanently">
+                                                <SfButton CssClass="e-flat e-danger pf-btn-delete pf-btn-icon pf-btn-square" IconCss="e-icons e-delete" OnClick="@(_ => OpenDeleteDialog(user))"><span class="visually-hidden">Delete Permanently</span></SfButton>
+                                            </span>
+                                        }
+                                    }
+                                </div>
+                            }
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="920px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDetailsDialogVisible">
+    <DialogTemplates>
+        <Header>User Details</Header>
+        <Content>
+            @if (SelectedUser is not null)
+            {
+                <div class="pf-detail-grid">
+                    <div class="pf-detail-item"><span class="pf-detail-label">Name</span><span class="pf-detail-value">@(SelectedUser.FullName ?? SelectedUser.Email)</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Email</span><span class="pf-detail-value">@(SelectedUser.Email ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Cell No</span><span class="pf-detail-value">@(SelectedUser.CellNo ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Address</span><span class="pf-detail-value">@(SelectedUser.Address ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Country</span><span class="pf-detail-value">@(SelectedUser.Country ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Crew</span><span class="pf-detail-value">@(SelectedUser.IsCrew ? "Yes" : "No")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Rank</span><span class="pf-detail-value">@(SelectedUser.CrewRank?.GetDisplayName() ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">SID Number</span><span class="pf-detail-value">@(SelectedUser.SidNumber ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">SID Issuing Country</span><span class="pf-detail-value">@(SelectedUser.SidIssuingCountry ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">SID Issuing Authority</span><span class="pf-detail-value">@(SelectedUser.SidIssuingAuthority ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">SID Issue Date</span><span class="pf-detail-value">@FormatDate(SelectedUser.SidIssueDate)</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">SID Expiry Date</span><span class="pf-detail-value">@FormatDate(SelectedUser.SidExpiryDate)</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Requested Role</span><span class="pf-detail-value">@(SelectedUser.RequestedRole ?? "-")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Email Confirmed</span><span class="pf-detail-value">@(SelectedUser.EmailConfirmed ? "Yes" : "No")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Approved</span><span class="pf-detail-value">@(SelectedUser.IsAccountApproved ? "Yes" : "No")</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Approval Status</span><span class="pf-detail-value">@SelectedUser.ApprovalStatus</span></div>
+                    <div class="pf-detail-item"><span class="pf-detail-label">Active</span><span class="pf-detail-value">@(SelectedUser.IsActive ? "Yes" : "No")</span></div>
+                </div>
+            }
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="980px" CssClass="pf-training-dialog pf-training-dialog--subtle pf-user-edit-dialog abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDialogVisible">
+    <DialogTemplates>
+        <Header>@(IsEditMode ? "Edit User" : "Add User")</Header>
+        <Content>
+            <EditForm EditContext="@DialogEditContext" FormName="user-admin-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <SfCard CssClass="pf-card-shell">
+                    <CardContent>
+                        <div class="pf-form-grid">
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Full Name</label>
+                                <SfTextBox Placeholder="Enter full name" @bind-Value="EditModel.FullName" />
+                            </div>
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Email</label>
+                                <SfTextBox Placeholder="Enter email" @bind-Value="EditModel.Email" />
+                            </div>
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Cell No</label>
+                                <SfTextBox Placeholder="Enter cell number" @bind-Value="EditModel.CellNo" />
+                            </div>
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Address</label>
+                                <SfTextBox Placeholder="Enter address" @bind-Value="EditModel.Address" />
+                            </div>
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">Country</label>
+                                <SfDropDownList TValue="string" TItem="CountryOption" DataSource="@CountryOptions" @bind-Value="EditModel.Country" Placeholder="Select country">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">Assigned Role</label>
+                                <SfDropDownList TValue="string" TItem="RoleOption" DataSource="@RoleOptions" @bind-Value="EditModel.AssignedRole" Placeholder="Select role">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                            </div>
+                            <div class="pf-col-4 auth-inline-checkbox">
+                                <label class="pf-field-label">Crew</label>
+                                <SfCheckBox Label="Crew" @bind-Checked="EditModel.IsCrew" />
+                            </div>
+                            @if (EditModel.IsCrew)
+                            {
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">Rank</label>
+                                    <SfDropDownList TValue="CrewRank?" TItem="CrewRankOption" DataSource="@CrewRankOptions" @bind-Value="EditModel.CrewRank" Placeholder="Select rank">
+                                        <DropDownListFieldSettings Text="Text" Value="Value" />
+                                    </SfDropDownList>
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">SID Number</label>
+                                    <SfTextBox Placeholder="Enter SID number" @bind-Value="EditModel.SidNumber" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">SID Issuing Country</label>
+                                    <SfDropDownList TValue="string" TItem="CountryOption" DataSource="@CountryOptions" @bind-Value="EditModel.SidIssuingCountry" Placeholder="Select country">
+                                        <DropDownListFieldSettings Text="Text" Value="Value" />
+                                    </SfDropDownList>
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">SID Issuing Authority</label>
+                                    <SfTextBox Placeholder="Enter issuing authority" @bind-Value="EditModel.SidIssuingAuthority" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">SID Issue Date</label>
+                                    <SfDatePicker TValue="DateTime?" @bind-Value="EditModel.SidIssueDate" Placeholder="Issue date" Format="yyyy-MM-dd" />
+                                </div>
+                                <div class="pf-col-4">
+                                    <label class="pf-field-label">SID Expiry Date</label>
+                                    <SfDatePicker TValue="DateTime?" @bind-Value="EditModel.SidExpiryDate" Placeholder="Expiry date" Format="yyyy-MM-dd" />
+                                </div>
+                            }
+                            <div class="pf-col-4 auth-inline-checkbox">
+                                <label class="pf-field-label">Status</label>
+                                <SfCheckBox Label="Active" @bind-Checked="EditModel.IsActive" />
+                            </div>
+                            @if (IsAdmin)
+                            {
+                                <div class="pf-col-4 auth-inline-checkbox">
+                                    <label class="pf-field-label">Approval</label>
+                                    <SfCheckBox Label="Approved" @bind-Checked="EditModel.IsAccountApproved" />
+                                </div>
+                                <div class="pf-col-4 auth-inline-checkbox">
+                                    <label class="pf-field-label">Identity</label>
+                                    <SfCheckBox Label="Email Confirmed" @bind-Checked="EditModel.EmailConfirmed" />
+                                </div>
+                            }
+                            @if (!IsEditMode)
+                            {
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Password</label>
+                                    <SfTextBox Placeholder="Enter password" Type="InputType.Password" @bind-Value="EditModel.Password" />
+                                </div>
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Confirm Password</label>
+                                    <SfTextBox Placeholder="Confirm password" Type="InputType.Password" @bind-Value="EditModel.ConfirmPassword" />
+                                </div>
+                            }
+                        </div>
+                    </CardContent>
+                </SfCard>
+            </EditForm>
+            <div class="pf-dialog-actions pf-user-edit-dialog-actions">
+                @if (IsAdmin && IsEditMode)
+                {
+                    <SfButton CssClass="pf-user-edit-dialog-btn pf-user-edit-dialog-btn--resend" IconCss="e-icons e-send" IconPosition="IconPosition.Left" OnClick="@(_ => ResendWelcomeEmailAsync(EditModel.UserId))">Re-send Email</SfButton>
+                }
+                <SfButton CssClass="pf-user-edit-dialog-btn pf-user-edit-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" OnClick="@(_ => CloseDialog())">Cancel</SfButton>
+                <SfButton CssClass="pf-user-edit-dialog-btn pf-user-edit-dialog-btn--save" IconCss="e-icons e-save" IconPosition="IconPosition.Left" OnClick="@(_ => SaveAsync())">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="760px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsRolesDialogVisible">
+    <DialogTemplates>
+        <Header>Allocate Roles</Header>
+        <Content>
+            <div class="pf-empty-state">Manage role assignments for <strong>@(RolesTargetUser?.FullName ?? RolesTargetUser?.Email)</strong>.</div>
+            <SfCard CssClass="pf-card-shell">
+                <CardContent>
+                    <div class="pf-form-grid">
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Assigned Roles</label>
+                            <SfMultiSelect TValue="string[]" TItem="RoleOption" DataSource="@RoleOptions" @bind-Value="SelectedRoleNames" Placeholder="Select roles" Mode="VisualMode.Box">
+                                <MultiSelectFieldSettings Text="Text" Value="Value" />
+                            </SfMultiSelect>
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+            <div class="pf-dialog-actions">
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@(_ => CloseRolesDialog())">Cancel</SfButton>
+                <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" OnClick="@(_ => SaveRolesAsync())">Save Roles</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="620px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsCompanyDialogVisible">
+    <DialogTemplates>
+        <Header>Assign Company — @(CompanyTargetUser?.FullName ?? CompanyTargetUser?.Email)</Header>
+        <Content>
+            <div class="pf-form-grid">
+                <div class="pf-col-12">
+                    <label class="pf-field-label">Company (Bunker Operator)</label>
+                    <SfDropDownList TValue="int?" TItem="BunkerOperator" DataSource="@CompanyOptions"
+                                   @bind-Value="CompanyAssignId" Placeholder="No company assigned">
+                        <DropDownListFieldSettings Value="Id" Text="Name" />
+                    </SfDropDownList>
+                </div>
+                <div class="pf-col-12">
+                    <SfCheckBox @bind-Checked="GrantCompanyManagerRole" Label="Grant COMPANY_MANAGER role" />
+                </div>
+                <div class="pf-col-12">
+                    <SfCheckBox @bind-Checked="SetCrewManagerFlag" Label="Mark as Crew Manager (can sign on/off crew)" />
+                </div>
+            </div>
+            <div class="pf-dialog-actions">
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@(_ => IsCompanyDialogVisible = false)">Cancel</SfButton>
+                <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" OnClick="SaveCompanyAsync">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="520px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+    <DialogTemplates>
+        <Header>Permanent Delete</Header>
+        <Content>
+            <div class="pf-empty-state text-start">
+                <p class="mb-2"><strong>This permanently deletes the user from the database.</strong></p>
+                <p class="mb-2">This action cannot be undone.</p>
+                <p class="mb-0">Related records may also be affected depending on database relationships.</p>
+            </div>
+            <div class="pf-dialog-actions">
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@(_ => CloseDeleteDialog())">Cancel</SfButton>
+                <SfButton CssClass="e-danger abmt-btn-red-3d abmt-dialog-action-btn" IconCss="e-icons e-delete" OnClick="@(_ => ConfirmDeleteAsync())">Delete Permanently</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<ApplicationUser> UserItems = new();
+    private Dictionary<string, IReadOnlyList<string>> UserRoles = new();
+    private List<RoleOption> RoleOptions = new();
+    private UserAdministrationModel EditModel = new();
+    private EditContext DialogEditContext = default!;
+    private ApplicationUser? SelectedUser;
+    private ApplicationUser? RolesTargetUser;
+    private ApplicationUser? DeleteTargetUser;
+    private string[] SelectedRoleNames = Array.Empty<string>();
+    private string? SearchTerm;
+    private string? StatusMessage;
+    private bool IsDialogVisible;
+    private bool IsEditMode;
+    private bool IsDetailsDialogVisible;
+    private bool IsRolesDialogVisible;
+    private bool IsDeleteDialogVisible;
+    private bool IsAdmin;
+    private SfToast SuccessToast = default!;
+
+    // Company assignment dialog state
+    private bool IsCompanyDialogVisible;
+    private ApplicationUser? CompanyTargetUser;
+    private int? CompanyAssignId;
+    private bool GrantCompanyManagerRole;
+    private bool SetCrewManagerFlag;
+    private List<BunkerOperator> CompanyOptions { get; set; } = [];
+
+    private static IReadOnlyList<CrewRankOption> CrewRankOptions => Enum.GetValues<CrewRank>()
+        .Select(rank => new CrewRankOption { Value = rank, Text = rank.GetDisplayName() })
+        .ToList();
+
+    private static IReadOnlyList<CountryOption> CountryOptions => CountryCatalog.All
+        .Select(country => new CountryOption { Value = country, Text = country })
+        .ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        IsAdmin = authState.User.IsInRole(RoleNames.Admin);
+        await LoadLookupsAsync();
+        await LoadAsync();
+        ResetDialogModel();
+    }
+
+    private async Task LoadAsync()
+    {
+        UserItems = await UserManagementService.GetUsersAsync(SearchTerm);
+        UserRoles = await UserManagementService.GetUserRolesBulkAsync(UserItems.Select(x => x.Id).ToList());
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        RoleOptions = (await UserManagementService.GetAvailableRolesAsync())
+            .Select(role => new RoleOption { Value = role, Text = role.Replace("_", " ") })
+            .ToList();
+    }
+
+    private void OpenDetailsDialog(ApplicationUser user)
+    {
+        SelectedUser = user;
+        IsDetailsDialogVisible = true;
+    }
+
+    private void OpenAddDialog()
+    {
+        if (!EnsureAdmin())
+        {
+            return;
+        }
+
+        IsEditMode = false;
+        ResetDialogModel();
+        IsDialogVisible = true;
+    }
+
+    private async Task OpenEditDialog(ApplicationUser? user)
+    {
+        if (user is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        var editor = await UserManagementService.GetUserEditorAsync(user.Id);
+        if (editor is null)
+        {
+            StatusMessage = "User not found.";
+            return;
+        }
+
+        IsEditMode = true;
+        EditModel = editor;
+        DialogEditContext = new EditContext(EditModel);
+        IsDialogVisible = true;
+    }
+
+    private async Task OpenRolesDialogAsync(ApplicationUser? user)
+    {
+        if (user is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        RolesTargetUser = user;
+        SelectedRoleNames = (await UserManagementService.GetUserRolesAsync(user.Id)).ToArray();
+        IsRolesDialogVisible = true;
+    }
+
+    private void OpenDeleteDialog(ApplicationUser? user)
+    {
+        if (user is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        if (user.IsActive)
+        {
+            StatusMessage = "Only deactivated users can be permanently deleted.";
+            return;
+        }
+
+        DeleteTargetUser = user;
+        IsDeleteDialogVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        IsDialogVisible = false;
+        ResetDialogModel();
+    }
+
+    private void CloseRolesDialog()
+    {
+        IsRolesDialogVisible = false;
+        RolesTargetUser = null;
+        SelectedRoleNames = Array.Empty<string>();
+    }
+
+    private async Task OpenCompanyDialogAsync(ApplicationUser user)
+    {
+        CompanyTargetUser = user;
+        CompanyAssignId = user.CompanyId;
+        GrantCompanyManagerRole = false;
+        SetCrewManagerFlag = user.IsCrewManager;
+        if (CompanyOptions.Count == 0)
+        {
+            await using var db = await DbContextFactory.CreateDbContextAsync();
+            CompanyOptions = await db.BunkerOperators.AsNoTracking()
+                .Where(x => x.IsActive).OrderBy(x => x.Name).ToListAsync();
+        }
+        IsCompanyDialogVisible = true;
+    }
+
+    private async Task SaveCompanyAsync()
+    {
+        if (CompanyTargetUser is null) return;
+        var assignResult = await UserManagementService.AssignCompanyAsync(
+            CompanyTargetUser.Id, CompanyAssignId, GrantCompanyManagerRole);
+        if (!assignResult.Succeeded)
+        {
+            StatusMessage = string.Join(", ", assignResult.Errors);
+            IsCompanyDialogVisible = false;
+            return;
+        }
+        var crewResult = await UserManagementService.SetCrewManagerAsync(
+            CompanyTargetUser.Id, SetCrewManagerFlag);
+        StatusMessage = crewResult.Succeeded
+            ? "Company and crew manager settings saved."
+            : string.Join(", ", crewResult.Errors);
+        IsCompanyDialogVisible = false;
+        await LoadAsync();
+    }
+
+    private void CloseDeleteDialog()
+    {
+        IsDeleteDialogVisible = false;
+        DeleteTargetUser = null;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (!EnsureAdmin())
+        {
+            return;
+        }
+
+        if (!DialogEditContext.Validate())
+        {
+            return;
+        }
+
+        if (!IsEditMode)
+        {
+            if (string.IsNullOrWhiteSpace(EditModel.Password))
+            {
+                StatusMessage = "Password is required for new users.";
+                return;
+            }
+
+            if (!string.Equals(EditModel.Password, EditModel.ConfirmPassword, StringComparison.Ordinal))
+            {
+                StatusMessage = "Password confirmation does not match.";
+                return;
+            }
+        }
+
+        var result = IsEditMode
+            ? await UserManagementService.UpdateUserAsync(EditModel)
+            : await UserManagementService.CreateUserAsync(EditModel);
+
+        if (!result.Succeeded)
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await ShowSuccessToastAsync(result.Message ?? (IsEditMode ? "User updated." : "User created."));
+        StatusMessage = null;
+        IsDialogVisible = false;
+        await LoadAsync();
+        ResetDialogModel();
+    }
+
+    private async Task ToggleActiveAsync(ApplicationUser? user)
+    {
+        if (user is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        var result = await UserManagementService.SetUserActivationAsync(user.Id, !user.IsActive);
+        if (result.Succeeded)
+        {
+            await ShowSuccessToastAsync(result.Message ?? "User activation updated.");
+            StatusMessage = null;
+        }
+        else
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        }
+        await LoadAsync();
+    }
+
+    private async Task ToggleApprovalAsync(ApplicationUser? user, bool isApproved)
+    {
+        if (user is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        var result = await UserManagementService.SetUserApprovalAsync(user.Id, isApproved);
+        if (result.Succeeded)
+        {
+            await ShowSuccessToastAsync(result.Message ?? "User approval updated.");
+            StatusMessage = null;
+        }
+        else
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        }
+        await LoadAsync();
+    }
+
+    private async Task SaveRolesAsync()
+    {
+        if (RolesTargetUser is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        var result = await UserManagementService.UpdateUserRolesAsync(RolesTargetUser.Id, SelectedRoleNames ?? Array.Empty<string>());
+        if (!result.Succeeded)
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await ShowSuccessToastAsync(result.Message ?? "Roles updated.");
+        StatusMessage = null;
+        IsRolesDialogVisible = false;
+        await LoadAsync();
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (DeleteTargetUser is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        var result = await UserManagementService.DeleteUserAsync(DeleteTargetUser.Id);
+        if (!result.Succeeded)
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        await ShowSuccessToastAsync(result.Message ?? "User deleted.");
+        StatusMessage = null;
+        IsDeleteDialogVisible = false;
+        await LoadAsync();
+    }
+
+    private async Task ResendWelcomeEmailAsync(ApplicationUser? user)
+    {
+        if (user is null || !EnsureAdmin())
+        {
+            return;
+        }
+
+        var result = await EmailService.SendWelcomeEmailWithResultAsync(user, NavigationManager.BaseUri);
+        if (result.Succeeded)
+        {
+            await ShowSuccessToastAsync(result.Message ?? "Welcome email resent.");
+            StatusMessage = null;
+        }
+        else
+        {
+            StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        }
+    }
+
+    private async Task ResendWelcomeEmailAsync(string? userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        var user = UserItems.FirstOrDefault(x => x.Id == userId);
+        if (user is null)
+        {
+            await LoadAsync();
+            user = UserItems.FirstOrDefault(x => x.Id == userId);
+        }
+
+        await ResendWelcomeEmailAsync(user);
+    }
+
+    private void ResetDialogModel()
+    {
+        EditModel = new UserAdministrationModel
+        {
+            AssignedRole = RoleNames.Customer,
+            IsActive = true,
+            IsAccountApproved = true,
+            EmailConfirmed = true
+        };
+        DialogEditContext = new EditContext(EditModel);
+    }
+
+    private bool EnsureAdmin()
+    {
+        if (IsAdmin)
+        {
+            return true;
+        }
+
+        StatusMessage = "Only admins can perform this action.";
+        return false;
+    }
+
+    private static string FormatDate(DateTime? value) => value?.ToString("yyyy-MM-dd") ?? "-";
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = message,
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 4000
+        });
+    }
+
+    private sealed class RoleOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class CrewRankOption
+    {
+        public CrewRank? Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class CountryOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

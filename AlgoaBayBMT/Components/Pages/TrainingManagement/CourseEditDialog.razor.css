@@ -1,0 +1,120 @@
+/* Course create/edit dialog: compact header and standardised footer buttons. */
+
+::deep .pf-course-create-dialog.e-dialog .e-dlg-header-content {
+    min-height: 42px !important;
+    padding: 0.45rem 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    background: linear-gradient(180deg, #0f5f64 0%, #0a4c52 52%, #073a40 100%) !important;
+    border-bottom: 1px solid rgba(3, 45, 49, 0.72) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.12) inset, 0 8px 18px rgba(7, 58, 64, 0.20) !important;
+}
+
+::deep .pf-course-create-dialog.e-dialog .e-dlg-header {
+    min-height: 30px !important;
+    display: flex !important;
+    align-items: center !important;
+    background: transparent !important;
+    color: #ffffff !important;
+    font-size: 0.98rem !important;
+    font-weight: 800 !important;
+    line-height: 1.1 !important;
+}
+
+::deep .pf-course-create-dialog.e-dialog .e-dlg-closeicon-btn {
+    align-self: center !important;
+    margin-top: 0 !important;
+}
+
+/* Footer action row: keep the two buttons aligned and evenly spaced. */
+.pf-course-create-dialog-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.65rem;
+    margin-top: 1rem;
+}
+
+/* Matches the courses page top action button sizing. */
+::deep .pf-course-create-dialog-btn.e-btn {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    color: #ffffff !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    line-height: 1.1 !important;
+    text-decoration: none !important;
+    white-space: nowrap !important;
+    background-image: none !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 2px 5px rgba(0, 0, 0, 0.22) !important;
+    transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important;
+}
+
+/* Syncfusion IconCss renders as .e-btn-icon; keep icon-to-text spacing compact. */
+::deep .pf-course-create-dialog-btn.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.95rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* Subtle dark-gray Cancel button with a restrained 3D finish. */
+::deep .pf-course-create-dialog-btn--cancel.e-btn,
+::deep .pf-course-create-dialog-btn--cancel.e-btn:focus,
+::deep .pf-course-create-dialog-btn--cancel.e-btn:active {
+    background: linear-gradient(180deg, #6b7280 0%, #4b5563 58%, #374151 100%) !important;
+    border-color: #313a46 !important;
+}
+
+::deep .pf-course-create-dialog-btn--cancel.e-btn:hover {
+    background: linear-gradient(180deg, #5f6673 0%, #434c59 58%, #313a46 100%) !important;
+    border-color: #27313c !important;
+    filter: none !important;
+    transform: translateY(-1px);
+}
+
+/* Save Course uses the same subtle green as the Create Course action button. */
+::deep .pf-course-create-dialog-btn--save.e-btn,
+::deep .pf-course-create-dialog-btn--save.e-btn:focus,
+::deep .pf-course-create-dialog-btn--save.e-btn:active {
+    background: linear-gradient(180deg, #27ae60 0%, #229954 58%, #1e8449 100%) !important;
+    border-color: #1e8449 !important;
+}
+
+::deep .pf-course-create-dialog-btn--save.e-btn:hover {
+    background: linear-gradient(180deg, #229954 0%, #1e8449 58%, #196f3d 100%) !important;
+    border-color: #196f3d !important;
+    filter: none !important;
+    transform: translateY(-1px);
+}
+
+@media (max-width: 640px) {
+    .pf-course-create-dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    ::deep .pf-course-create-dialog-btn.e-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}

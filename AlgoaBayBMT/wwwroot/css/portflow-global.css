@@ -1,0 +1,345 @@
+/* ==============================================================
+   PortFlow Global Stylesheet
+   --------------------------------------------------------------
+   Reusable, application-wide styling primitives:
+     • Page header container (.pf-header-container)
+     • Badge row spacing
+     • Syncfusion RichTextEditor toolbar normalisation (global)
+   Loaded LAST in App.razor so it wins the cascade against the
+   Syncfusion Fluent2 theme and earlier shared stylesheets.
+   ==============================================================*/
+
+/* ── Header container ──────────────────────────────────────── */
+/* Two-row header used on detail pages (e.g. Course Builder).
+   Row 1: <h1> page subject. Row 2: badges/metadata.
+   Both rows share one container + one background. */
+.pf-header-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+    min-height: 120px;
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    background-color: #ddecf0;
+    border: 1px solid #b8d8e0;
+    border-radius: 8px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset,
+                0 2px 5px rgba(15, 35, 56, 0.08);
+}
+
+.pf-header-row-primary {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.pf-header-row-primary h1 {
+    margin: 0;
+    padding: 0;
+    font-size: 1.45rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #0f3247;
+    letter-spacing: 0.005em;
+}
+
+.pf-header-row-secondary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Badges inside the header secondary row — slightly larger than grid badges */
+.pf-header-row-secondary .cb-summary-badge.e-badge,
+.pf-header-row-secondary .cb-summary-badge {
+    font-size: 0.78rem !important;
+    padding: 3px 10px !important;
+    line-height: 1.5 !important;
+    border-radius: 5px !important;
+}
+
+@media (max-width: 640px) {
+    .pf-header-container {
+        padding: 14px 16px;
+    }
+    .pf-header-row-primary h1 {
+        font-size: 1.2rem;
+    }
+}
+
+/* ==============================================================
+   GLOBAL Syncfusion RichTextEditor toolbar normalisation
+   --------------------------------------------------------------
+   Fixes inconsistent button rendering where dropdown-style
+   buttons (Formats, FontName, FontSize, Font/Background colour,
+   number list) were being captured by global .e-btn 3D gradient
+   rules and appearing dark while .e-tbar-btn buttons appeared
+   flat/white. This block forces ALL toolbar children to share
+   the same pastel blue-gray 3D look with consistent icon colour.
+   ============================================================== */
+
+/* Toolbar surface (main row + extended/expanded rows + wrapper) */
+.e-richtexteditor .e-toolbar.e-rte-toolbar,
+.e-richtexteditor .e-rte-toolbar-extended,
+.e-richtexteditor .e-rte-toolbar-expanded,
+.e-richtexteditor .e-toolbar-wrapper {
+    background: linear-gradient(180deg, #f4f6fa 0%, #e6eaf1 52%, #d8dee8 100%) !important;
+    border-bottom: 1px solid #b8c1d0 !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.80) inset,
+                0 2px 4px rgba(20, 40, 70, 0.10) !important;
+    border-radius: 0 !important;
+}
+
+.e-richtexteditor .e-toolbar-wrapper {
+    border-radius: 4px 4px 0 0 !important;
+}
+
+.e-richtexteditor .e-toolbar.e-rte-toolbar {
+    padding: 3px 5px !important;
+}
+
+.e-richtexteditor .e-rte-toolbar-extended {
+    padding: 2px 5px !important;
+    border-top: 1px solid #c8d0dc !important;
+}
+
+/* Every toolbar child button — flat transparent, dark icon. */
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-split-btn,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-split-btn-wrapper .e-btn {
+    background: transparent !important;
+    background-image: none !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #1f2937 !important;
+    border-radius: 3px !important;
+    transition: background 0.1s ease, border-color 0.1s ease !important;
+    transform: none !important;
+    filter: none !important;
+}
+
+/* Suppress the global ::before highlight overlay used elsewhere */
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn::before,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn::before,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-split-btn-wrapper .e-btn::before {
+    display: none !important;
+}
+
+/* Hover — soft white pop with thin border */
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn:hover,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn:hover,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-split-btn-wrapper .e-btn:hover {
+    background: rgba(255, 255, 255, 0.75) !important;
+    border-color: #9aa6ba !important;
+    color: #0f1827 !important;
+    filter: none !important;
+    transform: none !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.80) inset,
+                0 1px 2px rgba(20, 40, 70, 0.10) !important;
+}
+
+/* Active / pressed */
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item.e-active .e-tbar-btn.e-btn,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn:active,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn:active {
+    background: #d0daf0 !important;
+    border-color: #7a9cd0 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.10) !important;
+    color: #0e2060 !important;
+}
+
+/* Icons — uniform contrast across every variant of toolbar button */
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn .e-btn-icon,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn .e-icons,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn .e-btn-icon,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn .e-icons,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-split-btn-wrapper .e-icons,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-caret {
+    color: #1f2937 !important;
+    text-shadow: none !important;
+}
+
+/* ============================================================
+   REUSABLE GLOBAL CLASSES — ab-btn, ab-badge
+   ============================================================ */
+
+/* Base button — matches pf-training-page-action-btn sizing */
+.ab-btn.e-btn {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    transform: none !important;
+    transition: box-shadow 120ms ease, filter 120ms ease !important;
+}
+.ab-btn.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+    color: inherit !important;
+}
+
+/* 3D pastel green */
+.ab-btn-green.e-btn,
+.ab-btn-green.e-btn:focus,
+.ab-btn-green.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+}
+.ab-btn-green.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 8px rgba(10,80,20,0.22) !important;
+}
+
+/* 3D pastel red */
+.ab-btn-red.e-btn,
+.ab-btn-red.e-btn:focus,
+.ab-btn-red.e-btn:active {
+    background: linear-gradient(180deg, #f5d4d4 0%, #edbcbc 52%, #e0a4a4 100%) !important;
+    border-color: #cc8585 !important;
+    color: #4a1414 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(80,10,10,0.18) !important;
+}
+.ab-btn-red.e-btn:hover {
+    background: linear-gradient(180deg, #edbcbc 0%, #e0a4a4 52%, #d08c8c 100%) !important;
+    border-color: #b06868 !important;
+    color: #2e0a0a !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(80,10,10,0.22) !important;
+}
+
+/* 3D pastel gray */
+.ab-btn-gray.e-btn,
+.ab-btn-gray.e-btn:focus,
+.ab-btn-gray.e-btn:active {
+    background: linear-gradient(180deg, #e8eaf0 0%, #d4d8e4 52%, #c0c6d4 100%) !important;
+    border-color: #9aa4b8 !important;
+    color: #1e2a3a !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(20,30,50,0.14) !important;
+}
+.ab-btn-gray.e-btn:hover {
+    background: linear-gradient(180deg, #d4d8e4 0%, #c0c6d4 52%, #aab2c4 100%) !important;
+    border-color: #7a86a0 !important;
+    color: #111827 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(20,30,50,0.18) !important;
+}
+
+/* Dialog header — matches panel header standard */
+.ab-dialog-header.e-dialog .e-dlg-header-content {
+    min-height: 52px !important;
+    padding: 0.6rem 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #ddecf0 !important;
+    border-bottom: 1px solid #b8d8e0 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset !important;
+}
+.ab-dialog-header.e-dialog .e-dlg-header {
+    background: transparent !important;
+    color: #0f3247 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    flex: 1 !important;
+    order: 1 !important;
+}
+.ab-dialog-header.e-dialog .e-dlg-closeicon-btn {
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-top: 0 !important;
+    color: #0f3247 !important;
+    order: 2 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Status badges — active/inactive */
+.ab-badge {
+    display: inline-block !important;
+    padding: 0.18em 0.7em !important;
+    border-radius: 12px !important;
+    font-size: 0.76rem !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap !important;
+}
+.ab-badge-active {
+    background: #c8f0cd !important;
+    border: 1px solid #88d492 !important;
+    color: #0f3319 !important;
+}
+.ab-badge-inactive {
+    background: #fff5c0 !important;
+    border: 1px solid #e0c840 !important;
+    color: #3a2e00 !important;
+}
+
+
+
+/* CREATE COURSE + EDIT COURSE DIALOG - header text BLACK */
+/* Covers both dialogs. Placed in the last-loaded stylesheet so  */
+/* it wins over all earlier white-text rules at equal specificity. */
+
+.pf-course-create-dialog.e-dialog .e-dlg-header,
+.pf-course-create-dialog.e-dialog .e-dlg-header *,
+.pf-course-create-dialog.e-dialog .e-dlg-header .e-title-text,
+.pf-course-create-dialog.e-dialog .e-dlg-header span,
+.pf-course-create-dialog.e-dialog .e-dlg-header-content .e-dlg-header,
+.pf-course-create-dialog.e-dialog .e-dlg-header-content .e-title-text,
+.pf-course-create-dialog.e-dialog .e-dlg-header-content span,
+.pf-course-create-dialog.e-dialog .e-dlg-header-content label,
+.pf-course-edit-dialog.e-dialog .e-dlg-header,
+.pf-course-edit-dialog.e-dialog .e-dlg-header *,
+.pf-course-edit-dialog.e-dialog .e-dlg-header .e-title-text,
+.pf-course-edit-dialog.e-dialog .e-dlg-header span,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content .e-dlg-header,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content .e-title-text,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content span,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content label {
+    color: #000000 !important;
+    text-shadow: none !important;
+    background: transparent !important;
+}
+
+.pf-course-create-dialog.e-dialog .e-dlg-closeicon-btn,
+.pf-course-create-dialog.e-dialog .e-dlg-closeicon-btn .e-btn-icon,
+.pf-course-create-dialog.e-dialog .e-dlg-closeicon-btn span,
+.pf-course-edit-dialog.e-dialog .e-dlg-closeicon-btn,
+.pf-course-edit-dialog.e-dialog .e-dlg-closeicon-btn .e-btn-icon,
+.pf-course-edit-dialog.e-dialog .e-dlg-closeicon-btn span {
+    color: #000000 !important;
+    text-shadow: none !important;
+}

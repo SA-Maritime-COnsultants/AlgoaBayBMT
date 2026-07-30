@@ -1,0 +1,615 @@
+/* ══════════════════════════════════════════════════════════════════
+   Crew Pages  —  filter buttons, action buttons, status badges
+   Visual baseline: /training-management/course-builder/[CourseID]
+   Loaded via bare path (not @Assets) — same pattern as algobay-global.css
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────
+   FILTER BUTTONS  (rendered by SfButton → .e-btn element)
+   Self-contained: own geometry + own blue-gray colour.
+   Must NOT inherit from pf-training-page-action-btn.
+   ────────────────────────────────────────────────────────────────── */
+.e-btn.crew-filter-btn,
+.e-btn.crew-filter-btn:focus,
+.e-btn.crew-filter-btn:active {
+    width:            155px !important;
+    min-width:        155px !important;
+    height:           46px !important;
+    min-height:       46px !important;
+    max-height:       46px !important;
+    display:          inline-flex !important;
+    align-items:      center !important;
+    justify-content:  center !important;
+    gap:              0 !important;
+    padding:          0 0.75rem !important;
+    border-radius:    8px !important;
+    white-space:      nowrap !important;
+    font-family:      inherit !important;
+    font-size:        0.72rem !important;
+    font-weight:      600 !important;
+    line-height:      1.1 !important;
+    cursor:           pointer !important;
+    background:       linear-gradient(180deg, #e4eaed 0%, #cfd8dc 52%, #b8c5cb 100%) !important;
+    background-image: linear-gradient(180deg, #e4eaed 0%, #cfd8dc 52%, #b8c5cb 100%) !important;
+    border:           1px solid #9eb2bb !important;
+    color:            #2e3f47 !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.70) inset,
+                      0 2px 4px rgba(0,0,0,0.14) !important;
+    transition:       filter 120ms ease, transform 120ms ease !important;
+    text-decoration:  none !important;
+    transform:        none !important;
+}
+
+.e-btn.crew-filter-btn:hover {
+    background:       linear-gradient(180deg, #cfd8dc 0%, #b8c5cb 52%, #9eb2bb 100%) !important;
+    background-image: linear-gradient(180deg, #cfd8dc 0%, #b8c5cb 52%, #9eb2bb 100%) !important;
+    border-color:     #7a9aa6 !important;
+    color:            #1c2f38 !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.65) inset,
+                      0 3px 7px rgba(0,0,0,0.18) !important;
+}
+
+/* Active / selected filter state — deeper shade */
+.e-btn.crew-filter-btn.crew-filter-btn--active,
+.e-btn.crew-filter-btn.crew-filter-btn--active:focus,
+.e-btn.crew-filter-btn.crew-filter-btn--active:active {
+    background:       linear-gradient(180deg, #8eadb8 0%, #7799a6 52%, #5f8694 100%) !important;
+    background-image: linear-gradient(180deg, #8eadb8 0%, #7799a6 52%, #5f8694 100%) !important;
+    border-color:     #4a7585 !important;
+    color:            #ffffff !important;
+    text-shadow:      0 1px 0 rgba(0,0,0,0.20) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.25) inset,
+                      inset 0 2px 4px rgba(0,0,0,0.18) !important;
+    transform:        none !important;
+}
+
+.e-btn.crew-filter-btn.crew-filter-btn--active:hover {
+    background:       linear-gradient(180deg, #7799a6 0%, #5f8694 52%, #4a7585 100%) !important;
+    background-image: linear-gradient(180deg, #7799a6 0%, #5f8694 52%, #4a7585 100%) !important;
+    border-color:     #3a6272 !important;
+    color:            #ffffff !important;
+    filter:           none !important;
+    transform:        none !important;
+}
+
+/* Icon inside filter buttons */
+.e-btn.crew-filter-btn .e-btn-icon {
+    font-family:  'e-icons' !important;
+    font-size:    0.88rem !important;
+    line-height:  1 !important;
+    flex-shrink:  0 !important;
+    color:        inherit !important;
+    margin:       0 5px 0 0 !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   SfButton ACTION BUTTON COLOUR OVERRIDES
+   3D gradient so the raised appearance matches the rest of the app.
+   Size/shape geometry from pf-training-page-action-btn (unchanged).
+   ────────────────────────────────────────────────────────────────── */
+
+/* ── Pastel Green 3D — Create Crew Member / Add Document ──────── */
+.e-btn.crew-action-btn-green,
+.e-btn.crew-action-btn-green:focus,
+.e-btn.crew-action-btn-green:active {
+    background:       linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    background-image: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color:     #66c475 !important;
+    color:            #0f3319 !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 5px rgba(10,80,20,0.18) !important;
+}
+.e-btn.crew-action-btn-green .e-btn-icon {
+    color: #0f3319 !important;
+}
+.e-btn.crew-action-btn-green:hover {
+    background:       linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    background-image: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color:     #48b05a !important;
+    color:            #081f0f !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 4px 10px rgba(10,80,20,0.22) !important;
+}
+
+/* ── Pastel Teal 3D — Evaluate Compliance ─────────────────────── */
+.e-btn.crew-action-btn-teal,
+.e-btn.crew-action-btn-teal:focus,
+.e-btn.crew-action-btn-teal:active {
+    background:       linear-gradient(180deg, #c8ede9 0%, #a8ddd7 52%, #86ccc5 100%) !important;
+    background-image: linear-gradient(180deg, #c8ede9 0%, #a8ddd7 52%, #86ccc5 100%) !important;
+    border-color:     #4db6ac !important;
+    color:            #00352e !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 5px rgba(0,80,70,0.16) !important;
+}
+.e-btn.crew-action-btn-teal .e-btn-icon {
+    color: #00352e !important;
+}
+.e-btn.crew-action-btn-teal:hover {
+    background:       linear-gradient(180deg, #a8ddd7 0%, #86ccc5 52%, #4db6ac 100%) !important;
+    background-image: linear-gradient(180deg, #a8ddd7 0%, #86ccc5 52%, #4db6ac 100%) !important;
+    border-color:     #26a69a !important;
+    color:            #001f1b !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 4px 10px rgba(0,80,70,0.20) !important;
+}
+
+/* ── Pastel Blue 3D — Register for Training ───────────────────── */
+.e-btn.crew-action-btn-blue,
+.e-btn.crew-action-btn-blue:focus,
+.e-btn.crew-action-btn-blue:active {
+    background:       linear-gradient(180deg, #daeeff 0%, #bbdefb 52%, #96ccf5 100%) !important;
+    background-image: linear-gradient(180deg, #daeeff 0%, #bbdefb 52%, #96ccf5 100%) !important;
+    border-color:     #64b5f6 !important;
+    color:            #0d2d59 !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 5px rgba(10,40,100,0.16) !important;
+}
+.e-btn.crew-action-btn-blue .e-btn-icon {
+    color: #0d2d59 !important;
+}
+.e-btn.crew-action-btn-blue:hover {
+    background:       linear-gradient(180deg, #bbdefb 0%, #96ccf5 52%, #64b5f6 100%) !important;
+    background-image: linear-gradient(180deg, #bbdefb 0%, #96ccf5 52%, #64b5f6 100%) !important;
+    border-color:     #42a5f5 !important;
+    color:            #071c3a !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 4px 10px rgba(10,40,100,0.20) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   STATUS BADGES — uniform size, 2px vertical padding
+   ────────────────────────────────────────────────────────────────── */
+.crew-status-badge {
+    display:        inline-block !important;
+    min-width:      72px !important;
+    text-align:     center !important;
+    font-weight:    600 !important;
+    font-size:      0.65rem !important;
+    padding:        2px 10px !important;
+    line-height:    1.4 !important;
+    letter-spacing: 0.01em !important;
+    border-radius:  4px !important;
+    white-space:    nowrap !important;
+    box-shadow:     0 1px 0 rgba(255,255,255,0.75) inset,
+                    0 2px 6px rgba(15,35,56,0.08) !important;
+}
+
+.crew-badge-green      { background: #C8E6C9 !important; border: 1px solid #A5D6A7 !important; color: #2E7D32 !important; }
+.crew-badge-red        { background: #FFCDD2 !important; border: 1px solid #EF9A9A !important; color: #C62828 !important; }
+.crew-badge-orange     { background: #FFE0B2 !important; border: 1px solid #FFCC80 !important; color: #E65100 !important; }
+.crew-badge-blue       { background: #BBDEFB !important; border: 1px solid #90CAF9 !important; color: #1565C0 !important; }
+.crew-badge-teal       { background: #B2DFDB !important; border: 1px solid #80CBC4 !important; color: #00695C !important; }
+.crew-badge-blue-gray  { background: #CFD8DC !important; border: 1px solid #B0BEC5 !important; color: #37474F !important; }
+
+/* ──────────────────────────────────────────────────────────────────
+   FILTER BUTTONS
+   Double selector (element + class) beats Bootstrap's single-class
+   .btn rules.  !important beats any inline or Syncfusion remnant.
+   ────────────────────────────────────────────────────────────────── */
+button.crew-filter-btn,
+.crew-filter-btn {
+    width:            155px !important;
+    min-width:        155px !important;
+    height:           46px !important;
+    min-height:       46px !important;
+    max-height:       46px !important;
+    display:          inline-flex !important;
+    align-items:      center !important;
+    justify-content:  center !important;
+    gap:              5px !important;
+    padding:          0 0.6rem !important;
+    border-radius:    8px !important;
+    white-space:      nowrap !important;
+    font-family:      inherit !important;
+    font-size:        0.72rem !important;
+    font-weight:      600 !important;
+    line-height:      1.1 !important;
+    cursor:           pointer !important;
+    /* pastel blue-gray — flat, no gradient, solid and readable */
+    background:       #CFD8DC !important;
+    background-image: none !important;
+    border:           1px solid #B0BEC5 !important;
+    color:            #37474F !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 4px rgba(0,0,0,0.16) !important;
+    transition:       filter 120ms ease !important;
+    text-decoration:  none !important;
+    outline:          none !important;
+    /* kill Bootstrap's focus ring */
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 4px rgba(0,0,0,0.16) !important;
+}
+
+button.crew-filter-btn:hover,
+.crew-filter-btn:hover {
+    background:       #BDC8CC !important;
+    background-image: none !important;
+    border-color:     #90A4AE !important;
+    color:            #263238 !important;
+    filter:           none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.55) inset,
+                      0 3px 6px rgba(0,0,0,0.18) !important;
+}
+
+button.crew-filter-btn:focus,
+.crew-filter-btn:focus {
+    outline:          none !important;
+    box-shadow:       0 0 0 2px rgba(96,125,139,0.35),
+                      0 1px 0 rgba(255,255,255,0.60) inset !important;
+}
+
+button.crew-filter-btn--active,
+.crew-filter-btn--active,
+button.crew-filter-btn--active:focus,
+.crew-filter-btn--active:focus,
+button.crew-filter-btn--active:active,
+.crew-filter-btn--active:active {
+    background:       #90A4AE !important;
+    background-image: none !important;
+    border-color:     #607D8B !important;
+    color:            #1C313A !important;
+    box-shadow:       0 1px 3px rgba(0,0,0,0.28),
+                      inset 0 1px 3px rgba(0,0,0,0.12) !important;
+}
+
+button.crew-filter-btn--active:hover,
+.crew-filter-btn--active:hover {
+    background:       #7B99A4 !important;
+    background-image: none !important;
+    color:            #1C313A !important;
+    filter:           none !important;
+}
+
+/* Syncfusion e-icons span inside the filter button */
+.crew-filter-btn__icon {
+    font-family:  'e-icons' !important;
+    font-size:    0.9rem !important;
+    line-height:  1 !important;
+    flex-shrink:  0 !important;
+    color:        inherit !important;
+    display:      inline-block !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   SfButton COLOUR OVERRIDES
+   Use gradient + inset highlight so the 3D effect is preserved.
+   Size/shape controlled by pf-training-page-action-btn geometry.
+   ────────────────────────────────────────────────────────────────── */
+
+/* ── Pastel Green 3D — Create Crew Member / Add Document ──────── */
+.crew-action-btn-green.e-btn,
+.crew-action-btn-green.e-btn:focus,
+.crew-action-btn-green.e-btn:active {
+    background:       linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    background-image: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color:     #66c475 !important;
+    color:            #0f3319 !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 5px rgba(10,80,20,0.18) !important;
+}
+.crew-action-btn-green.e-btn .e-btn-icon {
+    color: #0f3319 !important;
+}
+.crew-action-btn-green.e-btn:hover {
+    background:       linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    background-image: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color:     #48b05a !important;
+    color:            #081f0f !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 4px 10px rgba(10,80,20,0.22) !important;
+}
+
+/* ── Pastel Teal 3D — Evaluate Compliance ─────────────────────── */
+.crew-action-btn-teal.e-btn,
+.crew-action-btn-teal.e-btn:focus,
+.crew-action-btn-teal.e-btn:active {
+    background:       linear-gradient(180deg, #c8ede9 0%, #a8ddd7 52%, #86ccc5 100%) !important;
+    background-image: linear-gradient(180deg, #c8ede9 0%, #a8ddd7 52%, #86ccc5 100%) !important;
+    border-color:     #4db6ac !important;
+    color:            #00352e !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 5px rgba(0,80,70,0.16) !important;
+}
+.crew-action-btn-teal.e-btn .e-btn-icon {
+    color: #00352e !important;
+}
+.crew-action-btn-teal.e-btn:hover {
+    background:       linear-gradient(180deg, #a8ddd7 0%, #86ccc5 52%, #4db6ac 100%) !important;
+    background-image: linear-gradient(180deg, #a8ddd7 0%, #86ccc5 52%, #4db6ac 100%) !important;
+    border-color:     #26a69a !important;
+    color:            #001f1b !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 4px 10px rgba(0,80,70,0.20) !important;
+}
+
+/* ── Pastel Blue 3D — Register for Training ───────────────────── */
+.crew-action-btn-blue.e-btn,
+.crew-action-btn-blue.e-btn:focus,
+.crew-action-btn-blue.e-btn:active {
+    background:       linear-gradient(180deg, #daeeff 0%, #bbdefb 52%, #96ccf5 100%) !important;
+    background-image: linear-gradient(180deg, #daeeff 0%, #bbdefb 52%, #96ccf5 100%) !important;
+    border-color:     #64b5f6 !important;
+    color:            #0d2d59 !important;
+    text-shadow:      none !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 2px 5px rgba(10,40,100,0.16) !important;
+}
+.crew-action-btn-blue.e-btn .e-btn-icon {
+    color: #0d2d59 !important;
+}
+.crew-action-btn-blue.e-btn:hover {
+    background:       linear-gradient(180deg, #bbdefb 0%, #96ccf5 52%, #64b5f6 100%) !important;
+    background-image: linear-gradient(180deg, #bbdefb 0%, #96ccf5 52%, #64b5f6 100%) !important;
+    border-color:     #42a5f5 !important;
+    color:            #071c3a !important;
+    filter:           none !important;
+    transform:        translateY(-1px) !important;
+    box-shadow:       0 1px 0 rgba(255,255,255,0.60) inset,
+                      0 4px 10px rgba(10,40,100,0.20) !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   STATUS BADGES
+   Uniform min-width + 2px vertical padding as requested.
+   ────────────────────────────────────────────────────────────────── */
+.crew-status-badge {
+    display:        inline-block !important;
+    min-width:      72px !important;
+    text-align:     center !important;
+    font-weight:    600 !important;
+    font-size:      0.65rem !important;
+    padding:        2px 10px !important;
+    line-height:    1.4 !important;
+    letter-spacing: 0.01em !important;
+    border-radius:  4px !important;
+    white-space:    nowrap !important;
+    box-shadow:     0 1px 0 rgba(255,255,255,0.75) inset,
+                    0 2px 6px rgba(15,35,56,0.08) !important;
+}
+
+.crew-badge-green {
+    background: #C8E6C9 !important;
+    border:     1px solid #A5D6A7 !important;
+    color:      #2E7D32 !important;
+}
+.crew-badge-red {
+    background: #FFCDD2 !important;
+    border:     1px solid #EF9A9A !important;
+    color:      #C62828 !important;
+}
+.crew-badge-orange {
+    background: #FFE0B2 !important;
+    border:     1px solid #FFCC80 !important;
+    color:      #E65100 !important;
+}
+.crew-badge-blue {
+    background: #BBDEFB !important;
+    border:     1px solid #90CAF9 !important;
+    color:      #1565C0 !important;
+}
+.crew-badge-teal {
+    background: #B2DFDB !important;
+    border:     1px solid #80CBC4 !important;
+    color:      #00695C !important;
+}
+.crew-badge-blue-gray {
+    background: #CFD8DC !important;
+    border:     1px solid #B0BEC5 !important;
+    color:      #37474F !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   FILTER BUTTONS
+   !important used throughout so Bootstrap's btn resets cannot win.
+   Geometry matches .pf-training-page-action-btn exactly.
+   ────────────────────────────────────────────────────────────────── */
+.crew-filter-btn,
+.crew-filter-btn:focus,
+.crew-filter-btn:active {
+    width:            155px !important;
+    min-width:        155px !important;
+    height:           46px !important;
+    min-height:       46px !important;
+    max-height:       46px !important;
+    display:          inline-flex !important;
+    align-items:      center !important;
+    justify-content:  center !important;
+    gap:              5px !important;
+    padding:          0 0.6rem !important;
+    border-radius:    8px !important;
+    white-space:      nowrap !important;
+    font-family:      inherit !important;
+    font-size:        0.72rem !important;
+    font-weight:      600 !important;
+    line-height:      1.1 !important;
+    cursor:           pointer !important;
+    background:       #CFD8DC !important;
+    background-image: none !important;
+    border:           1px solid #B0BEC5 !important;
+    color:            #37474F !important;
+    box-shadow:       0 1px 3px rgba(0,0,0,0.18) !important;
+    transition:       filter 120ms ease, background 120ms ease !important;
+    text-decoration:  none !important;
+    outline:          none !important;
+}
+
+.crew-filter-btn:hover {
+    filter:           brightness(0.91) !important;
+    background:       #CFD8DC !important;
+    background-image: none !important;
+    color:            #37474F !important;
+}
+
+.crew-filter-btn--active,
+.crew-filter-btn--active:focus,
+.crew-filter-btn--active:active {
+    background:       #90A4AE !important;
+    background-image: none !important;
+    border-color:     #607D8B !important;
+    color:            #1C313A !important;
+    box-shadow:       0 1px 3px rgba(0,0,0,0.28), inset 0 1px 3px rgba(0,0,0,0.10) !important;
+}
+
+.crew-filter-btn--active:hover {
+    background:       #7B99A4 !important;
+    background-image: none !important;
+    color:            #1C313A !important;
+    filter:           none !important;
+}
+
+/* Icon glyph inside filter buttons */
+.crew-filter-btn__icon {
+    font-family:      'e-icons' !important;
+    font-size:        0.9rem !important;
+    line-height:      1 !important;
+    flex-shrink:      0 !important;
+    color:            inherit !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   SfButton COLOUR OVERRIDES
+   Size/shape from pf-training-page-action-btn; only colour differs.
+   ────────────────────────────────────────────────────────────────── */
+
+/* ── Pastel Green — Create Crew Member / Add Document ─────────── */
+.crew-action-btn-green.e-btn,
+.crew-action-btn-green.e-btn:focus,
+.crew-action-btn-green.e-btn:active {
+    background:       #A5D6A7 !important;
+    background-image: none !important;
+    border-color:     #81C784 !important;
+    color:            #2E7D32 !important;
+}
+.crew-action-btn-green.e-btn .e-btn-icon {
+    color: #2E7D32 !important;
+}
+.crew-action-btn-green.e-btn:hover {
+    background:       #81C784 !important;
+    background-image: none !important;
+    border-color:     #66BB6A !important;
+    color:            #1B5E20 !important;
+    filter:           none !important;
+}
+
+/* ── Pastel Teal — Evaluate Compliance ────────────────────────── */
+.crew-action-btn-teal.e-btn,
+.crew-action-btn-teal.e-btn:focus,
+.crew-action-btn-teal.e-btn:active {
+    background:       #B2DFDB !important;
+    background-image: none !important;
+    border-color:     #80CBC4 !important;
+    color:            #00695C !important;
+}
+.crew-action-btn-teal.e-btn .e-btn-icon {
+    color: #00695C !important;
+}
+.crew-action-btn-teal.e-btn:hover {
+    background:       #80CBC4 !important;
+    background-image: none !important;
+    border-color:     #4DB6AC !important;
+    color:            #004D40 !important;
+    filter:           none !important;
+}
+
+/* ── Pastel Blue — Register for Training ──────────────────────── */
+.crew-action-btn-blue.e-btn,
+.crew-action-btn-blue.e-btn:focus,
+.crew-action-btn-blue.e-btn:active {
+    background:       #BBDEFB !important;
+    background-image: none !important;
+    border-color:     #90CAF9 !important;
+    color:            #1565C0 !important;
+}
+.crew-action-btn-blue.e-btn .e-btn-icon {
+    color: #1565C0 !important;
+}
+.crew-action-btn-blue.e-btn:hover {
+    background:       #90CAF9 !important;
+    background-image: none !important;
+    border-color:     #64B5F6 !important;
+    color:            #0D47A1 !important;
+    filter:           none !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   STATUS BADGES
+   Geometry mirrors .cb-summary-badge from courseBuilder.css.
+   Uniform min-width keeps all badges the same visual width.
+   2px top/bottom padding as requested.
+   ────────────────────────────────────────────────────────────────── */
+.crew-status-badge {
+    display:        inline-block !important;
+    min-width:      72px !important;
+    text-align:     center !important;
+    font-weight:    600 !important;
+    font-size:      0.65rem !important;
+    padding:        2px 10px !important;
+    line-height:    1.4 !important;
+    letter-spacing: 0.01em !important;
+    border-radius:  4px !important;
+    white-space:    nowrap !important;
+    box-shadow:
+        0 1px 0 rgba(255,255,255,0.75) inset,
+        0 2px 6px rgba(15,35,56,0.08) !important;
+}
+
+/* Green — Compliant / Active / Completed / Linked */
+.crew-badge-green {
+    background:  #C8E6C9 !important;
+    border:      1px solid #A5D6A7 !important;
+    color:       #2E7D32 !important;
+}
+
+/* Red — Non-Compliant / Expired / Inactive / NOT STARTED */
+.crew-badge-red {
+    background:  #FFCDD2 !important;
+    border:      1px solid #EF9A9A !important;
+    color:       #C62828 !important;
+}
+
+/* Orange — In Progress / Pending Approval / Pending Payment */
+.crew-badge-orange {
+    background:  #FFE0B2 !important;
+    border:      1px solid #FFCC80 !important;
+    color:       #E65100 !important;
+}
+
+/* Blue — informational */
+.crew-badge-blue {
+    background:  #BBDEFB !important;
+    border:      1px solid #90CAF9 !important;
+    color:       #1565C0 !important;
+}
+
+/* Teal — secondary status / Started */
+.crew-badge-teal {
+    background:  #B2DFDB !important;
+    border:      1px solid #80CBC4 !important;
+    color:       #00695C !important;
+}
+
+/* Blue-Gray — Unknown / neutral / no login */
+.crew-badge-blue-gray {
+    background:  #CFD8DC !important;
+    border:      1px solid #B0BEC5 !important;
+    color:       #37474F !important;
+}

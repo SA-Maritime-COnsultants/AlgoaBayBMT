@@ -1,21 +1,28 @@
 ﻿@inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager NavigationManager
+@inject ICrewComplianceWorkflowService ComplianceWorkflowService
+@inject AuthenticationStateProvider AuthState
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<div class="app-shell @(isSidebarOpen ? "sidebar-open" : string.Empty)">
+    <Sidebar Id="app-sidebar" OnNavigate="CloseSidebar" />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://www.syncfusion.com/blazor-components/" target="_blank">Blazor Components</a>
-        	<a href="https://blazor.syncfusion.com/documentation/" target="_blank">User Guide</a>
-        	<a href="http://blazor.syncfusion.com/" target="_blank">View Demos</a>
-        </div>
+    <div class="app-shell-main">
+        <TopBar IsSidebarOpen="isSidebarOpen"
+                ToggleSidebar="ToggleSidebar"
+                CurrentSection="@CurrentSection"
+                CurrentPageTitle="@CurrentPageTitle"
+                CurrentStatusClass="@CurrentStatusClass"
+                CurrentStatusLabel="@CurrentStatusLabel"
+                CrewComplianceStatus="@_crewComplianceStatus"
+                CrewComplianceLink="@_crewComplianceLink" />
 
-        <article class="content px-4">
+        <div class="app-overlay" @onclick="CloseSidebar"></div>
+
+        <main id="main-content" class="app-content" tabindex="-1">
             @Body
-        </article>
-    </main>
+        </main>
+    </div>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
@@ -23,3 +30,114 @@
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private bool isSidebarOpen;
+    private string currentPath = string.Empty;
+    private CrewComplianceOverallStatus? _crewComplianceStatus;
+    private string _crewComplianceLink = "/crewing/crew";
+    private bool _complianceLoaded;
+
+    protected override void OnInitialized()
+    {
+        currentPath = GetCurrentPath(NavigationManager.Uri);
+        NavigationManager.LocationChanged += HandleLocationChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_complianceLoaded)
+        {
+            _complianceLoaded = true;
+            await LoadCrewComplianceAsync();
+        }
+    }
+
+    private async Task LoadCrewComplianceAsync()
+    {
+        try
+        {
+            var auth = await AuthState.GetAuthenticationStateAsync();
+            var userId = auth.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId)) return;
+
+            var dashboard = await ComplianceWorkflowService.GetCrewDashboardByUserIdAsync(userId);
+            if (dashboard is null) return;
+
+            _crewComplianceStatus = dashboard.OverallStatus;
+            _crewComplianceLink = $"/crewing/crew/{dashboard.CrewMemberId}";
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            // Non-critical — suppress errors so layout never blocks.
+            // This avoids crashing the shell when the database or identity state is temporarily unavailable.
+            Console.Error.WriteLine($"Crew compliance summary load failed: {ex}");
+        }
+    }
+
+    private string CurrentPageTitle => currentPath switch
+    {
+        "" => "Operations Dashboard",
+        "training" => "Training",
+        "bunkering-operations" => "Bunkering Operations",
+        "wildlife-environment" => "Wildlife & Environment",
+        "emergency-response" => "Emergency Response",
+        "compliance-documents" => "Compliance & Documents",
+        "dashboards" => "Dashboards",
+        "settings" => "Settings",
+        _ => "Operations Workspace"
+    };
+
+    private string CurrentSection => currentPath switch
+    {
+        "" => "Home",
+        "training" => "Training Control",
+        "bunkering-operations" => "Marine Fuel Transfer",
+        "wildlife-environment" => "Environmental Oversight",
+        "emergency-response" => "Incident Command",
+        "compliance-documents" => "Regulatory Control",
+        "dashboards" => "Operational Reporting",
+        "settings" => "System Configuration",
+        _ => "Application"
+    };
+
+    private string CurrentStatusLabel => currentPath switch
+    {
+        "emergency-response" => "Priority Monitoring",
+        "wildlife-environment" => "Environmental Watch",
+        "compliance-documents" => "Controlled Access",
+        _ => "Normal Operations"
+    };
+
+    private string CurrentStatusClass => currentPath switch
+    {
+        "emergency-response" => "status-critical",
+        "wildlife-environment" => "status-success",
+        "compliance-documents" => "status-warning",
+        _ => "status-normal"
+    };
+
+    private void ToggleSidebar() => isSidebarOpen = !isSidebarOpen;
+
+    private void CloseSidebar() => isSidebarOpen = false;
+
+    private void HandleLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        currentPath = GetCurrentPath(e.Location);
+        isSidebarOpen = false;
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private static string GetCurrentPath(string uri)
+    {
+        var relativePath = new Uri(uri).PathAndQuery.TrimStart('/');
+        var path = relativePath.Split('?', '#')[0].TrimEnd('/');
+        return path;
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= HandleLocationChanged;
+    }
+}

@@ -1,0 +1,81 @@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+
+@inject ILearnerTrainingService LearnerTrainingService
+
+<div class="pf-authoring-item-list">
+    @foreach (var question in Block.QuizQuestions)
+    {
+        <div class="tp-quiz-question" @key="question.QuestionIndex">
+            @if (!string.IsNullOrWhiteSpace(question.ScenarioText))
+            {
+                <div class="tp-callout" style="margin-bottom:0.5rem;font-size:0.85rem;">@question.ScenarioText</div>
+            }
+            <div class="tp-quiz-prompt">@(question.QuestionIndex + 1). @question.Prompt</div>
+            <div class="tp-quiz-options">
+                @foreach (var option in question.Options)
+                {
+                    <label class="tp-quiz-option @(_selections.TryGetValue(question.QuestionIndex, out var sel) && sel == option.OptionIndex ? "is-selected" : string.Empty)"
+                           @key="@($"q{question.QuestionIndex}o{option.OptionIndex}")"">
+                        <input type="radio"
+                               name="@($"quiz-{Block.BlockId}-{question.QuestionIndex}")"
+                               disabled="@_submitted"
+                               checked="@(_selections.TryGetValue(question.QuestionIndex, out var s2) && s2 == option.OptionIndex)"
+                               @onchange="() => Select(question.QuestionIndex, option.OptionIndex)" />
+                        @option.OptionText
+                    </label>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (!_submitted)
+{
+    <button class="e-btn e-primary" type="button"
+            disabled="@(_selections.Count < Block.QuizQuestions.Count)"
+            @onclick="SubmitAsync">
+        Submit Quiz
+    </button>
+}
+
+@if (!string.IsNullOrWhiteSpace(_resultMessage))
+{
+    <div class="tp-quiz-result @(_passed ? "tp-quiz-result--pass" : "tp-quiz-result--fail")" style="margin-top:0.75rem;">
+        @_resultMessage
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+    [Parameter, EditorRequired] public string UserId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Guid CourseId { get; set; }
+    [Parameter, EditorRequired] public Guid LessonId { get; set; }
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    private readonly Dictionary<int, int> _selections = new();
+    private bool _submitted;
+    private bool _passed;
+    private string? _resultMessage;
+
+    private void Select(int questionIndex, int optionIndex) => _selections[questionIndex] = optionIndex;
+
+    private async Task SubmitAsync()
+    {
+        _submitted = true;
+        var answers = _selections.ToDictionary(x => x.Key, x => new List<int> { x.Value });
+        var result = await LearnerTrainingService.SubmitQuizBlockAsync(UserId, CourseId, LessonId, Block.BlockId, answers);
+        _passed = result.Data?.Passed == true;
+        _resultMessage = result.Data?.Message ?? result.Message;
+
+        if (_passed)
+        {
+            Block.IsCompleted = true;
+            await OnCompleted.InvokeAsync();
+        }
+        else
+        {
+            _submitted = false; // allow retry
+        }
+    }
+}

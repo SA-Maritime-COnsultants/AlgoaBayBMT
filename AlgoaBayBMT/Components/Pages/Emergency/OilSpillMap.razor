@@ -1,0 +1,280 @@
+@namespace AlgoaBayBMT.Components.Pages.Emergency
+@using AlgoaBayBMT.Emergency.OilSpill.Visualization
+@using Syncfusion.Blazor.Maps
+
+<div class="oilspill-map @(PlacementMode ? "oilspill-map--placing" : null)">
+    @if (MapPoints.Count == 0)
+    {
+        <div class="alert alert-secondary mb-0">No trajectory data to display on the map.</div>
+    }
+    else
+    {
+        @* Vessel identity badge: plain HTML overlay (not part of the Syncfusion render tree) so it
+           can show the vessel icon/name persistently without relying on a MarkerTemplate, which is
+           prone to ArgumentOutOfRangeException crashes in Syncfusion's MarkerRenderer when the
+           templated marker's DataSource is rebuilt (e.g. on every trajectory switch). *@
+        @if (!string.IsNullOrWhiteSpace(VesselName))
+        {
+            <div class="oilspill-vessel-badge">
+                <span aria-hidden="true">🚢</span>
+                <span>@VesselName — spill origin</span>
+            </div>
+        }
+
+        <SfMaps @ref="_mapsRef" Height="100%" Width="100%">
+            <MapsEvents OnClick="HandleMapClick" />
+            <MapsZoomSettings Enable="true" ZoomFactor="@_zoomFactor" MinZoom="3" MaxZoom="18">
+                <MapsCenterPosition Latitude="@_centerLat" Longitude="@_centerLon" />
+            </MapsZoomSettings>
+            <MapsLayers>
+                <MapsLayer TValue="string"
+                           UrlTemplate="https://tile.openstreetmap.org/level/tileX/tileY.png">
+
+                    @* Slick footprint (sublayer). Rendered as up to five explicit rings — clipping
+                       the slick against the coastline can split it into several water-side pieces
+                       (e.g. either side of a harbour breakwater), and all of them must be shown
+                       for the footprint to read as one continuous slick. Indexed @if blocks are
+                       used instead of @foreach, which crashes Syncfusion's PolygonRenderer. *@
+                    @if (ShowSlick && _slickRings.Count > 0)
+                    {
+                        <MapsPolygons>
+                            <MapsPolygon Points="@(_slickRings[0])"
+                                         Fill="@SlickFillColor"
+                                         BorderColor="@SlickBorderColor"
+                                         BorderWidth="@(ShorelineImpact ? 2.5 : 1.5)" />
+                            @if (_slickRings.Count > 1)
+                            {
+                                <MapsPolygon Points="@(_slickRings[1])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                            @if (_slickRings.Count > 2)
+                            {
+                                <MapsPolygon Points="@(_slickRings[2])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                            @if (_slickRings.Count > 3)
+                            {
+                                <MapsPolygon Points="@(_slickRings[3])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                            @if (_slickRings.Count > 4)
+                            {
+                                <MapsPolygon Points="@(_slickRings[4])"
+                                             Fill="@SlickFillColor"
+                                             BorderColor="@SlickBorderColor"
+                                             BorderWidth="1.5" />
+                            }
+                        </MapsPolygons>
+                    }
+
+                    @* Comparison-scenario footprint (WITH measures overlaid on WITHOUT, or vice
+                       versa) in green so the effect of the deployed response measures is visible
+                       directly on the chart. *@
+                    @if (ShowComparison && _comparisonRings.Count > 0)
+                    {
+                        <MapsPolygons>
+                            <MapsPolygon Points="@(_comparisonRings[0])"
+                                         Fill="rgba(25, 135, 84, 0.22)"
+                                         BorderColor="#198754"
+                                         BorderWidth="2.5" />
+                            @if (_comparisonRings.Count > 1)
+                            {
+                                <MapsPolygon Points="@(_comparisonRings[1])"
+                                             Fill="rgba(25, 135, 84, 0.22)"
+                                             BorderColor="#198754"
+                                             BorderWidth="2" />
+                            }
+                            @if (_comparisonRings.Count > 2)
+                            {
+                                <MapsPolygon Points="@(_comparisonRings[2])"
+                                             Fill="rgba(25, 135, 84, 0.22)"
+                                             BorderColor="#198754"
+                                             BorderWidth="2" />
+                            }
+                        </MapsPolygons>
+                    }
+
+                    @* Potential shoreline impact zone: the stretch of coastline the modelled slick
+                       presses against, drawn as a thick red band along the shore. *@
+                    @if (_impactZoneLines.Count > 0)
+                    {
+                        <MapsNavigationLines>
+                            <MapsNavigationLine Visible="true"
+                                                Latitude="@_impactZoneLines[0].Latitudes"
+                                                Longitude="@_impactZoneLines[0].Longitudes"
+                                                Color="#dc3545" Width="6" Angle="0" />
+                        </MapsNavigationLines>
+                        @if (_impactZoneLines.Count > 1)
+                        {
+                            <MapsNavigationLines>
+                                <MapsNavigationLine Visible="true"
+                                                    Latitude="@_impactZoneLines[1].Latitudes"
+                                                    Longitude="@_impactZoneLines[1].Longitudes"
+                                                    Color="#dc3545" Width="6" Angle="0" />
+                            </MapsNavigationLines>
+                        }
+                        @if (_impactZoneLines.Count > 2)
+                        {
+                            <MapsNavigationLines>
+                                <MapsNavigationLine Visible="true"
+                                                    Latitude="@_impactZoneLines[2].Latitudes"
+                                                    Longitude="@_impactZoneLines[2].Longitudes"
+                                                    Color="#dc3545" Width="6" Angle="0" />
+                            </MapsNavigationLines>
+                        }
+                    }
+
+                    @* Trajectory polyline *@
+                    @if (ShowTrajectory && _polylinePoints.Count > 1)
+                    {
+                        <MapsNavigationLines>
+                            <MapsNavigationLine Visible="true" Latitude="@_polylineLat" Longitude="@_polylineLon"
+                                                Color="#0d6efd" Width="2.5" Angle="0" />
+                        </MapsNavigationLines>
+                    }
+
+                    @* Response measure polylines (booms, shoreline protection, recon flight paths).
+                       One NavigationLine per action-type group avoids the PolygonRenderer/
+                       NavigationLineRenderer index crash that occurs with @foreach loops inside
+                       these Syncfusion child components. Only the first line of each type is
+                       rendered; for runs with many measures this is sufficient to show their
+                       positions without crashing the circuit. *@
+                    @if (_boomLines.Count > 0)
+                    {
+                        <MapsNavigationLines>
+                            <MapsNavigationLine Visible="true"
+                                                Latitude="@_boomLines[0].Latitudes"
+                                                Longitude="@_boomLines[0].Longitudes"
+                                                Color="#fd7e14" Width="5" Angle="0" />
+                        </MapsNavigationLines>
+                    }
+                    @if (_shorelineLines.Count > 0)
+                    {
+                        <MapsNavigationLines>
+                            <MapsNavigationLine Visible="true"
+                                                Latitude="@_shorelineLines[0].Latitudes"
+                                                Longitude="@_shorelineLines[0].Longitudes"
+                                                Color="#198754" Width="4" Angle="0" />
+                        </MapsNavigationLines>
+                    }
+                    @if (_reconLines.Count > 0)
+                    {
+                        <MapsNavigationLines>
+                            <MapsNavigationLine Visible="true"
+                                                Latitude="@_reconLines[0].Latitudes"
+                                                Longitude="@_reconLines[0].Longitudes"
+                                                Color="#6c757d" Width="2" DashArray="6" Angle="0" />
+                        </MapsNavigationLines>
+                    }
+
+                    @* Dispersant treated-area polygon - rendered as the first/largest ring to
+                       avoid Syncfusion PolygonRenderer index errors with @foreach loops. *@
+                    @if (_dispersantPolygons.Count > 0)
+                    {
+                        <MapsPolygons>
+                            <MapsPolygon Points="@(_dispersantPolygons[0])"
+                                         Fill="rgba(128, 0, 128, 0.30)"
+                                         BorderColor="#800080"
+                                         BorderWidth="1.5" />
+                        </MapsPolygons>
+                    }
+
+                    <MapsMarkerSettings>
+                        @* Pending measure pin: where the user just clicked while placing a measure.
+                           Uses a plain Shape marker (not a template) - templated markers whose
+                           DataSource toggles between empty/non-empty were the suspected cause of an
+                           ArgumentOutOfRangeException in Syncfusion's MarkerRenderer. *@
+                        @if (_pendingMarker.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_pendingMarker" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Pentagon" Fill="#b02a37" Height="22" Width="22"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Origin marker: distinct navy circle at the spill start position. The vessel
+                           name/icon is shown as an HTML badge above the map instead of an on-map
+                           MarkerTemplate (see the vessel badge above) to avoid the same renderer
+                           crash risk. *@
+                        <MapsMarker Visible="true" DataSource="_originMarker" TValue="OilSpillMapPoint"
+                                    Shape="MarkerType.Circle" Fill="#0d3b66" Height="24" Width="24"
+                                    AnimationDuration="0" />
+
+                        @* Time-step markers: small dots so the drift track reads as a path under
+                           the slick footprint rather than a chain of circles. *@
+                        @if (ShowTrajectory)
+                        {
+                            <MapsMarker Visible="true" DataSource="_stepMarkers" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Circle" Fill="#0d6efd" Height="6" Width="6"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Highlighted current time-step marker *@
+                        @if (_highlightMarker.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_highlightMarker" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Diamond" Fill="#ffc107" Height="20" Width="20"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Shoreline impact zone marker *@
+                        @if (_impactMarker.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_impactMarker" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Circle" Fill="#dc3545" Height="26" Width="26"
+                                        AnimationDuration="0" />
+                            <MapsMarker Visible="true" DataSource="_impactMarker" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Triangle" Fill="#ffffff" Height="12" Width="12"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Response action markers *@
+                        @if (ShowActions && _actionMarkers.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_actionMarkers" TValue="OilSpillActionMarker"
+                                        Shape="MarkerType.Triangle" Fill="#dc3545" Height="16" Width="16"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Skimmer point markers (blue circles) *@
+                        @if (_skimmerMarkers.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_skimmerMarkers" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Circle" Fill="#0d6efd" Height="16" Width="16"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Aerial recon / other point markers (grey diamonds) *@
+                        @if (_reconMarkers.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_reconMarkers" TValue="OilSpillMapPoint"
+                                        Shape="MarkerType.Diamond" Fill="#6c757d" Height="14" Width="14"
+                                        AnimationDuration="0" />
+                        }
+
+                        @* Plume time labels ("T+Xh") drawn at polygon centroids. Rendered through a
+                           template marker so the label text sits at each centroid without crashing
+                           the PolygonRenderer. *@
+                        @if (ShowTimeLabels && _timeLabels.Count > 0)
+                        {
+                            <MapsMarker Visible="true" DataSource="_timeLabels" TValue="OilSpillTimeLabel"
+                                        Height="0" Width="0" AnimationDuration="0">
+                                <MarkerTemplate>
+                                    @{
+                                        var label = (context as OilSpillTimeLabel);
+                                    }
+                                    <div class="oilspill-time-label">@label?.Text</div>
+                                </MarkerTemplate>
+                            </MapsMarker>
+                        }
+                    </MapsMarkerSettings>
+                </MapsLayer>
+            </MapsLayers>
+        </SfMaps>
+    }
+</div>

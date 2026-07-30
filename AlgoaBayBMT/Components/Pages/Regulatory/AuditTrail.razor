@@ -1,0 +1,88 @@
+@page "/regulatory/audit"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IRegulatoryReportingService Reporting
+
+<PageTitle>Compliance Audit Trail</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Compliance Audit Trail</h1>
+            <div class="page-subtitle">Immutable record of compliance evaluations, overrides, and remediation actions.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-refresh" OnClick="LoadAsync">Refresh</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Filter" />
+        <CardContent>
+            <div class="pf-form-grid">
+                <div class="pf-col-3">
+                    <label class="pf-field-label">From (UTC)</label>
+                    <SfDatePicker TValue="DateTime?" @bind-Value="FromUtc" />
+                </div>
+                <div class="pf-col-3">
+                    <label class="pf-field-label">To (UTC)</label>
+                    <SfDatePicker TValue="DateTime?" @bind-Value="ToUtc" />
+                </div>
+                <div class="pf-col-3" style="align-self:end;">
+                    <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-search" OnClick="LoadAsync">Apply</SfButton>
+                </div>
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Audit Entries" />
+        <CardContent>
+            <div class="pf-training-responsive-grid">
+            <SfGrid DataSource="@Entries" TValue="ComplianceAuditEntry" AllowPaging="true" AllowSorting="true" AllowFiltering="true" CssClass="pf-grid--compact pf-courses-grid">
+                <GridPageSettings PageSize="20" />
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                <GridColumns>
+                    <GridColumn HeaderText="When" Width="170"><Template>@FormatUtc((context as ComplianceAuditEntry)?.OccurredOnUtc)</Template></GridColumn>
+                    <GridColumn Field="@nameof(ComplianceAuditEntry.Action)" HeaderText="Action" Width="170" />
+                    <GridColumn HeaderText="Crew" Width="200"><Template>@((context as ComplianceAuditEntry)?.CrewMember is { } c ? $"{c.LastName}, {c.FirstName}" : "—")</Template></GridColumn>
+                    <GridColumn HeaderText="Vessel" Width="180"><Template>@((context as ComplianceAuditEntry)?.Vessel?.Name ?? "—")</Template></GridColumn>
+                    <GridColumn Field="@nameof(ComplianceAuditEntry.Details)" HeaderText="Details" Width="320" />
+                    <GridColumn Field="@nameof(ComplianceAuditEntry.PerformedByDisplayName)" HeaderText="By" Width="180" />
+                </GridColumns>
+            </SfGrid>
+            </div>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private List<ComplianceAuditEntry> Entries { get; set; } = [];
+    private DateTime? FromUtc { get; set; } = DateTime.UtcNow.AddDays(-30).Date;
+    private DateTime? ToUtc { get; set; } = DateTime.UtcNow.Date.AddDays(1);
+    private string? Message;
+    private bool IsError;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            var from = FromUtc ?? DateTime.UtcNow.AddDays(-30);
+            var to = ToUtc ?? DateTime.UtcNow.AddDays(1);
+            Entries = await Reporting.GetAuditTrailAsync(from, to);
+            IsError = false;
+            Message = $"Loaded {Entries.Count} entries.";
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    private static string FormatUtc(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy - HH:mm") : "—";
+}

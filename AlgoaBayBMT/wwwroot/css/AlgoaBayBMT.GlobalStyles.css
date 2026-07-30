@@ -1,0 +1,213 @@
+﻿/* AlgoaBayBMT Global Modernisation Layer
+   Provides reusable, application-wide 3D dark teal panels, dialogs, spacing, and buttons.
+   Loaded last so pages can opt in with helper classes while default Syncfusion cards/dialogs stay visually consistent. */
+:root {
+    --abmt-teal-top: #15635d;
+    --abmt-teal-mid: #0e4d47;
+    --abmt-teal-bottom: #073530;
+    --abmt-teal-border: rgba(5, 45, 41, 0.82);
+    --abmt-gray-top: #66727d;
+    --abmt-gray-mid: #4b5560;
+    --abmt-gray-bottom: #343d46;
+    --abmt-gray-border: rgba(43, 51, 59, 0.82);
+    --abmt-red-top: #c94d4d;
+    --abmt-red-mid: #a93636;
+    --abmt-red-bottom: #7f2323;
+    --abmt-red-border: rgba(103, 25, 25, 0.84);
+    --abmt-control-height: 62px;
+    --abmt-dialog-button-width: 168px;
+    --abmt-radius-sm: 10px;
+    --abmt-panel-content-gap: 5px;
+    --abmt-dialog-content-gap: 5px;
+    --abmt-3d-shadow: 0 1px 0 rgba(255, 255, 255, 0.34) inset, 0 2px 0 rgba(8, 28, 44, 0.28), 0 8px 18px rgba(15, 35, 56, 0.18);
+    --abmt-3d-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.42) inset, 0 3px 0 rgba(8, 28, 44, 0.30), 0 12px 26px rgba(15, 35, 56, 0.22);
+    --abmt-3d-overlay: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.02) 52%, rgba(0,0,0,0.08) 100%);
+}
+
+/* Reusable global 3D dark teal panel header. */
+.abmt-panel-header,
+.abmt-panel-3d .e-card-header,
+.e-card.pf-card-shell > .e-card-header {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+    color: #1a3a4a !important;
+    padding: 0.6875rem 1.15rem !important;
+    text-shadow: none;
+}
+
+.abmt-panel-header::before,
+.abmt-panel-3d .e-card-header::before,
+.e-card.pf-card-shell > .e-card-header::before {
+    display: none !important;
+}
+.abmt-dialog-header::before,
+.abmt-dialog .e-dlg-header-content::before,
+.e-dialog .e-dlg-header-content::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--abmt-3d-overlay);
+}
+
+.abmt-panel-3d .e-card-header-title,
+.abmt-panel-3d .e-card-sub-title,
+.e-card.pf-card-shell > .e-card-header .e-card-header-title,
+.e-card.pf-card-shell > .e-card-header .e-card-sub-title {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+    color: #1a3a4a !important;
+}
+
+.abmt-panel-3d .e-card-sub-title,
+.e-card.pf-card-shell > .e-card-header .e-card-sub-title {
+    color: rgba(26, 58, 74, 0.72) !important;
+    line-height: 1.35;
+}
+
+/* Add the requested global 5px separation between panel headers and panel content. */
+.abmt-panel-3d .e-card-header + .e-card-content,
+.e-card.pf-card-shell > .e-card-header + .e-card-content {
+    margin-top: var(--abmt-panel-content-gap);
+}
+
+/* Reusable global dialog header. */
+.abmt-dialog-header,
+.abmt-dialog .e-dlg-header-content,
+.e-dialog .e-dlg-header-content {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--abmt-teal-top) 0%, var(--abmt-teal-mid) 52%, var(--abmt-teal-bottom) 100%) !important;
+    border-bottom: 1px solid var(--abmt-teal-border) !important;
+    box-shadow: var(--abmt-3d-shadow) !important;
+    color: #ffffff !important;
+    padding: 1rem 1.15rem !important;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.abmt-dialog .e-dlg-header,
+.abmt-dialog .e-dlg-header *,
+.e-dialog .e-dlg-header,
+.e-dialog .e-dlg-header *,
+.e-dialog .e-dlg-header-content label,
+.e-dialog .e-dlg-header-content span {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+    color: #ffffff !important;
+}
+
+.abmt-dialog .e-dlg-closeicon-btn,
+.e-dialog .e-dlg-closeicon-btn {
+    position: relative;
+    z-index: 2;
+    color: #ffffff !important;
+}
+
+.abmt-dialog .e-dlg-content,
+.e-dialog .e-dlg-content {
+    margin-top: var(--abmt-dialog-content-gap);
+}
+
+/* Global action button primitives. Excludes compact icon-only grid buttons to avoid DataGrid content restyling. */
+.abmt-btn-primary-3d.e-btn,
+.abmt-btn-gray-3d.e-btn,
+.abmt-btn-red-3d.e-btn,
+.e-btn.e-primary:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green),
+.e-btn.e-success:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green),
+.e-btn.e-danger:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green) {
+    min-height: var(--abmt-control-height) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.45rem !important;
+    padding: 0.65rem 1rem !important;
+    border-radius: var(--abmt-radius-sm) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.01em;
+    text-decoration: none !important;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25) !important;
+    box-shadow: var(--abmt-3d-shadow) !important;
+    transition: transform 110ms ease, box-shadow 140ms ease, filter 140ms ease !important;
+    white-space: nowrap;
+}
+
+.abmt-btn-primary-3d.e-btn,
+.e-btn.e-primary:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green),
+.e-btn.e-success:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green) {
+    background: linear-gradient(180deg, var(--abmt-teal-top) 0%, var(--abmt-teal-mid) 52%, var(--abmt-teal-bottom) 100%) !important;
+    border-color: var(--abmt-teal-border) !important;
+}
+
+.abmt-btn-gray-3d.e-btn,
+.e-btn:not(.e-primary):not(.e-danger):not(.e-flat):not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green) {
+    min-height: var(--abmt-control-height) !important;
+    background: linear-gradient(180deg, var(--abmt-gray-top) 0%, var(--abmt-gray-mid) 52%, var(--abmt-gray-bottom) 100%) !important;
+    border-color: var(--abmt-gray-border) !important;
+    color: #ffffff !important;
+    box-shadow: var(--abmt-3d-shadow) !important;
+}
+
+.abmt-btn-red-3d.e-btn,
+.e-btn.e-danger:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green) {
+    background: linear-gradient(180deg, var(--abmt-red-top) 0%, var(--abmt-red-mid) 52%, var(--abmt-red-bottom) 100%) !important;
+    border-color: var(--abmt-red-border) !important;
+}
+
+.abmt-btn-primary-3d.e-btn:hover,
+.abmt-btn-gray-3d.e-btn:hover,
+.abmt-btn-red-3d.e-btn:hover,
+.e-btn.e-primary:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green):hover,
+.e-btn.e-success:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green):hover,
+.e-btn.e-danger:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green):hover,
+.e-btn:not(.e-primary):not(.e-danger):not(.e-flat):not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):not(.abmt-btn-save):not(.abmt-btn-cancel):not(.abmt-btn-search):not(.abmt-btn-manage):not(.pf-user-edit-dialog-btn):not(.pf-approval-btn):not(.pf-course-create-dialog-btn):not(.abmt-grid-action-text):not(.abmt-grid-action-approve):not(.abmt-grid-action-reject):not(.abmt-grid-action-edit):not(.abmt-grid-action-builder):not(.abmt-grid-action-question-bank):not(.abmt-grid-action-version):not(.abmt-grid-action-toggle):not(.abmt-grid-action-delete):not(.abmt-grid-action-roles):not(.e-tbar-btn):not(.e-dropdown-btn):not(.cb-btn-add-lesson-3d):not(.e-split-btn):not(.cb-btn-add-block):not(.cb-btn-save-block):not(.cb-btn-add-card):not(.cb-btn-remove-card):not(.ab-btn-gray):not(.ab-btn-red):not(.ab-btn-green):hover {
+    filter: brightness(1.04);
+    box-shadow: var(--abmt-3d-shadow-hover) !important;
+    transform: translateY(-1px);
+}
+
+.abmt-btn-primary-3d.e-btn .e-icons,
+.abmt-btn-gray-3d.e-btn .e-icons,
+.abmt-btn-red-3d.e-btn .e-icons,
+.e-btn:not(.pf-btn-icon):not(.pf-btn-square) .e-icons {
+    color: currentColor !important;
+    font-size: 1rem;
+    line-height: 1;
+    margin-inline-end: 0.2rem;
+}
+
+.abmt-dialog-action-btn.e-btn {
+    width: var(--abmt-dialog-button-width);
+}
+
+.pf-dialog-actions,
+.abmt-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .abmt-dialog-action-btn.e-btn,
+    .abmt-btn-primary-3d.e-btn,
+    .abmt-btn-gray-3d.e-btn,
+    .abmt-btn-red-3d.e-btn,
+    .e-btn:not(.pf-btn-icon):not(.pf-btn-square) {
+        width: 100%;
+    }
+
+    .pf-dialog-actions,
+    .abmt-dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Training page top action buttons are styled in abmt-training-buttons.css (loaded last). */

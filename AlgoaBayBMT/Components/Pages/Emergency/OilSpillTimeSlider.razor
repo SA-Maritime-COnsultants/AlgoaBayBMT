@@ -1,0 +1,41 @@
+@namespace AlgoaBayBMT.Components.Pages.Emergency
+@using Syncfusion.Blazor.Inputs
+
+<div class="oilspill-time-slider">
+    @if (MaxIndex <= 0)
+    {
+        <div class="text-muted small">No time-steps available.</div>
+    }
+    else
+    {
+        <SfSlider TValue="int" Value="CurrentIndex" Min="0" Max="MaxIndex" Step="1"
+                  Type="SliderType.MinRange" ValueChanged="HandleValueChanged">
+            <SliderTooltip IsVisible="true" Placement="TooltipPlacement.Before"
+                           ShowOn="TooltipShowOn.Always" Format="@TooltipFormat" />
+            <SliderTicks Placement="Placement.After" LargeStep="@LargeStep" SmallStep="1"
+                         ShowSmallTicks="false" />
+        </SfSlider>
+    }
+</div>
+
+@code {
+    /// <summary>Maximum (last) time-step index.</summary>
+    [Parameter] public int MaxIndex { get; set; }
+
+    /// <summary>Currently selected time-step index.</summary>
+    [Parameter] public int CurrentIndex { get; set; }
+
+    /// <summary>Raised when the slider value changes.</summary>
+    [Parameter] public EventCallback<int> OnIndexChanged { get; set; }
+
+    /// <summary>Optional label shown in the slider tooltip (e.g. timestamp text).</summary>
+    [Parameter] public string TooltipFormat { get; set; } = "Step ${value}";
+
+    private int LargeStep => Math.Max(1, (int)Math.Ceiling(MaxIndex / 10.0));
+
+    private async Task HandleValueChanged(int value)
+    {
+        CurrentIndex = value;
+        await OnIndexChanged.InvokeAsync(value);
+    }
+}

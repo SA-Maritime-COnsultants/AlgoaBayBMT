@@ -1,0 +1,367 @@
+@page "/emergency/oilspill/{SpillId:int}/visualize"
+@rendermode InteractiveServer
+@attribute [Authorize]
+@namespace AlgoaBayBMT.Components.Pages.Emergency
+
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@inject IOilSpillService OilSpillService
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillResponseService OilSpillResponseService
+@inject IOilSpillExportService OilSpillExportService
+@inject ICoastlineService CoastlineService
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<PageTitle>Oil Spill Visualiser</PageTitle>
+
+<div class="page-shell pf-training-admin-shell oilspill-visualizer">
+    @if (_loading)
+    {
+        <div class="pf-alert pf-status-message" role="alert">Loading…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">Oil spill incident @SpillId was not found.</div>
+    }
+    else
+    {
+        <div class="page-header">
+            <div>
+                <h1 class="page-title pf-training-heading">Oil Spill Visualiser</h1>
+                <div class="page-subtitle">@_spill.SpillName</div>
+            </div>
+            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToDetail">Back to Spill</SfButton>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-end justify-content-between gap-3 mb-3">
+
+            <div class="oilspill-toolbar d-flex flex-wrap align-items-center gap-3">
+                <div class="oilspill-run-selector">
+                    <label class="form-label small mb-1">Model Run</label>
+                    <SfDropDownList TValue="int?" TItem="OilSpillModelRun" DataSource="_modelRuns"
+                                    Value="_selectedRunId" Placeholder="Select a run" Width="260px">
+                        <DropDownListFieldSettings Value="Id" Text="RunName" />
+                        <DropDownListEvents TValue="int?" TItem="OilSpillModelRun"
+                                            ValueChange="OnRunChanged" />
+                    </SfDropDownList>
+                </div>
+
+                <div class="oilspill-scenario-toggle">
+                    <label class="form-label small mb-1 d-block">Prediction scenario</label>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <SfButton CssClass="@ScenarioButtonClass(OilSpillScenarioKind.Baseline)"
+                                  Content="Without measures"
+                                  OnClick="() => SetScenario(OilSpillScenarioKind.Baseline)" />
+                        <SfButton CssClass="@ScenarioButtonClass(OilSpillScenarioKind.Mitigated)"
+                                  Content="With measures"
+                                  Disabled="@(!HasMitigated)"
+                                  OnClick="() => SetScenario(OilSpillScenarioKind.Mitigated)" />
+                        <SfCheckBox TChecked="bool" Checked="_showComparisonOverlay"
+                                    CheckedChanged="OnComparisonOverlayToggled"
+                                    Disabled="@(!HasMitigated)"
+                                    Label="Overlay other scenario" />
+                    </div>
+                    @if (!HasMitigated)
+                    {
+                        <div class="form-text">Deploy a response measure to unlock the WITH-measures prediction.</div>
+                    }
+                </div>
+
+                <div class="oilspill-layer-toggles">
+                    <label class="form-label small mb-1 d-block">Layers</label>
+                    <div class="d-flex align-items-center gap-3">
+                        <SfCheckBox TChecked="bool" Checked="_showTrajectory"
+                                    CheckedChanged="OnTrajectoryToggled" Label="Trajectory" />
+                        <SfCheckBox TChecked="bool" Checked="_showSlick"
+                                    CheckedChanged="OnSlickToggled" Label="Slick Area" />
+                        <SfCheckBox TChecked="bool" Checked="_showActions"
+                                    CheckedChanged="OnActionsToggled" Label="Response Actions" />
+                        <SfCheckBox TChecked="bool" Checked="_showCumulative"
+                                    CheckedChanged="OnCumulativeToggled" Label="Cumulative footprint" />
+                        <SfCheckBox TChecked="bool" Checked="_showTimeLabels"
+                                    CheckedChanged="OnTimeLabelsToggled" Label="Time labels" />
+                    </div>
+                </div>
+
+                <div class="oilspill-playback">
+                    <label class="form-label small mb-1 d-block">Playback</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <SfButton CssClass="@(_isPlaying ? "e-danger" : "e-success")"
+                                  IconCss="@(_isPlaying ? "e-icons e-pause" : "e-icons e-play")"
+                                  Content="@(_isPlaying ? "Pause" : "Play")"
+                                  Disabled="@(_trajectory.Count < 2)" OnClick="TogglePlay" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-refresh"
+                                  Content="Replay" Disabled="@(_trajectory.Count < 2)"
+                                  OnClick="ReplayAsync" />
+                        <SfButton CssClass="e-warning" IconCss="e-icons e-recurrence"
+                                  Content="Regenerate" Disabled="@(SelectedRun is null || _regenerating)"
+                                  OnClick="RegenerateRunAsync">
+                        </SfButton>
+                    </div>
+                </div>
+
+                <div class="oilspill-exports">
+                    <label class="form-label small mb-1 d-block">Export</label>
+                    <div class="d-flex align-items-center gap-2">
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-image"
+                                  Content="Map PNG" Disabled="@(_trajectory.Count == 0 || _exporting)"
+                                  OnClick="ExportMapSnapshotAsync" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-file-document"
+                                  Content="SITREP PDF" Disabled="@(SelectedRun is null || _exporting)"
+                                  OnClick="ExportSitrepAsync" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-export"
+                                  Content="Run Summary" Disabled="@(SelectedRun is null || _exporting)"
+                                  OnClick="ExportRunSummaryAsync" />
+                        <SfButton CssClass="e-outline" IconCss="e-icons e-comparison"
+                                  Content="Compare" Disabled="@(_modelRuns.Count < 2)"
+                                  OnClick="GoToComparison" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (ShowImpactAlert && _shorelineImpactIndex is int impactStep
+            && impactStep >= 0 && impactStep < _trajectory.Count)
+        {
+            <div class="pf-alert pf-alert--warning-strong d-flex align-items-center gap-2" role="alert">
+                <span class="e-icons e-warning"></span>
+                <span>
+                    <strong>Shoreline Impact</strong>
+                    (@(_activeScenario == OilSpillScenarioKind.Mitigated ? "WITH measures" : "WITHOUT measures") scenario)
+                    at @_trajectory[impactStep].Timestamp.ToString("dd MMM yyyy HH:mm").
+                    Seaward drift stops here — the frames that follow model the oil spreading along
+                    the coastline, and the red band marks the impacted shore.
+                </span>
+            </div>
+        }
+
+        @if (_effectiveness is { } eff)
+        {
+            <div class="oilspill-effectiveness card oilspill-panel mb-3">
+                <div class="card-header py-2 fw-semibold d-flex justify-content-between align-items-center">
+                    <span>Response Measure Effectiveness — WITHOUT vs WITH measures</span>
+                    <span class="badge @(eff.ImpactPrevented || (eff.LandfallDelayHours ?? 0) > 0.05 || eff.AreaReductionPercent > 1 ? "bg-success" : "bg-secondary")">
+                        @(eff.ImpactPrevented
+                            ? "Impact prevented"
+                            : eff.LandfallDelayHours is double d && d > 0.05
+                                ? $"Landfall delayed {d:0.#} h"
+                                : eff.AreaReductionPercent > 1
+                                    ? "Slick reduced"
+                                    : "Limited effect")
+                    </span>
+                </div>
+                <div class="card-body py-2">
+                    <div class="row g-2 text-center">
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small text-uppercase">Shoreline impact</div>
+                            <div class="fw-semibold">
+                                @(eff.BaselineImpactTime?.ToString("dd MMM HH:mm") ?? "None in window")
+                                <span class="text-muted">→</span>
+                                @(eff.ImpactPrevented
+                                    ? "Prevented"
+                                    : eff.MitigatedImpactTime?.ToString("dd MMM HH:mm") ?? "None in window")
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small text-uppercase">Final slick area</div>
+                            <div class="fw-semibold">
+                                @eff.BaselineFinalAreaSqKm.ToString("N3") km²
+                                <span class="text-muted">→</span>
+                                @eff.MitigatedFinalAreaSqKm.ToString("N3") km²
+                                @if (eff.AreaReductionPercent > 0.5)
+                                {
+                                    <span class="badge bg-success ms-1">−@eff.AreaReductionPercent.ToString("0.#")%</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <div class="text-muted small text-uppercase">Coastline impacted</div>
+                            <div class="fw-semibold">
+                                @eff.BaselineShoreKm.ToString("N2") km
+                                <span class="text-muted">→</span>
+                                @eff.MitigatedShoreKm.ToString("N2") km
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(_exportMessage))
+        {
+            <div class="pf-alert pf-status-message" role="alert">@_exportMessage</div>
+        }
+
+        @if (_modelRuns.Count == 0)
+        {
+            <div class="pf-alert pf-status-message" role="alert">
+                This spill has no model runs yet.
+                <a href="@($"/emergency/oilspill/{SpillId}/model")">Create one</a> to visualise its trajectory.
+            </div>
+        }
+        else
+        {
+            <div class="row g-3 oilspill-visualizer-body">
+                <div class="col-12">
+                    <div class="card h-100 oilspill-panel">
+                        <div class="card-header py-2 fw-semibold">Trajectory Map</div>
+                        <div class="oilspill-response-panel border-bottom px-3 py-2">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <span class="fw-semibold small text-uppercase text-muted">Response measures</span>
+                                <SfCheckBox TChecked="bool" Checked="_showBooms"
+                                            CheckedChanged="OnBoomsToggled" Label="Booms" />
+                                <SfCheckBox TChecked="bool" Checked="_showSkimmers"
+                                            CheckedChanged="OnSkimmersToggled" Label="Skimmers" />
+                                <SfCheckBox TChecked="bool" Checked="_showDispersants"
+                                            CheckedChanged="OnDispersantsToggled" Label="Dispersants" />
+                                <SfCheckBox TChecked="bool" Checked="_showShorelineProtection"
+                                            CheckedChanged="OnShorelineProtectionToggled" Label="Shoreline protection" />
+                                <SfButton CssClass="e-small e-primary ms-auto" IconCss="e-icons e-plus"
+                                          Content="@(_showMeasurePanel ? "Close" : "Add measure")"
+                                          OnClick="ToggleMeasurePanel" />
+                            </div>
+                            @if (_showMeasurePanel)
+                            {
+                                <div class="oilspill-measure-form border rounded mt-2 p-3 bg-white">
+                                    <div class="alert alert-primary d-flex align-items-center gap-2 py-2 px-3 mb-3" role="alert">
+                                        <span class="e-icons e-location" aria-hidden="true"></span>
+                                        <span class="small">
+                                            <strong>Click the map</strong> to drop this measure where you want it, then set
+                                            its details below and <strong>Save</strong>. The latitude/longitude update as you click.
+                                        </span>
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label small mb-1">Action type</label>
+                                            <SfDropDownList TValue="OilSpillActionType" TItem="MeasureTypeOption"
+                                                            DataSource="_measureTypeOptions"
+                                                            @bind-Value="_measure.ActionType" Width="100%">
+                                                <DropDownListFieldSettings Value="Value" Text="Label" />
+                                            </SfDropDownList>
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">Latitude</label>
+                                            <SfNumericTextBox TValue="double" @bind-Value="_measure.Latitude"
+                                                              Format="0.#####" Step="0.001" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">Longitude</label>
+                                            <SfNumericTextBox TValue="double" @bind-Value="_measure.Longitude"
+                                                              Format="0.#####" Step="0.001" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">Start time</label>
+                                            <SfDateTimePicker TValue="DateTime" @bind-Value="_measure.StartTime" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            <label class="form-label small mb-1">End time (optional)</label>
+                                            <SfDateTimePicker TValue="DateTime?" @bind-Value="_measure.EndTime" Width="100%" />
+                                        </div>
+                                        <div class="col-6 col-md-4">
+                                            @if (_measure.ActionType is OilSpillActionType.Skimmer
+                                                or OilSpillActionType.Dispersant)
+                                            {
+                                                <label class="form-label small mb-1">Radius (m)</label>
+                                                <SfNumericTextBox TValue="double?" @bind-Value="_measure.RadiusMeters"
+                                                                  Min="10" Step="25" Width="100%" />
+                                            }
+                                            else
+                                            {
+                                                <label class="form-label small mb-1">Length (m)</label>
+                                                <SfNumericTextBox TValue="double?" @bind-Value="_measure.LengthMeters"
+                                                                  Min="10" Step="25" Width="100%" />
+                                            }
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label small mb-1">Notes</label>
+                                            <SfTextBox @bind-Value="_measure.Notes" Placeholder="Optional notes" Width="100%" />
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <SfButton CssClass="e-success" IconCss="e-icons e-save"
+                                                  Content="Save measure" Disabled="@_savingMeasure"
+                                                  OnClick="SaveMeasureAsync" />
+                                        <SfButton CssClass="e-outline" Content="Cancel"
+                                                  Disabled="@_savingMeasure" OnClick="ToggleMeasurePanel" />
+                                        <span class="text-muted small">
+                                            Position: @_measure.Latitude.ToString("0.#####"), @_measure.Longitude.ToString("0.#####").
+                                            Saving re-runs the model with this measure applied.
+                                        </span>
+                                    </div>
+                                </div>
+                            }
+                            @if (!string.IsNullOrEmpty(_measureMessage))
+                            {
+                                <div class="alert alert-info py-1 px-2 mt-2 mb-0 small" role="alert">@_measureMessage</div>
+                            }
+                            <div class="d-flex flex-wrap align-items-center gap-3 mt-2 small">
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#fd7e14;"></span> Boom
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch rounded-circle" style="background:#0d6efd;"></span> Skimmer
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:rgba(128,0,128,0.5);border:1px solid #800080;"></span> Dispersant
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#198754;"></span> Shoreline protection
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#6c757d;"></span> Aerial recon
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:#dc3545;"></span> Shoreline impact zone
+                                </span>
+                                <span class="oilspill-legend-item">
+                                    <span class="oilspill-legend-swatch" style="background:rgba(25,135,84,0.35);border:1px solid #198754;"></span> Comparison scenario
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-body oilspill-map-host">
+                            <div id="oilspill-map-capture">
+                                <OilSpillMap Trajectory="_trajectory"
+                                             Actions="_actions"
+                                             VesselName="@VesselName"
+                                             HighlightIndex="_currentIndex"
+                                             CurrentTime="CurrentTime"
+                                             ShowTrajectory="_showTrajectory"
+                                             ShowSlick="_showSlick"
+                                             ShowActions="_showActions"
+                                             ShowCumulative="_showCumulative"
+                                             ShowBooms="_showBooms"
+                                             ShowSkimmers="_showSkimmers"
+                                             ShowDispersants="_showDispersants"
+                                             ShowShorelineProtection="_showShorelineProtection"
+                                             ShowTimeLabels="_showTimeLabels"
+                                             ShorelineImpact="ShowImpactAlert"
+                                             ImpactIndex="_shorelineImpactIndex"
+                                             ImpactZoneGeoJson="@ActiveImpactZoneGeoJson"
+                                             ComparisonTrajectory="ComparisonTrajectory"
+                                             ShowComparison="@(_showComparisonOverlay && HasMitigated)"
+                                             PlacementMode="_showMeasurePanel"
+                                             PendingMeasure="PendingMeasure"
+                                             OnMapClick="OnMapMeasureClick"
+                                             ProductType="@(_spill?.ProductType ?? OilSpillProductType.Unknown)" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3 oilspill-panel">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-semibold">Time-step</span>
+                        <span class="badge bg-secondary">@CurrentTimeLabel</span>
+                    </div>
+                    <OilSpillTimeSlider MaxIndex="MaxIndex"
+                                        CurrentIndex="_currentIndex"
+                                        TooltipFormat="Step ${value}"
+                                        OnIndexChanged="OnSliderChanged" />
+                </div>
+            </div>
+        }
+    }
+</div>

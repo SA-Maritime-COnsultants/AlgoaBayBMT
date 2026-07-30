@@ -1,61 +1,151 @@
-﻿@page "/Account/Register"
+@page "/Account/Register"
+@rendermode InteractiveServer
 
 @using System.ComponentModel.DataAnnotations
 @using System.Text
-@using System.Text.Encodings.Web
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using AlgoaBayBMT.Data
 
+@inject IUserRegistrationService UserRegistrationService
 @inject UserManager<ApplicationUser> UserManager
-@inject IUserStore<ApplicationUser> UserStore
-@inject SignInManager<ApplicationUser> SignInManager
-@inject IEmailSender<ApplicationUser> EmailSender
+@inject IApplicationEmailService EmailService
 @inject ILogger<Register> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<div class="page-shell auth-page-shell">
+    <div class="auth-page-inner">
+        <div class="auth-brand text-center">
+            <h1 class="auth-title">Register</h1>
+            <div class="auth-subtitle">Create your account to access Algoa Bay BMT.</div>
+        </div>
 
-<div class="row">
-    <div class="col-lg-6">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
-            <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" id="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="Input.Email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" id="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.Password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
-            </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" id="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="Input.ConfirmPassword">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
-        </EditForm>
-    </div>
-    <div class="col-lg-4 col-lg-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
+        <SfCard CssClass="pf-card-shell auth-card register-card register-panel">
+            <CardHeader Title="Create a new account" SubTitle="Complete the form below to request access" />
+            <CardContent>
+                <StatusMessage Message="@Message" />
+
+                <EditForm Model="Input" method="post" OnValidSubmit="RegisterUser" FormName="register">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary class="text-danger" role="alert" />
+
+                    <div class="pf-form-grid">
+                        <div class="pf-col-4">
+                            <label class="pf-field-label">Full name</label>
+                            <SfTextBox @bind-Value="Input.FullName" Placeholder="Full name" />
+                            <ValidationMessage For="() => Input.FullName" class="text-danger" />
+                        </div>
+
+                        <div class="pf-col-4">
+                            <label class="pf-field-label">Email</label>
+                            <SfTextBox @bind-Value="Input.Email" Placeholder="name@example.com" HtmlAttributes="EmailAttributes" />
+                            <ValidationMessage For="() => Input.Email" class="text-danger" />
+                        </div>
+
+                        <div class="pf-col-4">
+                            <label class="pf-field-label">Cell No</label>
+                            <SfTextBox @bind-Value="Input.CellNo" Placeholder="Cell number" />
+                            <ValidationMessage For="() => Input.CellNo" class="text-danger" />
+                        </div>
+
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Address</label>
+                            <SfTextBox @bind-Value="Input.Address" Placeholder="Street address" />
+                            <ValidationMessage For="() => Input.Address" class="text-danger" />
+                        </div>
+
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Country</label>
+                            <SfDropDownList TValue="string" TItem="CountryOption" DataSource="@CountryOptions" @bind-Value="Input.Country" Placeholder="Select country">
+                                <DropDownListFieldSettings Text="Text" Value="Value" />
+                            </SfDropDownList>
+                        </div>
+
+                        <div class="pf-col-4 auth-inline-checkbox">
+                            <label class="pf-field-label">Crew</label>
+                            <SfCheckBox Label="Crew" @bind-Checked="Input.IsCrew" CssClass="register-crew-checkbox" />
+                        </div>
+
+                        @if (Input.IsCrew)
+                        {
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">Rank</label>
+                                <SfDropDownList TValue="CrewRank?" TItem="CrewRankOption" DataSource="@CrewRankOptions" @bind-Value="Input.CrewRank" Placeholder="Select rank">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                                <ValidationMessage For="() => Input.CrewRank" class="text-danger" />
+                            </div>
+
+                            <div class="pf-col-4">
+                                <label class="pf-field-label">SID Number</label>
+                                <SfTextBox @bind-Value="Input.SidNumber" Placeholder="SID number" />
+                                <ValidationMessage For="() => Input.SidNumber" class="text-danger" />
+                            </div>
+
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">SID Issuing Country</label>
+                                <SfDropDownList TValue="string" TItem="CountryOption" DataSource="@CountryOptions" @bind-Value="Input.SidIssuingCountry" Placeholder="Select country">
+                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                </SfDropDownList>
+                                <ValidationMessage For="() => Input.SidIssuingCountry" class="text-danger" />
+                            </div>
+
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">SID Issuing Authority</label>
+                                <SfTextBox @bind-Value="Input.SidIssuingAuthority" Placeholder="Issuing authority" />
+                                <ValidationMessage For="() => Input.SidIssuingAuthority" class="text-danger" />
+                            </div>
+
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">SID Issue Date</label>
+                                <SfDatePicker TValue="DateTime?" @bind-Value="Input.SidIssueDate" Placeholder="Issue date" Format="yyyy-MM-dd" />
+                            </div>
+
+                            <div class="pf-col-3">
+                                <label class="pf-field-label">SID Expiry Date</label>
+                                <SfDatePicker TValue="DateTime?" @bind-Value="Input.SidExpiryDate" Placeholder="Expiry date" Format="yyyy-MM-dd" />
+                            </div>
+                        }
+
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Password</label>
+                            <SfTextBox @bind-Value="Input.Password" Placeholder="Password" Type="InputType.Password" HtmlAttributes="PasswordAttributes" />
+                            <ValidationMessage For="() => Input.Password" class="text-danger" />
+                        </div>
+
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Confirm password</label>
+                            <SfTextBox @bind-Value="Input.ConfirmPassword" Placeholder="Confirm password" Type="InputType.Password" HtmlAttributes="ConfirmPasswordAttributes" />
+                            <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
+                        </div>
+                    </div>
+
+                    <div class="d-flex mt-4">
+                        <button type="submit" class="abmt-action-btn abmt-btn-green">
+                            <i class="bi bi-person-plus-fill"></i> Register
+                        </button>
+                    </div>
+                </EditForm>
+            </CardContent>
+        </SfCard>
     </div>
 </div>
 
 @code {
     private IEnumerable<IdentityError>? identityErrors;
+    private static IReadOnlyList<CrewRankOption> CrewRankOptions => Enum.GetValues<CrewRank>()
+        .Select(rank => new CrewRankOption { Value = rank, Text = rank.GetDisplayName() })
+        .ToList();
+    private static IReadOnlyList<CountryOption> CountryOptions => CountryCatalog.All
+        .Select(country => new CountryOption { Value = country, Text = country })
+        .ToList();
+
+    private readonly Dictionary<string, object> EmailAttributes = new() { ["autocomplete"] = "username" };
+    private readonly Dictionary<string, object> PasswordAttributes = new() { ["autocomplete"] = "new-password" };
+    private readonly Dictionary<string, object> ConfirmPasswordAttributes = new() { ["autocomplete"] = "new-password" };
 
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = default!;
@@ -65,27 +155,40 @@
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
-    protected override void OnInitialized()
+    protected override Task OnInitializedAsync()
     {
         Input ??= new();
+        return Task.CompletedTask;
     }
 
     public async Task RegisterUser(EditContext editContext)
     {
-        var user = CreateUser();
-
-        await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
-        var emailStore = GetEmailStore();
-        await emailStore.SetEmailAsync(user, Input.Email, CancellationToken.None);
-        var result = await UserManager.CreateAsync(user, Input.Password);
-
-        if (!result.Succeeded)
+        var registrationResult = await UserRegistrationService.RegisterAsync(new RegistrationRequest
         {
-            identityErrors = result.Errors;
+            Email = Input.Email,
+            Password = Input.Password,
+            ConfirmPassword = Input.ConfirmPassword,
+            FullName = Input.FullName,
+            CellNo = Input.CellNo,
+            Address = Input.Address,
+            Country = Input.Country,
+            IsCrew = Input.IsCrew,
+            CrewRank = Input.IsCrew ? Input.CrewRank : null,
+            SidNumber = Input.IsCrew ? Input.SidNumber : null,
+            SidIssuingCountry = Input.IsCrew ? Input.SidIssuingCountry : null,
+            SidIssuingAuthority = Input.IsCrew ? Input.SidIssuingAuthority : null,
+            SidIssueDate = Input.IsCrew ? Input.SidIssueDate : null,
+            SidExpiryDate = Input.IsCrew ? Input.SidExpiryDate : null
+        });
+
+        if (!registrationResult.Succeeded || registrationResult.Data is null)
+        {
+            identityErrors = registrationResult.Errors.Select(error => new IdentityError { Description = error });
             return;
         }
 
-        Logger.LogInformation("User created a new account with password.");
+        var user = registrationResult.Data;
+        Logger.LogInformation("User created a new account with password and pending approval workflow.");
 
         var userId = await UserManager.GetUserIdAsync(user);
         var code = await UserManager.GenerateEmailConfirmationTokenAsync(user);
@@ -94,59 +197,155 @@
             NavigationManager.ToAbsoluteUri("Account/ConfirmEmail").AbsoluteUri,
             new Dictionary<string, object?> { ["userId"] = userId, ["code"] = code, ["returnUrl"] = ReturnUrl });
 
-        await EmailSender.SendConfirmationLinkAsync(user, Input.Email, HtmlEncoder.Default.Encode(callbackUrl));
-
-        if (UserManager.Options.SignIn.RequireConfirmedAccount)
-        {
-            RedirectManager.RedirectTo(
-                "Account/RegisterConfirmation",
-                new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
-        }
-        else
-        {
-            await SignInManager.SignInAsync(user, isPersistent: false);
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
-    }
-
-    private ApplicationUser CreateUser()
-    {
         try
         {
-            return Activator.CreateInstance<ApplicationUser>();
+            await EmailService.SendConfirmationLinkAsync(user, Input.Email, callbackUrl);
         }
-        catch
+        catch (Exception ex)
         {
-            throw new InvalidOperationException($"Can't create an instance of '{nameof(ApplicationUser)}'. " +
-                $"Ensure that '{nameof(ApplicationUser)}' is not an abstract class and has a parameterless constructor.");
+            Logger.LogError(ex, "Failed to send confirmation email to {Email}", Input.Email);
         }
+
+        try
+        {
+            await EmailService.SendWelcomeEmailAsync(user, NavigationManager.BaseUri);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to send welcome email to {Email}", Input.Email);
+        }
+
+        RedirectManager.RedirectTo(
+            "Account/RegisterConfirmation",
+            new() { ["email"] = Input.Email, ["returnUrl"] = ReturnUrl });
     }
 
-    private IUserEmailStore<ApplicationUser> GetEmailStore()
+    private sealed class InputModel : IValidatableObject
     {
-        if (!UserManager.SupportsUserEmail)
-        {
-            throw new NotSupportedException("The default UI requires a user store with email support.");
-        }
-        return (IUserEmailStore<ApplicationUser>)UserStore;
-    }
+        private bool isCrew;
+        private string? sidNumber;
 
-    private sealed class InputModel
-    {
+        [Required]
+        [Display(Name = "Full name")]
+        public string FullName { get; set; } = string.Empty;
+
         [Required]
         [EmailAddress]
         [Display(Name = "Email")]
-        public string Email { get; set; } = "";
+        public string Email { get; set; } = string.Empty;
+
+        [StringLength(30)]
+        [Display(Name = "Cell No")]
+        public string CellNo { get; set; } = string.Empty;
+
+        [StringLength(300)]
+        [Display(Name = "Address")]
+        public string Address { get; set; } = string.Empty;
+
+        [StringLength(100)]
+        [Display(Name = "Country")]
+        public string Country { get; set; } = string.Empty;
+
+        [Display(Name = "Crew")]
+        public bool IsCrew
+        {
+            get => isCrew;
+            set
+            {
+                isCrew = value;
+                if (!isCrew)
+                {
+                    CrewRank = null;
+                    SidNumber = null;
+                    SidIssuingCountry = null;
+                    SidIssuingAuthority = null;
+                    SidIssueDate = null;
+                    SidExpiryDate = null;
+                }
+            }
+        }
+
+        [Display(Name = "Rank")]
+        public CrewRank? CrewRank { get; set; }
+
+        [Display(Name = "SID Number")]
+        public string? SidNumber
+        {
+            get => sidNumber;
+            set => sidNumber = value?.Trim().ToUpperInvariant();
+        }
+
+        [Display(Name = "SID Issuing Country")]
+        public string? SidIssuingCountry { get; set; }
+
+        [Display(Name = "SID Issuing Authority")]
+        public string? SidIssuingAuthority { get; set; }
+
+        [Display(Name = "SID Issue Date")]
+        public DateTime? SidIssueDate { get; set; }
+
+        [Display(Name = "SID Expiry Date")]
+        public DateTime? SidExpiryDate { get; set; }
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]
         [DataType(DataType.Password)]
         [Display(Name = "Password")]
-        public string Password { get; set; } = "";
+        public string Password { get; set; } = string.Empty;
 
         [DataType(DataType.Password)]
         [Display(Name = "Confirm password")]
-        [Compare("Password", ErrorMessage = "The password and confirmation password do not match.")]
-        public string ConfirmPassword { get; set; } = "";
+        [Compare(nameof(Password), ErrorMessage = "The password and confirmation password do not match.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (string.IsNullOrWhiteSpace(CellNo))
+            {
+                yield return new ValidationResult("Cell No is required.", [nameof(CellNo)]);
+            }
+
+            if (string.IsNullOrWhiteSpace(Address))
+            {
+                yield return new ValidationResult("Address is required.", [nameof(Address)]);
+            }
+
+            if (string.IsNullOrWhiteSpace(Country))
+            {
+                yield return new ValidationResult("Country is required.", [nameof(Country)]);
+            }
+
+            if (!IsCrew)
+            {
+                yield break;
+            }
+
+            if (CrewRank is null)
+            {
+                yield return new ValidationResult("Rank is required when Crew is selected.", [nameof(CrewRank)]);
+            }
+
+            if (string.IsNullOrWhiteSpace(SidIssuingCountry))
+            {
+                yield return new ValidationResult("SID issuing country is required when Crew is selected.", [nameof(SidIssuingCountry)]);
+            }
+
+            if (string.IsNullOrWhiteSpace(SidIssuingAuthority))
+            {
+                yield return new ValidationResult("SID issuing authority is required when Crew is selected.", [nameof(SidIssuingAuthority)]);
+            }
+        }
+    }
+
+    private sealed class CrewRankOption
+    {
+        public CrewRank? Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class CountryOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
     }
 }

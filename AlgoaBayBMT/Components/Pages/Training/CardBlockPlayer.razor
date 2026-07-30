@@ -1,0 +1,13 @@
+@using AlgoaBayBMT.Services.Models
+
+<div class="tp-callout">
+    @if (!string.IsNullOrWhiteSpace(Block.ThumbnailUrl))
+    {
+        <img src="@Block.ThumbnailUrl" alt="Card visual" style="max-width:100%;border-radius:4px;margin-bottom:0.75rem;" />
+    }
+    @((MarkupString)(Block.ContentHtml ?? string.Empty))
+</div>
+
+@code {
+    [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+}

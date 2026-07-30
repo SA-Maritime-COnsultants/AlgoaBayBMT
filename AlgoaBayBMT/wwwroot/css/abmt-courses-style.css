@@ -1,0 +1,696 @@
+/* ═══════════════════════════════════════════════════════════════════
+   AlgoaBayBMT — application-wide visual rollout of the
+   /training-management/courses page styling.
+
+   Rules:
+   • Scoped to main.app-content so the sidebar and topbar are untouched.
+   • No markup, routing, logic or component changes — pure CSS.
+   • Uses the existing courses-page palette (navy/teal + subtle dark teal
+     panel headers + subtle red/green action buttons).
+   • Never overrides the dedicated training-page action buttons or the
+     create-course dialog buttons.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── 1. Page shell + header — apply the courses-page layout to every page.
+       If a page does not opt in via .page-shell, treat the main content
+       region itself as a vertical-stacked shell.                        */
+main.app-content {
+    --abmt-panel-radius: 14px;
+    --abmt-panel-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) inset, 0 2px 4px rgba(15, 35, 56, 0.10), 0 12px 24px rgba(15, 35, 56, 0.08);
+    --abmt-panel-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.60) inset, 0 4px 10px rgba(15, 35, 56, 0.12), 0 18px 32px rgba(15, 35, 56, 0.12);
+    --abmt-panel-border: 1px solid rgba(15, 87, 96, 0.18);
+    --abmt-panel-bg: #ffffff;
+    --abmt-header-text: #1a3a4a;
+    --abmt-header-gradient: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    --abmt-section-gap: 1rem;
+}
+
+main.app-content > .page-shell,
+main.app-content > div:not(.page-shell):not(.app-overlay) {
+    display: flex;
+    flex-direction: column;
+    gap: var(--abmt-section-gap);
+}
+
+/* Standardise headings used as page titles even when authors did not
+   wrap them in .page-header, so legacy pages get the same look. */
+main.app-content h1:not(.page-title),
+main.app-content h2:not(.page-title) {
+    color: #0f3247;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    margin: 0 0 0.35rem 0;
+}
+
+main.app-content h3:not(.page-title) {
+    color: #173852;
+    font-weight: 700;
+    letter-spacing: 0.005em;
+}
+
+/* ── 2. Cards / panels — give all generic cards the courses panel look.
+       Avoid touching layout cards already styled by a more specific class
+       (.pf-training-metric-card keeps its compact appearance).          */
+main.app-content .e-card:not(.pf-training-metric-card) {
+    background: var(--abmt-panel-bg) !important;
+    border: var(--abmt-panel-border) !important;
+    border-radius: var(--abmt-panel-radius) !important;
+    box-shadow: var(--abmt-panel-shadow) !important;
+    overflow: hidden;
+}
+
+main.app-content .e-card:not(.pf-training-metric-card):hover {
+    box-shadow: var(--abmt-panel-shadow-hover) !important;
+}
+
+/* Panel header — subtle dark-teal 3D look matching the courses page.
+   Applies to every Syncfusion card header inside main content.        */
+main.app-content .e-card .e-card-header,
+main.app-content .abmt-panel-3d .e-card-header {
+    background: var(--abmt-header-gradient) !important;
+    color: var(--abmt-header-text) !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18) !important;
+    padding: 0.55rem 1rem !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+}
+
+main.app-content .e-card .e-card-header .e-card-header-caption,
+main.app-content .e-card .e-card-header-title,
+main.app-content .e-card .e-card-sub-title {
+    color: var(--abmt-header-text) !important;
+}
+
+main.app-content .e-card .e-card-sub-title {
+    opacity: 0.85;
+    font-weight: 500;
+}
+
+main.app-content .e-card .e-card-content {
+    padding: 1rem 1.1rem !important;
+    background: #ffffff;
+}
+
+/* ── 3. Form controls — match the courses dialog field treatment.
+       Tightened spacing, subtle border, focused border in dark teal.    */
+main.app-content .pf-field-label,
+main.app-content label.form-label {
+    font-weight: 600;
+    color: #173852;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.25rem;
+    display: inline-block;
+}
+
+main.app-content .form-control,
+main.app-content .e-input-group:not(.e-error),
+main.app-content .e-control-wrapper:not(.e-error) {
+    border-radius: 8px !important;
+}
+
+main.app-content .e-input-group:not(.e-error):focus-within,
+main.app-content .e-control-wrapper:not(.e-error):focus-within {
+    border-color: #0f5f64 !important;
+    box-shadow: 0 0 0 2px rgba(15, 95, 100, 0.18) !important;
+}
+
+main.app-content .form-control:focus {
+    border-color: #0f5f64 !important;
+    box-shadow: 0 0 0 2px rgba(15, 95, 100, 0.18) !important;
+}
+
+/* ── 4. Data grids — the compact, professional courses-grid look.      */
+main.app-content .e-grid {
+    border-radius: 12px !important;
+    overflow: hidden;
+    border: 1px solid rgba(15, 87, 96, 0.18) !important;
+    box-shadow: 0 2px 4px rgba(15, 35, 56, 0.06) !important;
+}
+
+/* Subtle 3D header background applied app-wide to ALL DataGrids. */
+.e-grid .e-gridheader,
+.e-grid .e-gridheader .e-headercontent,
+.e-grid .e-gridheader .e-columnheader,
+.e-grid .e-gridheader tr.e-columnheader,
+.e-grid .e-gridheader .e-headercell,
+.e-grid .e-gridheader .e-headercell.e-stackedheadercell,
+.e-grid .e-gridheader .e-detailheadercell,
+.e-grid .e-gridheader .e-filterbarcell {
+    background: linear-gradient(180deg, #d8efec 0%, #c8e8e4 50%, #b8ddd8 100%) !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.35) !important;
+}
+
+.e-grid .e-gridheader .e-headercell,
+.e-grid .e-gridheader .e-headercelldiv,
+.e-grid .e-gridheader .e-headertext,
+.e-grid .e-gridheader .e-headercell .e-headercelldiv .e-headertext,
+.e-grid .e-gridheader .e-stackedheadercelldiv {
+    color: #0a3a40 !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+.e-grid .e-gridheader .e-headercell .e-icons,
+.e-grid .e-gridheader .e-sortfilterdiv,
+.e-grid .e-gridheader .e-icon-filter,
+.e-grid .e-gridheader .e-icon-ascending,
+.e-grid .e-gridheader .e-icon-descending {
+    color: #0a3a40 !important;
+}
+
+main.app-content .e-grid .e-rowcell {
+    color: #1a3a52 !important;
+    font-size: 0.82rem;
+}
+
+main.app-content .e-grid .e-row:hover .e-rowcell {
+    background: #f1f7f8 !important;
+}
+
+main.app-content .e-grid .e-altrow .e-rowcell {
+    background: #fafcfc !important;
+}
+
+/* ?? Compact row height for all grids ????????????????????????????????????? */
+.e-grid .e-row .e-rowcell {
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
+    line-height: 1.3 !important;
+    vertical-align: middle !important;
+}
+
+/* Strip internal padding/margin from inline grid content so rows stay tight */
+.e-grid .e-rowcell .badge,
+.e-grid .e-rowcell .e-badge,
+.e-grid .e-rowcell .pf-role-badge {
+    margin: 0 !important;
+    vertical-align: middle !important;
+}
+
+.e-grid .e-rowcell .pf-role-badge-list {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 2px !important;
+}
+
+.e-grid .e-rowcell .pf-grid-actions,
+.e-grid .e-rowcell .pf-grid-actions--compact {
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 3px !important;
+}
+
+.e-grid .e-rowcell .pf-icon-action {
+    display: inline-flex !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.e-grid .e-rowcell span:not(.badge):not(.e-badge):not(.pf-role-badge):not(.e-icons):not(.visually-hidden) {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+/* ── 5. Generic action buttons inside main content.
+       Excludes:
+         • The training top action buttons (red/green pill).
+         • The Create Course dialog buttons.
+         • Compact icon-only grid buttons.
+         • Buttons inside the sidebar/topbar (scoped via main.app-content).
+       Uses the existing global gradient palette already defined in
+       AlgoaBayBMT.GlobalStyles.css; we just polish radii/sizing here.   */
+main.app-content .e-btn:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn) {
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.01em;
+    transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important;
+}
+
+main.app-content .e-btn:not(.pf-btn-icon):not(.pf-btn-square):not(.pf-training-page-action-btn):not(.pf-course-create-dialog-btn):hover {
+    transform: translateY(-1px);
+}
+
+/* ── 6. Dialogs — apply the same dark-teal 3D header used on
+       the courses page to every Syncfusion dialog rendered for the app.
+       Dialog popups render into the body, NOT inside main.app-content,
+       so we cannot scope them. Apply globally but exclude any dialog
+       that already opts in to a custom header treatment.              */
+.e-dialog .e-dlg-header-content {
+    background: linear-gradient(180deg, #0f5f64 0%, #0a4c52 52%, #073a40 100%) !important;
+    border-bottom: 1px solid rgba(3, 45, 49, 0.55) !important;
+    color: #ffffff !important;
+}
+
+.e-dialog .e-dlg-header,
+.e-dialog .e-dlg-header-content .e-dlg-header,
+.e-dialog .e-dlg-header-content .e-title-text {
+    background: transparent !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+}
+
+.e-dialog .e-dlg-closeicon-btn,
+.e-dialog .e-dlg-closeicon-btn .e-icons {
+    color: #ffffff !important;
+}
+
+/* ── 7. Empty / status panels.                                         */
+main.app-content .pf-empty-state {
+    background: #f7fafb;
+    border: 1px dashed rgba(15, 87, 96, 0.30);
+    border-radius: 10px;
+    color: #4a6076;
+    padding: 1rem 1.1rem;
+    font-size: 0.85rem;
+    line-height: 1.45;
+}
+
+main.app-content .pf-alert,
+main.app-content .alert {
+    border-radius: 10px !important;
+    box-shadow: 0 1px 3px rgba(15, 35, 56, 0.08);
+}
+
+/* ── 8. Tabs and accordions — quiet, professional accents that match
+       the dialog/panel header palette.                                */
+main.app-content .e-tab .e-tab-header .e-toolbar-item.e-active .e-tab-text,
+main.app-content .e-tab .e-tab-header .e-toolbar-item.e-active .e-tab-icon {
+    color: #0a4c52 !important;
+}
+
+main.app-content .e-tab .e-tab-header .e-indicator {
+    background: #0a4c52 !important;
+}
+
+main.app-content .e-accordion .e-acrdn-item.e-selected > .e-acrdn-header {
+    background: rgba(10, 76, 82, 0.06) !important;
+    color: #0a4c52 !important;
+}
+
+/* ── 9. Responsive behaviour stays consistent with courses page.       */
+@media (max-width: 768px) {
+    main.app-content .e-card .e-card-content {
+        padding: 0.85rem 0.95rem !important;
+    }
+}
+
+/* -------------------------------------------------------------------
+   App-wide semantic 3D button palette + DataGrid action cell.
+   Same dimensions as the courses-page top action buttons (155x46).
+   Loaded after AlgoaBayBMT.GlobalStyles.css so these win the cascade.
+   ------------------------------------------------------------------- */
+
+/* -- Shared sizing for ALL semantic action buttons. -- */
+.abmt-btn-save.e-btn,
+.abmt-btn-cancel.e-btn,
+.abmt-btn-search.e-btn,
+.abmt-btn-manage.e-btn,
+.abmt-btn-primary-3d.e-btn,
+.abmt-btn-gray-3d.e-btn,
+.abmt-btn-red-3d.e-btn {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    line-height: 1.1 !important;
+    letter-spacing: 0.01em !important;
+    color: #ffffff !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.20) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 2px 5px rgba(0, 0, 0, 0.22) !important;
+    transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important;
+}
+
+/* Icon spacing to match the create-course dialog buttons. */
+.abmt-btn-save.e-btn .e-btn-icon,
+.abmt-btn-cancel.e-btn .e-btn-icon,
+.abmt-btn-search.e-btn .e-btn-icon,
+.abmt-btn-manage.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.95rem !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* -- Save = subtle green (matches Create Course button). -- */
+.abmt-btn-save.e-btn,
+.abmt-btn-save.e-btn:focus,
+.abmt-btn-save.e-btn:active {
+    background: linear-gradient(180deg, #27ae60 0%, #229954 58%, #1e8449 100%) !important;
+    border-color: #1e8449 !important;
+}
+.abmt-btn-save.e-btn:hover {
+    background: linear-gradient(180deg, #229954 0%, #1e8449 58%, #196f3d 100%) !important;
+    border-color: #196f3d !important;
+    filter: none !important;
+    transform: translateY(-1px);
+}
+
+/* -- Cancel = subtle dark gray. -- */
+.abmt-btn-cancel.e-btn,
+.abmt-btn-cancel.e-btn:focus,
+.abmt-btn-cancel.e-btn:active {
+    background: linear-gradient(180deg, #6b7280 0%, #4b5563 58%, #374151 100%) !important;
+    border-color: #313a46 !important;
+}
+.abmt-btn-cancel.e-btn:hover {
+    background: linear-gradient(180deg, #5f6673 0%, #434c59 58%, #313a46 100%) !important;
+    border-color: #27313c !important;
+    filter: none !important;
+    transform: translateY(-1px);
+}
+
+/* -- Search = subtle teal. -- */
+.abmt-btn-search.e-btn,
+.abmt-btn-search.e-btn:focus,
+.abmt-btn-search.e-btn:active {
+    background: linear-gradient(180deg, #15635d 0%, #0e4d47 58%, #073530 100%) !important;
+    border-color: rgba(5, 45, 41, 0.82) !important;
+}
+.abmt-btn-search.e-btn:hover {
+    background: linear-gradient(180deg, #0e4d47 0%, #073530 58%, #052724 100%) !important;
+    border-color: rgba(4, 28, 26, 0.92) !important;
+    filter: none !important;
+    transform: translateY(-1px);
+}
+
+/* -- Manage (Manage Users / Manage Courses) = subtle teal. -- */
+.abmt-btn-manage.e-btn,
+.abmt-btn-manage.e-btn:focus,
+.abmt-btn-manage.e-btn:active {
+    background: linear-gradient(180deg, #15635d 0%, #0e4d47 58%, #073530 100%) !important;
+    border-color: rgba(5, 45, 41, 0.82) !important;
+}
+.abmt-btn-manage.e-btn:hover {
+    background: linear-gradient(180deg, #0e4d47 0%, #073530 58%, #052724 100%) !important;
+    border-color: rgba(4, 28, 26, 0.92) !important;
+    filter: none !important;
+    transform: translateY(-1px);
+}
+
+/* -------------------------------------------------------------------
+   DataGrid action cell � same compact pastel buttons as the courses page
+   on every grid in the app. Removes ALL padding/margins from the action
+   cell and the buttons inside it.
+   ------------------------------------------------------------------- */
+main.app-content .e-grid .e-rowcell:has(.pf-grid-actions),
+main.app-content .e-grid .e-rowcell:has(.pf-courses-grid-actions),
+main.app-content .e-grid .e-rowcell:has(.abmt-grid-actions) {
+    padding: 0 !important;
+}
+
+main.app-content .pf-grid-actions,
+main.app-content .pf-grid-actions--compact,
+main.app-content .pf-courses-grid-actions,
+main.app-content .abmt-grid-actions {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+main.app-content .e-grid .pf-btn-icon.e-btn,
+main.app-content .e-grid .pf-btn-square.e-btn,
+main.app-content .e-grid a.e-btn.pf-btn-icon {
+    width: 30px !important;
+    height: 30px !important;
+    min-width: 30px !important;
+    min-height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.70), 0 1px 2px rgba(19, 45, 56, 0.10) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+main.app-content .e-grid .pf-btn-icon.e-btn .e-icons,
+main.app-content .e-grid .pf-btn-square.e-btn .e-icons {
+    font-size: 0.95rem !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+}
+
+/* ?? Grid approval toggle button ??????????????????????????????????????????? */
+.e-btn.pf-approval-btn {
+    height: 24px !important;
+    min-height: 24px !important;
+    max-height: 24px !important;
+    min-width: 90px !important;
+    width: 90px !important;
+    padding: 0 8px !important;
+    margin: 0 !important;
+    border-radius: 12px !important;
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    text-shadow: none !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.55), 0 1px 2px rgba(0,0,0,0.10) !important;
+    transition: filter 120ms ease, transform 100ms ease !important;
+    cursor: pointer !important;
+}
+
+.e-btn.pf-approval-btn--on {
+    background: linear-gradient(180deg, #c8ecd5 0%, #b8e4c8 52%, #a0d4b4 100%) !important;
+    border-color: #82c49c !important;
+    color: #1a5c34 !important;
+}
+.e-btn.pf-approval-btn--on:hover {
+    background: linear-gradient(180deg, #a8d8b8 0%, #94ccaa 52%, #80be98 100%) !important;
+    border-color: #62a87c !important;
+    color: #134426 !important;
+    transform: translateY(-1px);
+}
+
+.e-btn.pf-approval-btn--off {
+    background: linear-gradient(180deg, #fdf0d4 0%, #f5e0a8 52%, #eacc7a 100%) !important;
+    border-color: #d4b054 !important;
+    color: #6b4b06 !important;
+}
+.e-btn.pf-approval-btn--off:hover {
+    background: linear-gradient(180deg, #eacc7a 0%, #ddb84e 52%, #cc9e2c 100%) !important;
+    border-color: #b88c28 !important;
+    color: #4a3204 !important;
+    transform: translateY(-1px);
+}
+
+/* ?? Role badges in Users grid ????????????????????????????????????????????? */
+.pf-role-badge-list {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 3px !important;
+    align-items: center !important;
+    padding: 2px 0 !important;
+}
+
+.pf-role-badge {
+    font-weight: 400 !important;
+    font-size: 0.65rem !important;
+    padding: 1px 6px !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.01em !important;
+    border-radius: 4px !important;
+    white-space: nowrap !important;
+}
+
+
+/* View Details � neutral gray-blue */
+.e-btn.pf-btn-details,
+.e-btn.pf-btn-details.e-flat {
+    background: linear-gradient(180deg, #e8edf2 0%, #d8e2eb 50%, #c4d0dc 100%) !important;
+    border-color: #b0bfcc !important; color: #2d4a60 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-details .e-btn-icon,
+.e-btn.pf-btn-details.e-flat .e-btn-icon,
+.e-btn.pf-btn-details .e-icons,
+.e-btn.pf-btn-details.e-flat .e-icons { color: #2d4a60 !important; }
+.e-btn.pf-btn-details:hover,
+.e-btn.pf-btn-details.e-flat:hover { background: linear-gradient(180deg, #c0cfdc 0%, #aabdcc 50%, #94aabb 100%) !important; border-color: #8aa0b4 !important; color: #1a3040 !important; }
+
+/* Edit User � pastel blue */
+.e-btn.pf-btn-edit,
+.e-btn.pf-btn-edit.e-flat {
+    background: linear-gradient(180deg, #dae8f5 0%, #d7e6f3 50%, #c2d8ed 100%) !important;
+    border-color: #b7cfe3 !important; color: #244d70 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-edit .e-btn-icon,
+.e-btn.pf-btn-edit.e-flat .e-btn-icon,
+.e-btn.pf-btn-edit .e-icons,
+.e-btn.pf-btn-edit.e-flat .e-icons { color: #244d70 !important; }
+.e-btn.pf-btn-edit:hover,
+.e-btn.pf-btn-edit.e-flat:hover { background: linear-gradient(180deg, #b8cfe0 0%, #a8c7df 50%, #90b8d4 100%) !important; border-color: #87b0cf !important; color: #173852 !important; }
+
+/* Allocate Roles � pastel purple */
+.e-btn.pf-btn-roles,
+.e-btn.pf-btn-roles.e-flat {
+    background: linear-gradient(180deg, #ece8f5 0%, #e6e0f3 50%, #d8cfec 100%) !important;
+    border-color: #c8bfe0 !important; color: #4a3a78 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-roles:hover,
+.e-btn.pf-btn-roles.e-flat:hover { background: linear-gradient(180deg, #d0c4e8 0%, #c8b8e0 50%, #b8a8d4 100%) !important; border-color: #a797c4 !important; color: #2f2350 !important; }
+
+/* Activate/Deactivate icon colour */
+.e-btn.pf-btn-deactivate.e-danger .e-btn-icon,
+.e-btn.pf-btn-deactivate.e-danger.e-flat .e-btn-icon,
+.e-btn.pf-btn-deactivate.e-danger .e-icons,
+.e-btn.pf-btn-deactivate.e-danger.e-flat .e-icons { color: #7a3510 !important; }
+.e-btn.pf-btn-deactivate.e-warning .e-btn-icon,
+.e-btn.pf-btn-deactivate.e-warning.e-flat .e-btn-icon,
+.e-btn.pf-btn-deactivate.e-warning .e-icons,
+.e-btn.pf-btn-deactivate.e-warning.e-flat .e-icons { color: #236327 !important; }
+
+/* Delete icon colour */
+.e-btn.pf-btn-delete .e-btn-icon,
+.e-btn.pf-btn-delete.e-flat .e-btn-icon,
+.e-btn.pf-btn-delete .e-icons,
+.e-btn.pf-btn-delete.e-flat .e-icons,
+.e-btn.pf-btn-delete.e-danger .e-btn-icon,
+.e-btn.pf-btn-delete.e-danger.e-flat .e-btn-icon,
+.e-btn.pf-btn-delete.e-danger .e-icons,
+.e-btn.pf-btn-delete.e-danger.e-flat .e-icons { color: #803030 !important; }
+
+/* Re-send Email � pastel amber */
+.e-btn.pf-btn-email,
+.e-btn.pf-btn-email.e-flat {
+    background: linear-gradient(180deg, #fdf0d4 0%, #f1e6c8 50%, #e4d4aa 100%) !important;
+    border-color: #ddca98 !important; color: #6b4b06 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-email .e-btn-icon,
+.e-btn.pf-btn-email.e-flat .e-btn-icon,
+.e-btn.pf-btn-email .e-icons,
+.e-btn.pf-btn-email.e-flat .e-icons { color: #6b4b06 !important; }
+.e-btn.pf-btn-email:hover,
+.e-btn.pf-btn-email.e-flat:hover { background: linear-gradient(180deg, #e4cc88 0%, #d9c27e 50%, #c8ae64 100%) !important; border-color: #c5a958 !important; color: #543a03 !important; }
+
+/* Activate/Deactivate � pastel green (activate) or pastel orange (deactivate) */
+.e-btn.pf-btn-deactivate.e-danger,
+.e-btn.pf-btn-deactivate.e-danger.e-flat {
+    background: linear-gradient(180deg, #fde8d8 0%, #fad4b8 50%, #f0bea0 100%) !important;
+    border-color: #e8a878 !important; color: #7a3510 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-deactivate.e-danger:hover,
+.e-btn.pf-btn-deactivate.e-danger.e-flat:hover { background: linear-gradient(180deg, #f0b888 0%, #e4a070 50%, #d08858 100%) !important; border-color: #c87848 !important; color: #5a2808 !important; }
+
+.e-btn.pf-btn-deactivate.e-warning,
+.e-btn.pf-btn-deactivate.e-warning.e-flat {
+    background: linear-gradient(180deg, #e0f5e0 0%, #dcefdc 50%, #c8e4c8 100%) !important;
+    border-color: #b9dab9 !important; color: #236327 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-deactivate.e-warning:hover,
+.e-btn.pf-btn-deactivate.e-warning.e-flat:hover { background: linear-gradient(180deg, #b8d8b8 0%, #acd6ac 50%, #98c498 100%) !important; border-color: #87bf89 !important; color: #194d1d !important; }
+
+/* Delete � pastel red */
+.e-btn.pf-btn-delete,
+.e-btn.pf-btn-delete.e-flat,
+.e-btn.pf-btn-delete.e-danger,
+.e-btn.pf-btn-delete.e-danger.e-flat {
+    background: linear-gradient(180deg, #f5dede 0%, #f3d7d7 50%, #e8c0c0 100%) !important;
+    border-color: #e3b7b7 !important; color: #803030 !important;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important;
+}
+.e-btn.pf-btn-delete:hover,
+.e-btn.pf-btn-delete.e-flat:hover,
+.e-btn.pf-btn-delete.e-danger:hover,
+.e-btn.pf-btn-delete.e-danger.e-flat:hover { background: linear-gradient(180deg, #e8b0b0 0%, #df9b9b 50%, #d08080 100%) !important; border-color: #c87a7a !important; color: #5a2020 !important; }
+
+/* Reusable pastel maritime palette for grid actions (already used on courses page). */
+.abmt-grid-action-edit.e-btn { background: #d7e6f3 !important; border-color: #b7cfe3 !important; color: #244d70 !important; }
+.abmt-grid-action-edit.e-btn:hover { background: #a8c7df !important; border-color: #87b0cf !important; color: #173852 !important; }
+
+.abmt-grid-action-builder.e-btn { background: #d4eef8 !important; border-color: #a9d8ea !important; color: #075f8c !important; }
+.abmt-grid-action-builder.e-btn:hover { background: #9ed6ea !important; border-color: #75bedb !important; color: #044a70 !important; }
+
+.abmt-grid-action-question-bank.e-btn { background: #d8f0ed !important; border-color: #acdcd6 !important; color: #0b5f59 !important; }
+.abmt-grid-action-question-bank.e-btn:hover { background: #a6d9d2 !important; border-color: #7cc4bb !important; color: #084a45 !important; }
+
+.abmt-grid-action-version.e-btn { background: #f1e6c8 !important; border-color: #ddca98 !important; color: #6b4b06 !important; }
+.abmt-grid-action-version.e-btn:hover { background: #d9c27e !important; border-color: #c5a958 !important; color: #543a03 !important; }
+
+.abmt-grid-action-toggle.e-btn { background: #dcefdc !important; border-color: #b9dab9 !important; color: #236327 !important; }
+.abmt-grid-action-toggle.e-btn:hover { background: #acd6ac !important; border-color: #87bf89 !important; color: #194d1d !important; }
+
+.e-btn.abmt-grid-action-delete,
+.e-btn.abmt-grid-action-delete.e-flat { background: linear-gradient(180deg, #f5dede 0%, #f3d7d7 50%, #e8c0c0 100%) !important; border-color: #e3b7b7 !important; color: #803030 !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important; }
+.e-btn.abmt-grid-action-delete:hover,
+.e-btn.abmt-grid-action-delete.e-flat:hover { background: linear-gradient(180deg, #e8b0b0 0%, #df9b9b 50%, #d08080 100%) !important; border-color: #c87a7a !important; color: #5a2020 !important; }
+
+.abmt-grid-action-roles.e-btn { background: #e6e0f3 !important; border-color: #c8bfe0 !important; color: #4a3a78 !important; }
+.abmt-grid-action-roles.e-btn:hover { background: #c8b8e0 !important; border-color: #a797c4 !important; color: #2f2350 !important; }
+
+/* Force approve/reject colours to override e-flat transparent background from portflow-modern. */
+.e-btn.abmt-grid-action-approve,
+.e-btn.abmt-grid-action-approve.e-flat { background: linear-gradient(180deg, #e6f5f2 0%, #d8f0ed 50%, #c4e4df 100%) !important; border-color: #acdcd6 !important; color: #0b5f59 !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important; }
+.e-btn.abmt-grid-action-approve:hover,
+.e-btn.abmt-grid-action-approve.e-flat:hover { background: linear-gradient(180deg, #cfeae5 0%, #bce0d9 50%, #a6d3cb 100%) !important; border-color: #7cc4bb !important; color: #084a45 !important; }
+
+.e-btn.abmt-grid-action-reject,
+.e-btn.abmt-grid-action-reject.e-flat { background: linear-gradient(180deg, #e64d3a 0%, #d52610 50%, #b21f0c 100%) !important; border-color: #8a1808 !important; color: #ffffff !important; text-shadow: 0 1px 0 rgba(0,0,0,0.25) !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.30), 0 1px 2px rgba(19,45,56,0.18) !important; }
+.e-btn.abmt-grid-action-reject:hover,
+.e-btn.abmt-grid-action-reject.e-flat:hover { background: linear-gradient(180deg, #c3220e 0%, #a81c08 50%, #8a1808 100%) !important; border-color: #6a1206 !important; color: #ffffff !important; }
+
+.e-btn.abmt-grid-action-edit,
+.e-btn.abmt-grid-action-edit.e-flat { background: #d7e6f3 !important; border-color: #b7cfe3 !important; color: #244d70 !important; box-shadow: inset 0 1px 0 rgba(255,255,255,0.70), 0 1px 2px rgba(19,45,56,0.10) !important; }
+.e-btn.abmt-grid-action-edit:hover,
+.e-btn.abmt-grid-action-edit.e-flat:hover { background: #a8c7df !important; border-color: #87b0cf !important; color: #173852 !important; }
+
+/* Text-variant grid action buttons: 30px height, auto width for labels. */
+.e-btn.abmt-grid-action-text,
+.e-btn.abmt-grid-action-text.e-flat {
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    min-width: unset !important;
+    line-height: 1 !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    border-radius: 4px !important;
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.02em;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+}
+
+@media (max-width: 640px) {
+    .abmt-btn-save.e-btn,
+    .abmt-btn-cancel.e-btn,
+    .abmt-btn-search.e-btn,
+    .abmt-btn-manage.e-btn {
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+}

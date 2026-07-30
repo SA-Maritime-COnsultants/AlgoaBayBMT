@@ -1,0 +1,229 @@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+
+@inject ITrainingAssetStorageService TrainingAssetStorageService
+
+<SfDialog Width="1020px" CssClass="@DialogCssClass" IsModal="true" ShowCloseIcon="true" @bind-Visible="Visible">
+    <DialogTemplates>
+        <Header>@(Model.CourseId.HasValue ? "Edit Course" : "Create Course")</Header>
+        <Content>
+            <EditForm Model="Model" OnValidSubmit="HandleSaveAsync" FormName="@GetFormName()">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message" />
+
+                <div class="pf-form-grid pf-training-course-dialog-grid">
+                    <div class="pf-col-3 pf-col-lg-3">
+                        <label class="pf-field-label">Code</label>
+                        <SfTextBox @bind-Value="Model.Code" Placeholder="e.g. WILD-001" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+                    <div class="pf-col-3 pf-col-lg-3">
+                        <label class="pf-field-label">Validity (Months)</label>
+                        <InputNumber @bind-Value="Model.ValidityMonths" class="form-control" />
+                    </div>
+                    <div class="pf-col-3 pf-col-lg-3">
+                        <label class="pf-field-label">Duration (Minutes)</label>
+                        <InputNumber @bind-Value="Model.EstimatedDurationMinutes" class="form-control" />
+                    </div>
+                    <div class="pf-col-3 pf-col-lg-3">
+                        <label class="pf-field-label">Audience / Applies To</label>
+                        <SfDropDownList TValue="TrainingAudienceType" TItem="AudienceOption" DataSource="@AudienceOptions" @bind-Value="Model.AudienceType" Placeholder="Select training audience">
+                            <DropDownListFieldSettings Text="Text" Value="Value" />
+                        </SfDropDownList>
+                    </div>
+
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Title</label>
+                        <SfTextBox @bind-Value="Model.Title" Placeholder="Course title" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+
+                    <div class="pf-col-12 pf-col-lg-6">
+                        <label class="pf-field-label">Summary</label>
+                        <InputTextArea @bind-Value="Model.Summary" class="form-control pf-textarea" />
+                    </div>
+
+                    <div class="pf-col-12 pf-col-lg-6">
+                        <label class="pf-field-label">Description</label>
+                        <InputTextArea @bind-Value="Model.Description" class="form-control pf-textarea pf-textarea--large" />
+                    </div>
+
+                    <div class="pf-col-12 pf-col-xl-8">
+                        <div class="pf-training-course-asset-region">
+                            <div class="pf-training-course-asset-upload">
+                                <label class="pf-field-label">Thumbnail Image Upload</label>
+                                <div class="pf-training-upload-panel">
+                                    <InputFile OnChange="HandleThumbnailSelectedAsync" accept=".jpg,.jpeg,.png,.webp,.gif" />
+                                    <div class="pf-training-upload-hint">Recommended: landscape image, JPG/PNG/WEBP/GIF, up to 5 MB.</div>
+                                    @if (!string.IsNullOrWhiteSpace(UploadStatusMessage))
+                                    {
+                                        <div class="pf-training-upload-status">@UploadStatusMessage</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(UploadError))
+                                    {
+                                        <div class="validation-message">@UploadError</div>
+                                    }
+                                </div>
+                            </div>
+                            <div class="pf-training-course-asset-preview">
+                                <label class="pf-field-label">Thumbnail Preview</label>
+                                <div class="pf-training-thumbnail-shell">
+                                    @if (!string.IsNullOrWhiteSpace(Model.ThumbnailUrl))
+                                    {
+                                        <img src="@Model.ThumbnailUrl" alt="Course thumbnail preview" class="pf-training-thumbnail-preview" />
+                                        <div class="pf-grid-actions pf-grid-actions--compact pf-training-upload-actions">
+                                            <SfButton type="button" OnClick="ClearThumbnail">Remove Thumbnail</SfButton>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="pf-empty-state pf-empty-state--compact">Upload a thumbnail to see the course preview image.</div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pf-col-12 pf-col-xl-4">
+                        <div class="pf-training-course-meta-panel">
+                            <div>
+                                <label class="pf-field-label">Training Cost</label>
+                                <SfNumericTextBox @bind-Value="Model.Cost" Format="N2" Placeholder="0.00" FloatLabelType="FloatLabelType.Never" Min="0" />
+                            </div>
+                            <div>
+                                <label class="pf-field-label">Regulatory Reference</label>
+                                <SfTextBox @bind-Value="Model.RegulatoryReference" Placeholder="Reference or standard" FloatLabelType="FloatLabelType.Never" />
+                            </div>
+                            <div>
+                                <label class="pf-field-label">Compliance Settings</label>
+                                <div class="pf-training-course-toggle-stack">
+                                    <label class="pf-inline-check">
+                                        <InputCheckbox @bind-Value="Model.IsMandatory" />
+                                        <span>Mandatory training</span>
+                                    </label>
+                                    <label class="pf-inline-check">
+                                        <InputCheckbox @bind-Value="Model.IsActive" />
+                                        <span>Course active</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Learning Objectives</label>
+                        <InputTextArea @bind-Value="Model.LearningObjectives" class="form-control pf-textarea pf-textarea--large" />
+                    </div>
+                </div>
+
+                <div class="@DialogActionsCssClass">
+                    <button class="btn btn-bmt btn-pastel-gray" type="button" @onclick="CloseAsync">
+                        <i class="bi bi-x-circle me-2"></i>Cancel
+                    </button>
+                    <button class="btn btn-bmt btn-pastel-green" type="submit">
+                        <i class="bi bi-floppy-fill me-2"></i>Save Course
+                    </button>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private IReadOnlyList<AudienceOption> AudienceOptions =>
+    [
+        new(TrainingAudienceType.All, "ALL"),
+        new(TrainingAudienceType.Crew, "Crew"),
+        new(TrainingAudienceType.Officers, "Officers"),
+        new(TrainingAudienceType.Responders, "Responders")
+    ];
+
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public TrainingCourseEditModel Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<TrainingCourseEditModel> SaveRequested { get; set; }
+
+    [Parameter]
+    public string? CurrentUserId { get; set; }
+
+    private string? UploadError { get; set; }
+    private string? UploadStatusMessage { get; set; }
+
+    private bool IsCreateDialog => !Model.CourseId.HasValue;
+
+    private string DialogCssClass => IsCreateDialog
+        ? "pf-training-dialog pf-training-dialog--subtle pf-course-create-dialog abmt-dialog"
+        : "pf-training-dialog pf-training-dialog--subtle pf-course-edit-dialog abmt-dialog";
+
+    private string DialogActionsCssClass => IsCreateDialog
+        ? "pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions"
+        : "pf-dialog-actions pf-training-dialog-actions";
+
+    private string CancelButtonCssClass => IsCreateDialog
+        ? "ab-btn ab-btn-gray pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel"
+        : "ab-btn ab-btn-gray";
+
+    private string SaveButtonCssClass => IsCreateDialog
+        ? "ab-btn ab-btn-green pf-course-create-dialog-btn pf-course-create-dialog-btn--save"
+        : "ab-btn ab-btn-green";
+
+    protected override void OnParametersSet()
+    {
+        UploadError = null;
+        UploadStatusMessage = null;
+    }
+
+    private string GetFormName() => Model.CourseId.HasValue
+        ? $"training-course-{Model.CourseId.Value:N}"
+        : $"training-course-new-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Model)}";
+
+    private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
+
+    private async Task HandleThumbnailSelectedAsync(InputFileChangeEventArgs args)
+    {
+        UploadError = null;
+        UploadStatusMessage = null;
+
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        var result = await TrainingAssetStorageService.SaveCourseThumbnailAsync(file, CurrentUserId);
+        if (!result.Succeeded || result.Data is null)
+        {
+            UploadError = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        Model.ThumbnailUrl = result.Data.Url;
+        UploadStatusMessage = $"{result.Data.FileName} uploaded.";
+    }
+
+    private void ClearThumbnail()
+    {
+        Model.ThumbnailUrl = null;
+        UploadError = null;
+        UploadStatusMessage = null;
+    }
+
+    private async Task CloseAsync()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private sealed record AudienceOption(TrainingAudienceType Value, string Text);
+}

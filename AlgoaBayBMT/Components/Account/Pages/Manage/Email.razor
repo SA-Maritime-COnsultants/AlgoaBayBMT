@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using AlgoaBayBMT.Data
+@using Syncfusion.Blazor.Cards
 
 @inject UserManager<ApplicationUser> UserManager
 @inject IEmailSender<ApplicationUser> EmailSender
@@ -14,7 +15,14 @@
 
 <PageTitle>Manage email</PageTitle>
 
-<h3>Manage email</h3>
+<SfCard CssClass="pf-card-shell">
+    <CardHeader>
+        <div class="card-header-bmt" style="margin: -0.6875rem -1.15rem 0; border-radius: 0;">
+            <i class="bi bi-envelope-fill"></i>
+            <span>Manage Email</span>
+        </div>
+    </CardHeader>
+    <CardContent>
 
 <StatusMessage Message="@message"/>
 <div class="row">
@@ -48,10 +56,15 @@
                 <label for="Input.NewEmail" class="form-label">New email</label>
                 <ValidationMessage For="() => Input.NewEmail" class="text-danger" />
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Change email</button>
+            <button type="submit" class="btn btn-bmt btn-pastel-blue">
+                <i class="bi bi-envelope-check-fill me-2"></i>Change email
+            </button>
         </EditForm>
     </div>
 </div>
+
+    </CardContent>
+</SfCard>
 
 @code {
     private string? message;

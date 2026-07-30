@@ -1,0 +1,274 @@
+@*
+    CourseEditDialogBmt.razor
+    ──────────────────────────────────────────────────────────────────
+    Demonstrates the BMT 3D design system on a real Syncfusion dialog.
+    CssClass="bmt-dialog"             → 3D header + body + footer
+    .bmt-form-row / .bmt-field        → label+field stretch grid
+    .bmt-btn-3d .bmt-btn-primary|success|danger|neutral → 3D buttons
+    ──────────────────────────────────────────────────────────────────
+*@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Popups
+
+@inject ITrainingAssetStorageService TrainingAssetStorageService
+
+<SfDialog Width="1060px"
+          CssClass="bmt-dialog"
+          IsModal="true"
+          ShowCloseIcon="true"
+          @bind-Visible="Visible">
+
+    <DialogTemplates>
+
+        @* ── Dialog Header ── *@
+        <Header>@(Model.CourseId.HasValue ? "Edit Course" : "Create Course")</Header>
+
+        @* ── Dialog Body ── *@
+        <Content>
+            <EditForm Model="Model" OnValidSubmit="HandleSaveAsync" FormName="@GetFormName()">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message" />
+
+                @* Bordered body container *@
+                <div class="bmt-dialog-body bmt-dialog-section">
+
+                    @* Row 1: Code / Validity / Duration / Audience *@
+                    <div class="bmt-form-row">
+                        <div class="bmt-field bmt-field--quarter">
+                            <label class="bmt-field-label">Code</label>
+                            <SfTextBox @bind-Value="Model.Code"
+                                       Placeholder="e.g. WILD-001"
+                                       FloatLabelType="FloatLabelType.Never" />
+                        </div>
+                        <div class="bmt-field bmt-field--quarter">
+                            <label class="bmt-field-label">Validity (Months)</label>
+                            <InputNumber @bind-Value="Model.ValidityMonths" class="form-control" />
+                        </div>
+                        <div class="bmt-field bmt-field--quarter">
+                            <label class="bmt-field-label">Duration (Minutes)</label>
+                            <InputNumber @bind-Value="Model.EstimatedDurationMinutes" class="form-control" />
+                        </div>
+                        <div class="bmt-field bmt-field--quarter">
+                            <label class="bmt-field-label">Audience / Applies To</label>
+                            <SfDropDownList TValue="TrainingAudienceType"
+                                            TItem="AudienceOption"
+                                            DataSource="@AudienceOptions"
+                                            @bind-Value="Model.AudienceType"
+                                            Placeholder="Select training audience">
+                                <DropDownListFieldSettings Text="Text" Value="Value" />
+                            </SfDropDownList>
+                        </div>
+                    </div>
+
+                    @* Row 2: Title (full width) *@
+                    <div class="bmt-form-row">
+                        <div class="bmt-field bmt-field--full">
+                            <label class="bmt-field-label">Title</label>
+                            <SfTextBox @bind-Value="Model.Title"
+                                       Placeholder="Course title"
+                                       FloatLabelType="FloatLabelType.Never" />
+                        </div>
+                    </div>
+
+                    @* Row 3: Summary + Description side-by-side *@
+                    <div class="bmt-form-row">
+                        <div class="bmt-field bmt-field--half">
+                            <label class="bmt-field-label">Summary</label>
+                            <InputTextArea @bind-Value="Model.Summary" class="form-control pf-textarea" />
+                        </div>
+                        <div class="bmt-field bmt-field--half">
+                            <label class="bmt-field-label">Description</label>
+                            <InputTextArea @bind-Value="Model.Description" class="form-control pf-textarea pf-textarea--large" />
+                        </div>
+                    </div>
+
+                    @* Row 4: Thumbnail upload + meta panel *@
+                    <div class="bmt-form-row">
+
+                        @* Thumbnail upload area *@
+                        <div class="bmt-field" style="flex: 2 1 340px;">
+                            <label class="bmt-field-label">Thumbnail Image Upload</label>
+                            <div class="pf-training-upload-panel">
+                                <InputFile OnChange="HandleThumbnailSelectedAsync"
+                                           accept=".jpg,.jpeg,.png,.webp,.gif" />
+                                <div class="pf-training-upload-hint">
+                                    Recommended: landscape image, JPG/PNG/WEBP/GIF, up to 5 MB.
+                                </div>
+                                @if (!string.IsNullOrWhiteSpace(UploadStatusMessage))
+                                {
+                                    <div class="pf-training-upload-status">@UploadStatusMessage</div>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(UploadError))
+                                {
+                                    <div class="validation-message">@UploadError</div>
+                                }
+                            </div>
+
+                            <label class="bmt-field-label" style="margin-top:.75rem;">Thumbnail Preview</label>
+                            <div class="pf-training-thumbnail-shell">
+                                @if (!string.IsNullOrWhiteSpace(Model.ThumbnailUrl))
+                                {
+                                    <img src="@Model.ThumbnailUrl"
+                                         alt="Course thumbnail preview"
+                                         class="pf-training-thumbnail-preview" />
+                                    <div class="bmt-dialog-actions" style="margin-top:.5rem;">
+                                        <button type="button"
+                                                class="bmt-btn-3d bmt-btn-danger"
+                                                @onclick="ClearThumbnail">
+                                            Remove Thumbnail
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="pf-empty-state pf-empty-state--compact">
+                                        Upload a thumbnail to see the preview image.
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        @* Meta / compliance panel *@
+                        <div class="bmt-field" style="flex: 1 1 240px;">
+                            <div class="bmt-dialog-body" style="height:100%;">
+                                <div class="bmt-dialog-section-title">Course Meta</div>
+
+                                <div class="bmt-form-row">
+                                    <div class="bmt-field bmt-field--full">
+                                        <label class="bmt-field-label">Regulatory Reference</label>
+                                        <SfTextBox @bind-Value="Model.RegulatoryReference"
+                                                   Placeholder="Reference or standard"
+                                                   FloatLabelType="FloatLabelType.Never" />
+                                    </div>
+                                </div>
+
+                                <div class="bmt-dialog-section-title" style="margin-top:1rem;">Compliance</div>
+                                <div class="pf-training-course-toggle-stack">
+                                    <label class="pf-inline-check">
+                                        <InputCheckbox @bind-Value="Model.IsMandatory" />
+                                        <span>Mandatory training</span>
+                                    </label>
+                                    <label class="pf-inline-check" style="margin-top:.5rem;">
+                                        <InputCheckbox @bind-Value="Model.IsActive" />
+                                        <span>Course active</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Row 5: Learning Objectives *@
+                    <div class="bmt-form-row">
+                        <div class="bmt-field bmt-field--full">
+                            <label class="bmt-field-label">Learning Objectives</label>
+                            <InputTextArea @bind-Value="Model.LearningObjectives"
+                                           class="form-control pf-textarea pf-textarea--large" />
+                        </div>
+                    </div>
+
+                </div>@* /bmt-dialog-body *@
+
+                @* ── Footer action row ── *@
+                <div class="bmt-dialog-actions">
+                    <button type="button"
+                            class="bmt-btn-3d bmt-btn-neutral"
+                            @onclick="CloseAsync">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="bmt-btn-3d bmt-btn-primary">
+                        @(Model.CourseId.HasValue ? "Save Changes" : "Create Course")
+                    </button>
+                </div>
+
+            </EditForm>
+        </Content>
+
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private IReadOnlyList<AudienceOption> AudienceOptions =>
+    [
+        new(TrainingAudienceType.All,        "ALL"),
+        new(TrainingAudienceType.Crew,       "Crew"),
+        new(TrainingAudienceType.Officers,   "Officers"),
+        new(TrainingAudienceType.Responders, "Responders")
+    ];
+
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter, EditorRequired]
+    public TrainingCourseEditModel Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback OnSaved { get; set; }
+
+    private string? UploadStatusMessage;
+    private string? UploadError;
+
+    private string GetFormName() =>
+        Model.CourseId.HasValue ? $"edit-course-{Model.CourseId}" : "create-course";
+
+    private async Task CloseAsync()
+    {
+        await VisibleChanged.InvokeAsync(false);
+    }
+
+    private async Task HandleSaveAsync()
+    {
+        await VisibleChanged.InvokeAsync(false);
+        await OnSaved.InvokeAsync();
+    }
+
+    private async Task HandleThumbnailSelectedAsync(InputFileChangeEventArgs e)
+    {
+        UploadError = null;
+        UploadStatusMessage = "Uploading...";
+        try
+        {
+            var file = e.File;
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                UploadError = "File exceeds the 5 MB limit.";
+                UploadStatusMessage = null;
+                return;
+            }
+            var result = await TrainingAssetStorageService.SaveCourseThumbnailAsync(file, uploadedByUserId: null);
+            if (result.Succeeded && result.Data is not null)
+            {
+                Model.ThumbnailUrl = result.Data.Url;
+                UploadStatusMessage = "Thumbnail uploaded.";
+            }
+            else
+            {
+                UploadError = result.Message ?? "Upload failed.";
+                UploadStatusMessage = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            UploadError = $"Upload failed: {ex.Message}";
+            UploadStatusMessage = null;
+        }
+    }
+
+    private void ClearThumbnail()
+    {
+        Model.ThumbnailUrl = null;
+        UploadStatusMessage = null;
+        UploadError = null;
+    }
+
+    private record AudienceOption(TrainingAudienceType Value, string Text);
+}

@@ -1,0 +1,142 @@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+
+@inject ILearnerTrainingService LearnerTrainingService
+
+<div style="text-align:center;margin-bottom:0.75rem;">
+    <span class="tp-flashcard-label">Card @(_currentIndex + 1) of @_cards.Count</span>
+</div>
+
+<div class="tp-flashcard-scene" @key="_currentIndex">
+    <div class="tp-flashcard-inner @(_flipped ? "is-flipped" : string.Empty)"
+         @onclick="Flip" style="cursor:pointer;" title="Click to flip">
+        <div class="tp-flashcard-face">
+            <div class="tp-flashcard-label">Term / Question</div>
+            <div class="tp-flashcard-content tp-flashcard-content--front">
+                <div class="tp-flashcard-text">@_cards[_currentIndex].FrontText</div>
+                @if (!string.IsNullOrWhiteSpace(_cards[_currentIndex].FrontImageUrl))
+                {
+                    <img src="@_cards[_currentIndex].FrontImageUrl" alt="Flashcard visual" class="tp-flashcard-image" />
+                }
+            </div>
+        </div>
+        <div class="tp-flashcard-face tp-flashcard-face--back">
+            <div class="tp-flashcard-label">Answer / Definition</div>
+            <div class="tp-flashcard-content tp-flashcard-content--back">
+                <div class="tp-flashcard-text">@_cards[_currentIndex].BackText</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p class="tp-flashcard-flip-hint">
+    @if (!_flipped) { <span>Click the card to reveal the answer</span> }
+    else            { <span>Click again to flip back</span> }
+</p>
+
+<div style="display:flex;justify-content:center;gap:1rem;margin-top:0.75rem;">
+    <button class="e-btn" type="button" disabled="@(_currentIndex == 0)" @onclick="Previous">‹ Prev Card</button>
+    <button class="e-btn" type="button" disabled="@(_currentIndex == _cards.Count - 1)" @onclick="Next">Next Card ›</button>
+</div>
+
+@if (AllReviewed)
+{
+    <div class="tp-video-complete-badge" style="margin-top:0.75rem;justify-content:center;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        All cards reviewed — ready to continue
+    </div>
+}
+else
+{
+    <div class="tp-flashcard-lock-msg">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        Review all @_cards.Count card(s) to continue
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+    [Parameter, EditorRequired] public string UserId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Guid CourseId { get; set; }
+    [Parameter, EditorRequired] public Guid LessonId { get; set; }
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    private record FlashCard(string FrontText, string? FrontImageUrl, string BackText);
+
+    private List<FlashCard> _cards = new();
+    private int _currentIndex;
+    private bool _flipped;
+    private int _maxReached;
+    private bool _completionRaised;
+
+    public bool AllReviewed => _cards.Count == 0 || _maxReached >= _cards.Count - 1;
+
+    protected override void OnParametersSet()
+    {
+        _cards = Block.QuizQuestions.Count > 0
+            ? Block.QuizQuestions
+                .Select(q => new FlashCard(q.FrontText, q.IncludeFrontImage ? q.FrontImageUrl : null, q.BackText ?? string.Empty))
+                .ToList()
+            : new List<FlashCard> { new(Block.ContentHtml ?? string.Empty, null, Block.SecondaryContentHtml ?? string.Empty) };
+
+        _currentIndex = Math.Clamp(Block.SavedFlashCardIndex ?? 0, 0, Math.Max(0, _cards.Count - 1));
+        _flipped = false;
+        _maxReached = Math.Clamp(Block.SavedFlashCardMaxViewedIndex ?? _currentIndex, 0, Math.Max(0, _cards.Count - 1));
+        _completionRaised = Block.IsCompleted;
+    }
+
+    private async Task Flip()
+    {
+        _flipped = !_flipped;
+        if (_flipped && _currentIndex > _maxReached) _maxReached = _currentIndex;
+        if (_flipped && _currentIndex == _cards.Count - 1 && _maxReached < _currentIndex)
+            _maxReached = _currentIndex;
+
+        await PersistProgressAsync();
+    }
+
+    private async Task Previous()
+    {
+        if (_currentIndex > 0)
+        {
+            _currentIndex--;
+            _flipped = false;
+            await PersistProgressAsync();
+        }
+    }
+
+    private async Task Next()
+    {
+        if (_currentIndex < _cards.Count - 1)
+        {
+            _currentIndex++;
+            _flipped = false;
+            if (_currentIndex > _maxReached) _maxReached = _currentIndex;
+            await PersistProgressAsync();
+        }
+    }
+
+    private async Task PersistProgressAsync()
+    {
+        if (string.IsNullOrWhiteSpace(UserId) || _cards.Count == 0)
+        {
+            return;
+        }
+
+        var result = await LearnerTrainingService.SaveFlashCardProgressAsync(UserId, CourseId, LessonId, Block.BlockId, _currentIndex, _maxReached);
+        if (!result.Succeeded)
+        {
+            return;
+        }
+
+        if (AllReviewed)
+        {
+            Block.IsCompleted = true;
+            if (!_completionRaised)
+            {
+                _completionRaised = true;
+                await OnCompleted.InvokeAsync();
+            }
+        }
+    }
+}

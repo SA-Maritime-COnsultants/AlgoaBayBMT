@@ -1,0 +1,111 @@
+@page "/my-training/certificates/{CertificateId:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using Syncfusion.Blazor.Buttons
+
+@inject ILearnerTrainingService LearnerTrainingService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Training Certificate</PageTitle>
+
+<div class="page-shell pf-training-learner-shell">
+    @if (Certificate is null)
+    {
+        <SfCard CssClass="pf-card-shell pf-training-learner-card">
+            <CardContent>
+                <div class="pf-empty-state">Loading certificate...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <div class="page-header pf-training-learner-header">
+            <div>
+                <h1 class="page-title">Certificate</h1>
+                <div class="page-subtitle">Review the current completion certificate for compliance and operational recordkeeping.</div>
+            </div>
+            <div class="pf-grid-actions pf-grid-actions--compact">
+                <a class="e-btn" href="/my-training">Back to My Training</a>
+                <SfButton CssClass="e-primary" OnClick="PrintAsync">Print / Save</SfButton>
+            </div>
+        </div>
+
+        <div class="pf-training-certificate-shell">
+            <div class="pf-training-certificate-title">@Certificate.TemplateTitle</div>
+            <div class="pf-training-certificate-body">
+                <p>This certificate confirms that</p>
+                <h2>@Certificate.LearnerFullName</h2>
+                <p>has successfully completed the training course</p>
+                <h3>@Certificate.CourseTitle</h3>
+                <p class="pf-training-certificate-meta">Course Code: <strong>@Certificate.CourseCode</strong> · Version: <strong>@Certificate.VersionLabel</strong></p>
+                <div class="pf-training-certificate-grid">
+                    <div>
+                        <span class="pf-training-certificate-label">Completion Date</span>
+                        <strong>@Certificate.CompletedOnUtc.ToLocalTime().ToString("dd MMM yyyy")</strong>
+                    </div>
+                    <div>
+                        <span class="pf-training-certificate-label">Expiry Date</span>
+                        <strong>@Certificate.ExpiresOnUtc.ToLocalTime().ToString("dd MMM yyyy")</strong>
+                    </div>
+                    <div>
+                        <span class="pf-training-certificate-label">Certificate Number</span>
+                        <strong>@Certificate.CertificateNumber</strong>
+                    </div>
+                    <div>
+                        <span class="pf-training-certificate-label">Verification Code</span>
+                        <strong>@Certificate.VerificationCode</strong>
+                    </div>
+                </div>
+                <div class="pf-training-certificate-footer">
+                    <div>
+                        <span class="pf-training-certificate-label">Issuing Organisation</span>
+                        <strong>@Certificate.IssuingOrganisation</strong>
+                    </div>
+                    <div class="pf-training-certificate-note">
+                        Template wording and legal formatting should be validated against current SAMSA / DFFE compliance requirements before operational release.
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Guid CertificateId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "download")]
+    public bool Download { get; set; }
+
+    private TrainingCertificateViewModel? Certificate;
+    private bool _downloadTriggered;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var userId = (await AuthenticationStateProvider.GetAuthenticationStateAsync())
+            .User
+            .FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return;
+        }
+
+        Certificate = await LearnerTrainingService.GetCertificateAsync(userId, CertificateId);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_downloadTriggered && Download && Certificate is not null)
+        {
+            _downloadTriggered = true;
+            await PrintAsync();
+        }
+    }
+
+    private async Task PrintAsync() => await JSRuntime.InvokeVoidAsync("print");
+}

@@ -1,0 +1,168 @@
+@page "/emergency/oilspill/{SpillId:int}/model"
+@rendermode InteractiveServer
+@attribute [Authorize]
+
+@using AlgoaBayBMT.Emergency.OilSpill.DTOs
+@using AlgoaBayBMT.Emergency.OilSpill.Models
+@using AlgoaBayBMT.Emergency.OilSpill.Services
+@using Microsoft.AspNetCore.WebUtilities
+@inject IOilSpillModelService OilSpillModelService
+@inject IOilSpillService OilSpillService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@(_isEdit ? "Edit Oil Spill Model Run" : "New Oil Spill Model Run")</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    @if (_loading)
+    {
+        <div class="pf-alert pf-status-message" role="alert">Loading…</div>
+    }
+    else if (_spill is null)
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">Oil spill incident @SpillId was not found.</div>
+    }
+    else
+    {
+        <div class="page-header">
+            <div>
+                <h1 class="page-title pf-training-heading">@(_isEdit ? "Edit Model Run" : "New Model Run")</h1>
+                <div class="page-subtitle">@_spill.SpillName</div>
+            </div>
+            <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal" IconCss="e-icons e-chevron-left" IconPosition="IconPosition.Left" OnClick="BackToDetail">Back to Spill</SfButton>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(_message))
+        {
+            <div class="pf-alert @(_isError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@_message</div>
+        }
+
+        <SfCard CssClass="pf-card-shell abmt-panel-3d">
+            <CardHeader Title="Model Run Parameters" SubTitle="Simulation window, metocean forcing and tide state." />
+            <CardContent>
+                <EditForm Model="_request" OnValidSubmit="RunModelAsync" FormName="oil-spill-model-run-form">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    <div class="pf-form-grid">
+                        <div class="pf-col-6"><label class="pf-field-label">Run Name</label><SfTextBox @bind-Value="_request.RunName" /></div>
+                        <div class="pf-col-6"><label class="pf-field-label">Start Time</label><SfDateTimePicker TValue="DateTime" @bind-Value="_request.StartTime" Format="dd MMM yyyy HH:mm" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Duration (hours)</label><SfNumericTextBox TValue="double" @bind-Value="_request.DurationHours" Min="0" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Time Step (minutes)</label><SfNumericTextBox TValue="int" @bind-Value="_request.TimeStepMinutes" Min="1" /></div>
+                        <div class="pf-col-3">
+                            <label class="pf-field-label">Tide State</label>
+                            <SfDropDownList TValue="OilSpillTideState" TItem="OilSpillTideState" DataSource="@(Enum.GetValues<OilSpillTideState>())" @bind-Value="_request.TideState" />
+                        </div>
+                        <div class="pf-col-3"><label class="pf-field-label">Wind Speed (m/s)</label><SfNumericTextBox TValue="double" @bind-Value="_request.WindSpeed" Min="0" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Wind Direction (°)</label><SfNumericTextBox TValue="double" @bind-Value="_request.WindDirection" Min="0" Max="360" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Current Speed (m/s)</label><SfNumericTextBox TValue="double" @bind-Value="_request.CurrentSpeed" Min="0" /></div>
+                        <div class="pf-col-3"><label class="pf-field-label">Current Direction (°)</label><SfNumericTextBox TValue="double" @bind-Value="_request.CurrentDirection" Min="0" Max="360" /></div>
+                        <div class="pf-col-12"><label class="pf-field-label">Notes</label><SfTextBox Multiline="true" @bind-Value="_request.Notes" /></div>
+                    </div>
+                    <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                        <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="BackToDetail">Cancel</SfButton>
+                        <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-play" IconPosition="IconPosition.Left" type="submit" Disabled="@_running">@(_running ? "Running model…" : _isEdit ? "Save & Re-run Model" : "Run Model")</SfButton>
+                    </div>
+                </EditForm>
+            </CardContent>
+        </SfCard>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int SpillId { get; set; }
+
+    private bool _loading = true;
+    private bool _running;
+    private bool _isError;
+    private bool _isEdit;
+    private int? _runId;
+    private string? _message;
+    private OilSpillIncident? _spill;
+    private OilSpillModelRunRequest _request = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _spill = await OilSpillService.GetSpillByIdAsync(SpillId);
+
+        // Detect an edit by reading the optional ?runId= query string.
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("runId", out var runIdValue)
+            && int.TryParse(runIdValue, out var parsedRunId))
+        {
+            _runId = parsedRunId;
+        }
+
+        if (_spill is not null)
+        {
+            OilSpillModelRun? existingRun = null;
+            if (_runId is int runId)
+            {
+                existingRun = await OilSpillModelService.GetModelRunByIdAsync(runId);
+            }
+
+            if (existingRun is not null && existingRun.SpillId == SpillId)
+            {
+                _isEdit = true;
+                _request = new OilSpillModelRunRequest
+                {
+                    SpillId = SpillId,
+                    RunId = existingRun.Id,
+                    RunName = existingRun.RunName,
+                    StartTime = existingRun.StartTime,
+                    DurationHours = existingRun.DurationHours,
+                    TimeStepMinutes = existingRun.TimeStepMinutes,
+                    WindSpeed = existingRun.WindSpeed,
+                    WindDirection = existingRun.WindDirection,
+                    CurrentSpeed = existingRun.CurrentSpeed,
+                    CurrentDirection = existingRun.CurrentDirection,
+                    TideState = existingRun.TideState,
+                    Notes = existingRun.Notes
+                };
+            }
+            else
+            {
+                _request = new OilSpillModelRunRequest
+                {
+                    SpillId = SpillId,
+                    RunName = "Base Case",
+                    StartTime = _spill.SpillStartTime,
+                    DurationHours = 12,
+                    TimeStepMinutes = 30,
+                    TideState = OilSpillTideState.Unknown
+                };
+            }
+        }
+
+        _loading = false;
+    }
+
+    private async Task RunModelAsync()
+    {
+        _running = true;
+        _isError = false;
+        _message = null;
+
+        try
+        {
+            var wasEdit = _isEdit;
+            var run = await OilSpillModelService.RunModelAsync(_request);
+            _runId = run.Id;
+            _isEdit = true;
+            _request.RunId = run.Id;
+            _message = wasEdit
+                ? $"Model run #{run.Id} '{run.RunName}' saved and re-run successfully."
+                : $"Model run #{run.Id} '{run.RunName}' completed successfully.";
+        }
+        catch (Exception ex)
+        {
+            _isError = true;
+            _message = $"Model run failed: {ex.Message}";
+        }
+        finally
+        {
+            _running = false;
+        }
+    }
+
+    private void BackToDetail() => NavigationManager.NavigateTo($"/emergency/oilspill/{SpillId}");
+}

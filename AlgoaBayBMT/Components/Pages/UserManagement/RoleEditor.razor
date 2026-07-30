@@ -1,0 +1,170 @@
+@page "/RoleEditor"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IRoleEditorService RoleEditorService
+
+<PageTitle>Role Editor</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Role Editor</h1>
+            <div class="page-subtitle">Manage application roles and view assigned user counts.</div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(StatusMessage))
+    {
+        <SfCard CssClass="pf-status-message"><CardContent>@StatusMessage</CardContent></SfCard>
+    }
+
+    <SfCard CssClass="pf-card-shell">
+        <CardHeader Title="Application Roles" SubTitle="All roles currently configured in the system" />
+        <CardContent>
+            <SfGrid DataSource="@Roles"
+                    AllowPaging="true"
+                    AllowSorting="true"
+                    AllowFiltering="true"
+                    AllowResizing="true"
+                    EnableHover="true">
+                <GridPageSettings PageSize="15" />
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                <GridColumns>
+                    <GridColumn Field="RoleName" HeaderText="Role Name" Width="200" />
+                    <GridColumn Field="NormalizedName" HeaderText="Normalized Name" Width="220" />
+                    <GridColumn Field="UserCount" HeaderText="Users" Width="120" TextAlign="TextAlign.Center" />
+                    <GridColumn HeaderText="Actions" Width="200" TextAlign="TextAlign.Center">
+                        <Template>
+                            @{
+                                var role = context as RoleEditorRowModel;
+                            }
+                            <div class="pf-grid-actions">
+                                <SfButton CssClass="abmt-grid-action-edit abmt-grid-action-text" IconCss="e-icons e-edit"
+                                          OnClick="@(() => OpenEditDialog(role))">Edit</SfButton>
+                                <SfButton CssClass="abmt-grid-action-delete abmt-grid-action-text" IconCss="e-icons e-delete"
+                                          OnClick="@(() => OpenDeleteDialog(role))">Delete</SfButton>
+                            </div>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="440px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsEditDialogVisible">
+    <DialogTemplates>
+        <Header>Edit Role</Header>
+        <Content>
+            <SfCard CssClass="pf-card-shell">
+                <CardContent>
+                    <div class="pf-form-grid">
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Role Name</label>
+                            <SfTextBox Placeholder="Enter role name" @bind-Value="EditRoleName" />
+                        </div>
+                    </div>
+                </CardContent>
+            </SfCard>
+            <div class="pf-dialog-actions">
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@CloseEditDialog">Cancel</SfButton>
+                <SfButton CssClass="abmt-btn-save" IconCss="e-icons e-save" OnClick="@SaveRoleAsync">Save</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="420px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsDeleteDialogVisible">
+    <DialogTemplates>
+        <Header>Confirm Delete</Header>
+        <Content>
+            <SfCard CssClass="pf-card-shell">
+                <CardContent>
+                    <p>Are you sure you want to delete the role <strong>@(DeleteTarget?.RoleName)</strong>?</p>
+                    @if ((DeleteTarget?.UserCount ?? 0) > 0)
+                    {
+                        <p class="text-danger">This role has <strong>@DeleteTarget!.UserCount</strong> user(s) assigned and cannot be deleted until they are reassigned.</p>
+                    }
+                </CardContent>
+            </SfCard>
+            <div class="pf-dialog-actions">
+                <SfButton CssClass="abmt-btn-cancel" IconCss="e-icons e-close" OnClick="@CloseDeleteDialog">Cancel</SfButton>
+                <SfButton CssClass="e-danger abmt-btn-red-3d abmt-dialog-action-btn" IconCss="e-icons e-delete" OnClick="@ConfirmDeleteAsync" Disabled="@((DeleteTarget?.UserCount ?? 0) > 0)">Delete</SfButton>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private List<RoleEditorRowModel> Roles = new();
+    private string? StatusMessage;
+
+    private bool IsEditDialogVisible;
+    private string EditRoleId = string.Empty;
+    private string EditRoleName = string.Empty;
+
+    private bool IsDeleteDialogVisible;
+    private RoleEditorRowModel? DeleteTarget;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        Roles = await RoleEditorService.GetRolesAsync();
+    }
+
+    private void OpenEditDialog(RoleEditorRowModel? role)
+    {
+        if (role is null) return;
+        EditRoleId = role.RoleId;
+        EditRoleName = role.RoleName;
+        IsEditDialogVisible = true;
+    }
+
+    private void CloseEditDialog()
+    {
+        IsEditDialogVisible = false;
+        EditRoleId = string.Empty;
+        EditRoleName = string.Empty;
+    }
+
+    private async Task SaveRoleAsync()
+    {
+        var result = await RoleEditorService.UpdateRoleAsync(EditRoleId, EditRoleName);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        if (result.Succeeded)
+        {
+            CloseEditDialog();
+            await LoadAsync();
+        }
+    }
+
+    private void OpenDeleteDialog(RoleEditorRowModel? role)
+    {
+        if (role is null) return;
+        DeleteTarget = role;
+        IsDeleteDialogVisible = true;
+    }
+
+    private void CloseDeleteDialog()
+    {
+        IsDeleteDialogVisible = false;
+        DeleteTarget = null;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (DeleteTarget is null) return;
+        var result = await RoleEditorService.DeleteRoleAsync(DeleteTarget.RoleId);
+        StatusMessage = result.Message ?? string.Join(", ", result.Errors);
+        CloseDeleteDialog();
+        if (result.Succeeded)
+        {
+            await LoadAsync();
+        }
+    }
+}

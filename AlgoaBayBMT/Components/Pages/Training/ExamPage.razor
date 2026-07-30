@@ -1,0 +1,128 @@
+@page "/training/environmental-law-compliance/exam"
+@rendermode InteractiveServer
+
+@using AlgoaBayBMT.Models.Training
+
+@inject IExamService ExamService
+
+<PageTitle>Environmental Law & Compliance Exam</PageTitle>
+
+<div class="page-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Environmental Law &amp; Compliance Exam</h1>
+            <div class="page-subtitle">25-question randomized assessment drawn from the full 160-question module pool.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton OnClick="StartNewAttemptAsync">Generate New Attempt</SfButton>
+        </div>
+    </div>
+
+    @if (Attempt is null)
+    {
+        <SfCard CssClass="pf-card-shell">
+            <CardContent>
+                <div class="pf-empty-state">Generating exam...</div>
+            </CardContent>
+        </SfCard>
+    }
+    else
+    {
+        <SfCard CssClass="pf-card-shell pf-training-exam-summary">
+            <CardContent>
+                <div class="pf-role-badge-list">
+                    <span class="e-badge pf-role-badge">Attempt @Attempt.AttemptId.ToString()[..8]</span>
+                    <span class="e-badge pf-role-badge">@Attempt.Questions.Count questions</span>
+                    <span class="e-badge pf-role-badge">Pass mark 80%</span>
+                </div>
+            </CardContent>
+        </SfCard>
+
+        <div class="pf-training-course-grid">
+            @foreach (var question in Attempt.Questions)
+            {
+                <div class="pf-training-check-card">
+                    <div class="pf-training-check-header">
+                        <span class="pf-training-check-type">@question.Kind</span>
+                        <h4>@question.Prompt</h4>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(question.ScenarioContext))
+                    {
+                        <div class="pf-training-check-context">@question.ScenarioContext</div>
+                    }
+                    <div class="pf-training-check-options">
+                        @for (var index = 0; index < question.Options.Count; index++)
+                        {
+                            var optionIndex = index;
+                            <label class="pf-training-check-option @(GetExamAnswer(question.QuestionId).Contains(optionIndex) ? "is-selected" : string.Empty)">
+                                <input type="radio" name="@question.QuestionId" checked="@GetExamAnswer(question.QuestionId).Contains(optionIndex)" @onchange="() => SelectExamAnswer(question.QuestionId, optionIndex)" />
+                                <span>@question.Options[index]</span>
+                            </label>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="pf-grid-actions pf-grid-actions--compact pf-training-card-actions">
+            <SfButton CssClass="e-primary" OnClick="SubmitAsync">Submit Exam</SfButton>
+        </div>
+
+        @if (Evaluation is not null)
+        {
+            <SfCard CssClass="pf-card-shell pf-training-exam-summary">
+                <CardHeader Title="Exam Result" SubTitle="Automated grading for the current attempt." />
+                <CardContent>
+                    <div class="pf-role-badge-list">
+                        <span class="e-badge pf-role-badge">@Evaluation.Attempt.ScorePercent%</span>
+                        <span class="e-badge pf-role-badge">@(Evaluation.Attempt.Passed ? "Passed" : "Review Required")</span>
+                        <span class="e-badge pf-role-badge">@Evaluation.EarnedPoints / @Evaluation.AvailablePoints points</span>
+                    </div>
+                    <div class="pf-training-result-list">
+                        @foreach (var result in Evaluation.Results)
+                        {
+                            <div class="pf-training-check-result @(result.IsCorrect ? "is-correct" : "is-incorrect")">
+                                <strong>@result.QuestionId</strong>
+                                <p>@result.Explanation</p>
+                            </div>
+                        }
+                    </div>
+                </CardContent>
+            </SfCard>
+        }
+    }
+</div>
+
+@code {
+    private ExamAttempt? Attempt;
+    private ExamEvaluationResult? Evaluation;
+    private readonly Dictionary<string, List<int>> Answers = new(StringComparer.OrdinalIgnoreCase);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await StartNewAttemptAsync();
+    }
+
+    private async Task StartNewAttemptAsync()
+    {
+        Attempt = await ExamService.CreateEnvironmentalLawComplianceExamAsync();
+        Evaluation = null;
+        Answers.Clear();
+    }
+
+    private List<int> GetExamAnswer(string questionId)
+        => Answers.TryGetValue(questionId, out var selected) ? selected : [];
+
+    private void SelectExamAnswer(string questionId, int optionIndex)
+        => Answers[questionId] = [optionIndex];
+
+    private async Task SubmitAsync()
+    {
+        if (Attempt is null)
+        {
+            return;
+        }
+
+        Evaluation = await ExamService.GradeExamAsync(Attempt, Answers, null);
+    }
+}

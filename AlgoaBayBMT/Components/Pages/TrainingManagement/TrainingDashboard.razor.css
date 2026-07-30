@@ -1,0 +1,123 @@
+:root {
+    --pf-training-button-teal-top: #1b4f8a;
+    --pf-training-button-teal-mid: #123b68;
+    --pf-training-button-teal-bottom: #0b2747;
+    --pf-training-button-border: rgba(8, 28, 52, 0.82);
+    --pf-training-panel-gap: 5px;
+}
+
+.pf-training-admin-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pf-training-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.pf-training-dashboard-grid--compact {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.pf-training-dashboard-panel {
+    overflow: hidden;
+}
+
+.pf-training-dashboard-panel--recent {
+    margin-top: var(--pf-training-panel-gap);
+}
+
+/* 3D dark teal header for Row 3 and Row 4 dashboard panels only. */
+::deep .pf-training-dashboard-panel .e-card-header {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--pf-training-button-teal-top) 0%, var(--pf-training-button-teal-mid) 52%, var(--pf-training-button-teal-bottom) 100%);
+    border-bottom: 1px solid var(--pf-training-button-border);
+    box-shadow: var(--pf-modern-shadow-3d, 0 1px 0 rgba(255,255,255,0.36) inset, 0 2px 0 rgba(8, 28, 44, 0.28), 0 8px 18px rgba(15, 35, 56, 0.18));
+    color: #ffffff;
+    padding: 1rem 1.15rem;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+/* Match the primary button's glossy 3D overlay without increasing header height. */
+::deep .pf-training-dashboard-panel .e-card-header::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.02) 52%, rgba(0,0,0,0.08) 100%);
+}
+
+::deep .pf-training-dashboard-panel .e-card-header-title,
+::deep .pf-training-dashboard-panel .e-card-sub-title {
+    position: relative;
+    z-index: 1;
+}
+
+::deep .pf-training-dashboard-panel .e-card-header-title,
+::deep .pf-training-dashboard-panel .e-card-sub-title {
+    color: #ffffff;
+}
+
+::deep .pf-training-dashboard-panel .e-card-sub-title {
+    color: rgba(255, 255, 255, 0.82);
+    line-height: 1.35;
+}
+
+.pf-training-responsive-grid {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.pf-training-manage-courses-btn {
+    min-height: 43px !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 0.45rem 0.9rem !important;
+    background: #31638d !important;
+    border-color: #244d70 !important;
+    border-radius: 10px !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.24) inset, 0 2px 0 rgba(25, 55, 82, 0.28), 0 8px 16px rgba(31, 67, 100, 0.18) !important;
+    color: #ffffff !important;
+    white-space: nowrap;
+}
+
+.pf-training-manage-courses-btn .e-icons {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+@media (max-width: 1200px) {
+    .pf-training-dashboard-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .pf-training-dashboard-grid--compact {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .pf-training-admin-shell {
+        gap: 0.85rem;
+    }
+
+    .pf-training-dashboard-grid,
+    .pf-training-dashboard-grid--compact {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-dashboard-panel--recent {
+        margin-top: var(--pf-training-panel-gap);
+    }
+
+    .pf-training-manage-courses-btn {
+        width: 100%;
+    }
+}

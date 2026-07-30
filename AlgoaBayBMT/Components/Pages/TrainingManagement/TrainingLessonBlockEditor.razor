@@ -1,0 +1,603 @@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.RichTextEditor
+
+@inject ITrainingAssetStorageService TrainingAssetStorageService
+
+<div class="cb-block-accordion-item cb-block-type-@GetBlockTypeClass() @(IsSelected ? "is-selected" : string.Empty)">
+    <div class="cb-block-accordion-header" @onclick="SelectAsync">
+        <div class="cb-block-accordion-left">
+            <span class="cb-block-type-dot cb-dot-@GetBlockTypeClass()"></span>
+            <span class="cb-block-order">@Model.OrderIndex</span>
+            <span class="cb-block-type-label">
+                <span class="cb-block-type-icon" aria-hidden="true">@((MarkupString)GetBlockTypeIconSvg())</span>
+                <span>@GetBlockTypeLabel()</span>
+            </span>
+            @if (!string.IsNullOrWhiteSpace(Model.Title))
+            {
+                <span class="cb-block-title-preview">— @Model.Title</span>
+            }
+        </div>
+        <div class="cb-block-accordion-actions" @onclick:stopPropagation>
+            <button type="button" class="cb-icon-btn" title="Move Up" aria-label="Move block up" @onclick="MoveUpAsync">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24"><path d="M12 19V5" /><path d="M5 12l7-7 7 7" /></svg>
+            </button>
+            <button type="button" class="cb-icon-btn" title="Move Down" aria-label="Move block down" @onclick="MoveDownAsync">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24"><path d="M12 5v14" /><path d="M19 12l-7 7-7-7" /></svg>
+            </button>
+            @if (Model.LessonBlockId.HasValue)
+            {
+                <button type="button" class="cb-icon-btn cb-icon-btn--danger" title="Delete Block" aria-label="Delete block" @onclick="DeleteAsync">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.25" viewBox="0 0 24 24"><path d="M18 6 6 18" /><path d="m6 6 12 12" /></svg>
+                </button>
+            }
+            <span class="cb-accordion-toggle" aria-hidden="true">
+                @if (Model.IsExpanded)
+                {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9" /></svg>
+                }
+                else
+                {
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 6 15 12 9 18" /></svg>
+                }
+            </span>
+        </div>
+    </div>
+
+    @if (Model.IsExpanded)
+    {
+        <div class="cb-block-accordion-body">
+            <EditForm Model="Model" OnValidSubmit="HandleSaveAsync" FormName="@GetFormName()">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message" />
+
+                <div class="pf-form-grid">
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Content Type</label>
+                        <SfDropDownList TValue="LessonBlockType" TItem="BlockTypeOption"
+                                        DataSource="@BlockTypeOptions"
+                                        @bind-Value="Model.BlockType"
+                                        Placeholder="Select content type"
+                                        ValueChange="HandleBlockTypeChangedAsync">
+                            <DropDownListFieldSettings Text="Label" Value="Value" />
+                        </SfDropDownList>
+                    </div>
+
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Title</label>
+                        <SfTextBox @bind-Value="Model.Title" Placeholder="Content block title" FloatLabelType="FloatLabelType.Never" />
+                    </div>
+
+                    @if (Model.BlockType == LessonBlockType.TextNarrative || Model.BlockType == LessonBlockType.Card)
+                    {
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">@(Model.BlockType == LessonBlockType.Card ? "Card Content" : "Content")</label>
+                            <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="@(Model.BlockType == LessonBlockType.Card ? "240px" : "280px")" EnableResize="true" CssClass="cb-richtext-editor">
+                                <RichTextEditorToolbarSettings Items="@RichTextToolbarItems" Type="ToolbarType.MultiRow" />
+                            </SfRichTextEditor>
+                        </div>
+                        @if (Model.BlockType == LessonBlockType.Card)
+                        {
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Optional Image</label>
+                                <div class="pf-training-upload-panel">
+                                    <InputFile OnChange="HandleAssetSelectedAsync" accept=".jpg,.jpeg,.png,.webp,.gif" />
+                                    <div class="pf-training-upload-hint">Upload a supporting image for this card.</div>
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(Model.ThumbnailUrl))
+                            {
+                                <div class="pf-col-6">
+                                    <label class="pf-field-label">Image Preview</label>
+                                    <img src="@Model.ThumbnailUrl" alt="Card image" class="pf-training-thumbnail-preview" @key="GetVisualPreviewKey()" />
+                                </div>
+                            }
+                        }
+                    }
+
+                    @if (Model.BlockType == LessonBlockType.Flashcard)
+                    {
+                        <div class="pf-col-12">
+                            <div class="cb-flashcard-set-header">
+                                <span class="pf-field-label" style="margin:0;">Flash Cards</span>
+                                <SfButton type="button" CssClass="cb-btn-add-card" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="AddFlashCard">Add Card</SfButton>
+                            </div>
+                            @if (Model.QuizQuestions.Count == 0)
+                            {
+                                <div class="pf-empty-state--compact">No cards yet. Click &ldquo;+ Add Card&rdquo; to create the first flashcard.</div>
+                            }
+                            @foreach (var card in Model.QuizQuestions.Select((item, i) => new { Item = item, Index = i }))
+                            {
+                                <div class="cb-flashcard-item" @key="card.Item.UiKey">
+                                    <div class="cb-flashcard-item-header">
+                                        <span class="cb-flashcard-item-num">Card @(card.Index + 1)</span>
+                                        <SfButton type="button" CssClass="cb-btn-remove-card" IconCss="e-icons e-trash" IconPosition="IconPosition.Left" OnClick="@(() => RemoveFlashCard(card.Index))">Remove</SfButton>
+                                    </div>
+                                    <div class="pf-form-grid">
+                                        <div class="pf-col-6">
+                                            <label class="pf-field-label">Front — Term / Question</label>
+                                            <InputTextArea @bind-Value="card.Item.FrontText" class="form-control pf-textarea pf-textarea--large cb-flashcard-textarea" />
+                                            <div class="cb-flashcard-image-toggle">
+                                                <label class="pf-inline-check">
+                                                    <InputCheckbox @bind-Value="card.Item.IncludeFrontImage" />
+                                                    <span>Include image on front of flashcard</span>
+                                                </label>
+                                            </div>
+                                            @if (card.Item.IncludeFrontImage)
+                                            {
+                                                <div class="cb-flashcard-image-editor">
+                                                    <label class="pf-field-label">Upload Front Image</label>
+                                                    <div class="pf-training-upload-panel">
+                                                        <InputFile @key="card.Item.UiKey" OnChange="@(args => HandleFlashCardImageSelectedAsync(args, card.Item.UiKey))" accept=".jpg,.jpeg,.png,.webp,.gif" />
+                                                        <div class="pf-training-upload-hint">Upload a front image for this flashcard.</div>
+                                                    </div>
+
+                                                    @if (!string.IsNullOrWhiteSpace(card.Item.FrontImageUrl))
+                                                    {
+                                                        <div class="cb-flashcard-image-preview-shell">
+                                                            <img src="@card.Item.FrontImageUrl" alt="Flashcard front image" class="cb-flashcard-image-preview" />
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="pf-col-6">
+                                            <label class="pf-field-label">Back — Definition / Answer</label>
+                                            <InputTextArea @bind-Value="card.Item.BackText" class="form-control pf-textarea pf-textarea--large cb-flashcard-textarea" />
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                    @if (Model.BlockType == LessonBlockType.Video)
+                    {
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Video Upload</label>
+                            <div class="pf-training-upload-panel">
+                                <InputFile OnChange="HandleAssetSelectedAsync" accept=".mp4,.webm,.mov,.m4v" />
+                                <div class="pf-training-upload-hint">Upload MP4, WEBM, MOV, or M4V up to 250 MB.</div>
+                            </div>
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">External Video URL (YouTube / Vimeo / direct)</label>
+                            <SfTextBox @bind-Value="Model.ExternalUrl" Placeholder="https://youtube.com/watch?v=..." FloatLabelType="FloatLabelType.Never" />
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.FileUrl))
+                        {
+                            <div class="pf-col-12">
+                                <label class="pf-field-label">Video Preview (admin — no autoplay)</label>
+                                <video class="pf-training-scenario-video" controls autoplay muted playsinline preload="metadata" src="@Model.FileUrl" @key="GetVideoPreviewKey()"></video>
+                            </div>
+                        }
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Description (optional)</label>
+                            <SfRichTextEditor @bind-Value="Model.IntroTextHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
+                                <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
+                            </SfRichTextEditor>
+                        </div>
+                        <div class="pf-col-12">
+                            <div class="pf-training-upload-hint pf-info-note">Learner must watch to completion before advancing.</div>
+                        </div>
+                    }
+
+                    @if (Model.BlockType == LessonBlockType.Download)
+                    {
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Download Description</label>
+                            <SfRichTextEditor @bind-Value="Model.ContentHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
+                                <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
+                            </SfRichTextEditor>
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Attachment Upload</label>
+                            <div class="pf-training-upload-panel">
+                                <InputFile OnChange="HandleAssetSelectedAsync" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip" />
+                                <div class="pf-training-upload-hint">Upload a learner download or supporting attachment.</div>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(Model.FileUrl))
+                        {
+                            <div class="pf-col-6">
+                                <label class="pf-field-label">Uploaded File</label>
+                                <SfTextBox Value="@Model.FileUrl" Placeholder="Uploaded file path" FloatLabelType="FloatLabelType.Never" Readonly="true" />
+                            </div>
+                        }
+                    }
+
+                    @if (Model.BlockType == LessonBlockType.Assessment)
+                    {
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Assessment</label>
+                            <SfDropDownList TValue="Guid?" TItem="TrainingCourseAssessmentEditModel" DataSource="@AssessmentOptions" @bind-Value="Model.LinkedAssessmentId" Placeholder="Select an assessment from the bank">
+                                <DropDownListFieldSettings Text="Name" Value="TrainingCourseAssessmentId" />
+                            </SfDropDownList>
+                        </div>
+                        @if (Model.LinkedAssessmentId.HasValue)
+                        {
+                            <div class="pf-col-6">
+                                <div class="pf-training-upload-hint pf-info-note" style="margin-top:28px;">Questions drawn randomly from selected assessment pool.</div>
+                            </div>
+                        }
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Assessment Intro (optional)</label>
+                            <SfRichTextEditor @bind-Value="Model.IntroTextHtml" Height="180px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--compact">
+                                <RichTextEditorToolbarSettings Items="@CompactToolbarItems" Type="ToolbarType.MultiRow" />
+                            </SfRichTextEditor>
+                        </div>
+                    }
+
+                    @if (Model.BlockType == LessonBlockType.Quiz)
+                    {
+                        <div class="pf-col-12">
+                            <div class="pf-authoring-item-header">
+                                <div>
+                                    <h4 class="pf-authoring-item-title">Inline Lesson Quiz</h4>
+                                    <div class="pf-authoring-item-preview">Short in-lesson checks specific to this lesson.</div>
+                                </div>
+                                <SfButton type="button" CssClass="e-primary" OnClick="AddQuizQuestion">Add Question</SfButton>
+                            </div>
+                            <div class="pf-authoring-item-list">
+                                @foreach (var question in Model.QuizQuestions.Select((item, index) => new { Item = item, Index = index }))
+                                {
+                                    <div class="pf-training-quiz-editor-card" @key="question.Item.UiKey">
+                                        <div class="pf-authoring-item-header">
+                                            <h4 class="pf-authoring-item-title">Question @(question.Index + 1)</h4>
+                                            <SfButton type="button" CssClass="e-flat e-danger" OnClick="@(() => RemoveQuizQuestion(question.Index))">Remove</SfButton>
+                                        </div>
+                                        <div class="pf-form-grid">
+                                            <div class="pf-col-8">
+                                                <label class="pf-field-label">Question Prompt</label>
+                                                <SfTextBox @bind-Value="question.Item.Prompt" Placeholder="Enter the learner question" FloatLabelType="FloatLabelType.Never" />
+                                            </div>
+                                            <div class="pf-col-4">
+                                                <label class="pf-field-label">Question Type</label>
+                                                <SfDropDownList TValue="TrainingQuestionType" TItem="QuizQuestionTypeOption" DataSource="@QuizQuestionTypes" @bind-Value="question.Item.QuestionType" Placeholder="Select type">
+                                                    <DropDownListFieldSettings Text="Text" Value="Value" />
+                                                </SfDropDownList>
+                                            </div>
+                                            @if (question.Item.QuestionType == TrainingQuestionType.Scenario)
+                                            {
+                                                <div class="pf-col-12">
+                                                    <label class="pf-field-label">Scenario Context</label>
+                                                    <InputTextArea @bind-Value="question.Item.ScenarioText" class="form-control pf-textarea" />
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="pf-authoring-item-list pf-question-bank-options-list">
+                                            @foreach (var option in question.Item.Options.Select((item, index) => new { Item = item, Index = index }))
+                                            {
+                                                <div class="pf-question-bank-option-row" @key="GetQuizOptionKey(question.Index, option.Index)">
+                                                    <SfTextBox @bind-Value="option.Item.OptionText" Placeholder="Enter option text" FloatLabelType="FloatLabelType.Never" />
+                                                    <label class="pf-inline-check">
+                                                        <InputCheckbox @bind-Value="option.Item.IsCorrect" />
+                                                        <span>Correct</span>
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="pf-grid-actions pf-grid-actions--compact pf-training-upload-actions">
+                                            <SfButton type="button" OnClick="@(() => AddQuizOption(question.Index))">Add Option</SfButton>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (ShowAssetSummary)
+                    {
+                        <div class="pf-col-12">
+                            <div class="pf-training-upload-status">@AssetSummary</div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(UploadError))
+                    {
+                        <div class="pf-col-12 validation-message">@UploadError</div>
+                    }
+                </div>
+
+                <div class="pf-dialog-actions pf-dialog-actions--right" style="margin-top:12px;">
+                    <SfButton CssClass="e-primary cb-btn-save-block" IsPrimary="true" IconCss="e-icons e-save" IconPosition="IconPosition.Left" type="submit">Save Block</SfButton>
+                </div>
+            </EditForm>
+        </div>
+    }
+</div>
+
+@code {
+    private IReadOnlyList<QuizQuestionTypeOption> QuizQuestionTypes =>
+    [
+        new(TrainingQuestionType.MultipleChoice, "Multiple Choice"),
+        new(TrainingQuestionType.TrueFalse, "True / False"),
+        new(TrainingQuestionType.Scenario, "Scenario")
+    ];
+
+    private static IReadOnlyList<BlockTypeOption> BlockTypeOptions =>
+    [
+        new(LessonBlockType.Card, "Card"),
+        new(LessonBlockType.Video, "Video"),
+        new(LessonBlockType.Flashcard, "Flash Card"),
+        new(LessonBlockType.Quiz, "Quiz"),
+        new(LessonBlockType.Assessment, "Assessment"),
+        new(LessonBlockType.Download, "Download")
+    ];
+
+    // Full toolbar — Card body, Quiz question text
+    private List<ToolbarItemModel> RichTextToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.StrikeThrough },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Formats },
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.FontSize },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.BackgroundColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.OrderedList },
+        new() { Command = ToolbarCommand.UnorderedList },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Indent },
+        new() { Command = ToolbarCommand.Outdent },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.CreateLink },
+        new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.CreateTable },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo },
+        new() { Command = ToolbarCommand.ClearFormat }
+    ];
+
+    // Compact toolbar — video description, download description, assessment intro
+    private List<ToolbarItemModel> CompactToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.OrderedList },
+        new() { Command = ToolbarCommand.UnorderedList },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.CreateLink },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo }
+    ];
+
+    [Parameter, EditorRequired]
+    public TrainingLessonBlockEditModel Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<TrainingLessonBlockEditModel> SaveRequested { get; set; }
+
+    [Parameter]
+    public EventCallback DeleteRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<int> MoveRequested { get; set; }
+
+    [Parameter]
+    public IReadOnlyList<TrainingCourseAssessmentEditModel> AssessmentOptions { get; set; } = Array.Empty<TrainingCourseAssessmentEditModel>();
+
+    [Parameter]
+    public string? CurrentUserId { get; set; }
+
+    [Parameter]
+    public bool IsSelected { get; set; }
+
+    [Parameter]
+    public EventCallback SelectedRequested { get; set; }
+
+    private string? UploadError { get; set; }
+    private string? AssetSummary { get; set; }
+    private bool ShowAssetSummary => !string.IsNullOrWhiteSpace(AssetSummary);
+
+    protected override void OnParametersSet()
+    {
+        Model.UiKey = Model.UiKey == Guid.Empty ? Guid.NewGuid() : Model.UiKey;
+        EnsureQuestionKeys();
+
+        Model.BlockType = Model.BlockType switch
+        {
+            LessonBlockType.Flashcard or LessonBlockType.Card or LessonBlockType.Video
+            or LessonBlockType.Quiz or LessonBlockType.Assessment or LessonBlockType.Download => Model.BlockType,
+            _ => LessonBlockType.TextNarrative
+        };
+        if (Model.BlockType == LessonBlockType.Quiz && Model.QuizQuestions.Count == 0)
+            AddQuizQuestion();
+        if (Model.BlockType == LessonBlockType.Flashcard && Model.QuizQuestions.Count == 0)
+            AddFlashCard();
+    }
+
+    private async Task SelectAsync()
+    {
+        await SelectedRequested.InvokeAsync();
+    }
+
+    private string GetFormName() => Model.LessonBlockId.HasValue
+        ? $"training-block-{Model.LessonBlockId.Value:N}"
+        : $"training-block-new-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Model)}";
+
+    private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
+    private async Task DeleteAsync() => await DeleteRequested.InvokeAsync();
+    private async Task MoveUpAsync() => await MoveRequested.InvokeAsync(-1);
+    private async Task MoveDownAsync() => await MoveRequested.InvokeAsync(1);
+
+    private Task HandleBlockTypeChangedAsync(ChangeEventArgs<LessonBlockType, BlockTypeOption> args)
+    {
+        Model.BlockType = args.Value;
+        Model.ContentHtml ??= string.Empty;
+
+        if (Model.BlockType == LessonBlockType.Quiz && Model.QuizQuestions.Count == 0)
+        {
+            AddQuizQuestion();
+        }
+
+        if (Model.BlockType == LessonBlockType.Flashcard && Model.QuizQuestions.Count == 0)
+        {
+            AddFlashCard();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task HandleAssetSelectedAsync(InputFileChangeEventArgs args)
+    {
+        UploadError = null; AssetSummary = null;
+        var file = args.File;
+        if (file is null) return;
+        var category = Model.BlockType switch
+        {
+            LessonBlockType.Video => "video",
+            LessonBlockType.Download => "attachment",
+            _ => "image"
+        };
+        var result = await TrainingAssetStorageService.SaveLessonAssetAsync(file, category, CurrentUserId);
+        if (!result.Succeeded || result.Data is null) { UploadError = result.Message ?? string.Join(", ", result.Errors); return; }
+        Model.MediaAssetId = result.Data.MediaAssetId;
+        Model.MimeType = result.Data.ContentType;
+        AssetSummary = $"{result.Data.FileName} uploaded.";
+        switch (Model.BlockType)
+        {
+            case LessonBlockType.Video: case LessonBlockType.Download: Model.FileUrl = result.Data.Url; break;
+            default: Model.ThumbnailUrl = result.Data.Url; break;
+        }
+    }
+
+    private async Task HandleFlashCardImageSelectedAsync(InputFileChangeEventArgs args, Guid cardUiKey)
+    {
+        UploadError = null;
+        AssetSummary = null;
+
+        var flashCard = Model.QuizQuestions.FirstOrDefault(x => x.UiKey == cardUiKey);
+        if (flashCard is null)
+        {
+            return;
+        }
+
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        var result = await TrainingAssetStorageService.SaveFlashCardImageAsync(file, CurrentUserId);
+        if (!result.Succeeded || result.Data is null)
+        {
+            UploadError = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        flashCard.IncludeFrontImage = true;
+        flashCard.FrontImageUrl = result.Data.Url;
+        flashCard.FrontImageFileName = result.Data.FileName;
+        AssetSummary = $"{result.Data.FileName} uploaded.";
+    }
+
+    private void AddQuizQuestion() => Model.QuizQuestions.Add(new TrainingLessonQuizQuestionEditModel
+        {
+            UiKey = Guid.NewGuid(),
+            OrderIndex = Model.QuizQuestions.Count + 1,
+            Options = [new() { OrderIndex = 1 }, new() { OrderIndex = 2 }]
+        });
+
+    private void RemoveQuizQuestion(int index)
+    {
+        if (index >= 0 && index < Model.QuizQuestions.Count) Model.QuizQuestions.RemoveAt(index);
+        ReindexQuestions();
+        if (Model.QuizQuestions.Count == 0) AddQuizQuestion();
+    }
+
+    // Flash card helpers — repurpose QuizQuestions: Prompt = Front, ScenarioText = Back
+    private void AddFlashCard() => Model.QuizQuestions.Add(new TrainingLessonQuizQuestionEditModel
+    {
+        UiKey = Guid.NewGuid(),
+        OrderIndex = Model.QuizQuestions.Count + 1,
+        Prompt = string.Empty,
+        FrontText = string.Empty,
+        ScenarioText = string.Empty,
+        BackText = string.Empty,
+        Options = []
+    });
+
+    private void RemoveFlashCard(int index)
+    {
+        if (index >= 0 && index < Model.QuizQuestions.Count) Model.QuizQuestions.RemoveAt(index);
+        ReindexQuestions();
+        if (Model.QuizQuestions.Count == 0) AddFlashCard();
+    }
+
+    private void ReindexQuestions()
+    {
+        for (var index = 0; index < Model.QuizQuestions.Count; index++)
+        {
+            Model.QuizQuestions[index].OrderIndex = index + 1;
+            if (Model.QuizQuestions[index].UiKey == Guid.Empty)
+            {
+                Model.QuizQuestions[index].UiKey = Guid.NewGuid();
+            }
+        }
+    }
+
+    private void EnsureQuestionKeys()
+    {
+        foreach (var question in Model.QuizQuestions)
+        {
+            question.UiKey = question.UiKey == Guid.Empty ? Guid.NewGuid() : question.UiKey;
+            question.FrontText ??= question.Prompt;
+            question.BackText ??= question.ScenarioText;
+        }
+
+        ReindexQuestions();
+    }
+
+    private void AddQuizOption(int questionIndex)
+    {
+        if (questionIndex < 0 || questionIndex >= Model.QuizQuestions.Count) return;
+        var q = Model.QuizQuestions[questionIndex];
+        q.Options.Add(new TrainingLessonQuizOptionEditModel { OrderIndex = q.Options.Count + 1 });
+    }
+
+    private string GetBlockTypeClass() => Model.BlockType switch
+    {
+        LessonBlockType.Video => "video", LessonBlockType.Card => "card",
+        LessonBlockType.Flashcard => "flashcard", LessonBlockType.Quiz => "quiz",
+        LessonBlockType.Assessment => "assessment", LessonBlockType.Download => "download",
+        _ => "text"
+    };
+    private string GetBlockTypeLabel() => Model.BlockType switch
+    {
+        LessonBlockType.TextNarrative => "Text / Narrative", LessonBlockType.Video => "Video",
+        LessonBlockType.Card => "Card", LessonBlockType.Flashcard => "Flash Cards",
+        LessonBlockType.Quiz => "Quiz", LessonBlockType.Assessment => "Assessment",
+        LessonBlockType.Download => "Download", _ => Model.BlockType.ToString()
+    };
+    private string GetBlockTypeIconSvg() => Model.BlockType switch
+    {
+        LessonBlockType.TextNarrative => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/><path d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/></svg>",
+        LessonBlockType.Video => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><polygon points='23 7 16 12 23 17 23 7'/><rect x='1' y='5' width='15' height='14' rx='2' ry='2'/></svg>",
+        LessonBlockType.Card => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><rect x='3' y='4' width='18' height='16' rx='2'/><path d='M7 8h10M7 12h10M7 16h6'/></svg>",
+        LessonBlockType.Flashcard => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M7 7h10v10H7z'/><path d='M4 4h10v10'/><path d='M10 14h10V4'/></svg>",
+        LessonBlockType.Quiz => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/><path d='M9.09 9a3 3 0 1 1 5.82 1c0 2-3 3-3 3'/><path d='M12 17h.01'/></svg>",
+        LessonBlockType.Assessment => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M9 11l3 3L22 4'/><path d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/></svg>",
+        LessonBlockType.Download => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' y1='15' x2='12' y2='3'/></svg>",
+        _ => "<svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>"
+    };
+
+    private static string GetQuizOptionKey(int qi, int oi) => $"quiz-option-{qi}-{oi}";
+    private string GetVisualPreviewKey() => $"visual-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.MediaAssetId?.ToString() ?? "none"}";
+    private string GetVideoPreviewKey() => $"video-{Model.LessonBlockId?.ToString() ?? "new"}-{Model.FileUrl ?? "empty"}";
+
+    private sealed record QuizQuestionTypeOption(TrainingQuestionType Value, string Text);
+    private sealed record BlockTypeOption(LessonBlockType Value, string Label);
+}

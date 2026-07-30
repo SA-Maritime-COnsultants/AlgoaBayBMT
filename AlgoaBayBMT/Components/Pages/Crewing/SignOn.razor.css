@@ -1,0 +1,55 @@
+/* ============================================================
+   Sign-On page — scoped component styles
+   Visual baseline: training-management/course-builder
+   ============================================================ */
+
+/* ── Filter row layout ───────────────────────────────────────── */
+.so-filter-row {
+    display:       flex;
+    align-items:   flex-end;
+    gap:           0.75rem;
+    flex-wrap:     wrap;
+    margin-bottom: 1rem;
+}
+
+.so-filter-field {
+    display:        flex;
+    flex-direction: column;
+    gap:            0.3rem;
+    min-width:      200px;
+}
+
+.so-filter-action {
+    display:     flex;
+    align-items: flex-end;
+    gap:         0.5rem;
+}
+
+/* ── "Sign On Crew" header button (SfButton → ::deep needed) ── */
+::deep .so-btn-sign-on.e-btn,
+::deep .so-btn-sign-on.e-btn:focus {
+    background:   linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color:        #0f3319 !important;
+    font-weight:  600 !important;
+}
+::deep .so-btn-sign-on.e-btn:hover {
+    background:   linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color:        #081f0f !important;
+}
+
+/* ── "Register for Training" grid icon button (SfButton → ::deep needed) ── */
+::deep .so-btn-register-training.e-btn,
+::deep .so-btn-register-training.e-btn.e-flat,
+::deep .so-btn-register-training.e-btn:focus {
+    background:   linear-gradient(180deg, #daeeff 0%, #bbdefb 52%, #96ccf5 100%) !important;
+    border-color: #64b5f6 !important;
+    color:        #0d2d59 !important;
+}
+::deep .so-btn-register-training.e-btn:hover,
+::deep .so-btn-register-training.e-btn.e-flat:hover {
+    background:   linear-gradient(180deg, #bbdefb 0%, #96ccf5 52%, #64b5f6 100%) !important;
+    border-color: #42a5f5 !important;
+    color:        #071c3a !important;
+}

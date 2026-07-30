@@ -1,0 +1,170 @@
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using Microsoft.JSInterop
+
+@inject IJSRuntime JS
+@inject ILearnerTrainingService LearnerTrainingService
+
+@implements IAsyncDisposable
+
+<div class="tp-slide-layout">
+    <div class="tp-slide-presentation">
+        @if (!string.IsNullOrWhiteSpace(Block.Title))
+        {
+            <div class="tp-slide-title">@Block.Title</div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Block.ThumbnailUrl))
+        {
+            <img src="@Block.ThumbnailUrl" alt="Slide visual" style="max-width:100%;border-radius:4px;margin-bottom:0.75rem;" />
+        }
+        <div class="tp-slide-body">
+            @((MarkupString)(Block.ContentHtml ?? string.Empty))
+        </div>
+    </div>
+
+    @if (_hasAvatarVideo)
+    {
+        <div class="tp-avatar-container">
+            @switch (_avatarType)
+            {
+                case "youtube":
+                    <div id="@_avatarId"></div>
+                    break;
+                case "vimeo":
+                    <iframe id="@_avatarId" src="" allow="autoplay; fullscreen" frameborder="0"></iframe>
+                    break;
+                default:
+                    <video id="@_avatarId" preload="metadata" playsinline style="width:100%;height:100%;object-fit:cover;">
+                        <source src="@_avatarSrc" />
+                    </video>
+                    break;
+            }
+        </div>
+    }
+    else
+    {
+        @* No avatar: show a no-avatar placeholder; auto-complete after short timer *@
+        <div style="width:200px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#f8f9fa;border-radius:8px;color:#adb5bd;font-size:0.75rem;">
+            No presenter video
+        </div>
+    }
+</div>
+
+@if (_avatarCompleted || !_hasAvatarVideo)
+{
+    <div class="tp-video-complete-badge" style="margin-top:0.5rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+        Slide complete
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public TrainingPlayerBlockModel Block { get; set; } = default!;
+    [Parameter, EditorRequired] public string UserId { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Guid CourseId { get; set; }
+    [Parameter, EditorRequired] public Guid LessonId { get; set; }
+    [Parameter] public EventCallback OnCompleted { get; set; }
+
+    private IJSObjectReference? _module;
+    private DotNetObjectReference<SlideBlockPlayer>? _dotNetRef;
+    private string _avatarId = string.Empty;
+    private string _avatarType = "html5";
+    private string? _avatarSrc;
+    private bool _hasAvatarVideo;
+    private bool _avatarCompleted;
+    private bool _disposed;
+
+    protected override void OnParametersSet()
+    {
+        _avatarId = $"avatar-{Block.BlockId:N}";
+        _avatarCompleted = Block.IsCompleted;
+
+        var avatarUrl = Block.AvatarVideoUrl;
+        if (string.IsNullOrWhiteSpace(avatarUrl) && !string.IsNullOrWhiteSpace(Block.FileUrl))
+        {
+            // Slide with an uploaded video file used as the avatar source
+            avatarUrl = Block.FileUrl;
+        }
+
+        if (!string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            _hasAvatarVideo = true;
+            if (avatarUrl.Contains("youtube.com") || avatarUrl.Contains("youtu.be"))
+                _avatarType = "youtube";
+            else if (avatarUrl.Contains("vimeo.com"))
+                _avatarType = "vimeo";
+            else
+                _avatarType = "html5";
+            _avatarSrc = avatarUrl;
+        }
+        else
+        {
+            _hasAvatarVideo = false;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender || _disposed) return;
+        if (!_hasAvatarVideo) { await AutoCompleteNoAvatarAsync(); return; }
+
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/trainingPlayer.js");
+        _dotNetRef ??= DotNetObjectReference.Create(this);
+
+        switch (_avatarType)
+        {
+            case "youtube":
+                var ytId = ExtractYouTubeId(_avatarSrc!);
+                if (!string.IsNullOrWhiteSpace(ytId))
+                    await _module.InvokeVoidAsync("initYouTubePlayer", _avatarId, ytId, _dotNetRef, true);
+                break;
+            case "vimeo":
+                await _module.InvokeVoidAsync("initVimeoPlayer", _avatarId, _avatarSrc, _dotNetRef, true);
+                break;
+            default:
+                await _module.InvokeVoidAsync("initAvatarPlayer", _avatarId, _dotNetRef);
+                break;
+        }
+    }
+
+    private async Task AutoCompleteNoAvatarAsync()
+    {
+        await Task.Delay(2000);
+        if (!_disposed) await OnAvatarEnded();
+    }
+
+    private static string? ExtractYouTubeId(string url)
+    {
+        var match = System.Text.RegularExpressions.Regex.Match(url, @"(?:v=|youtu\.be/)([^&?/\s]+)");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    [JSInvokable]
+    public async Task OnAvatarEnded()
+    {
+        if (_disposed) return;
+        _avatarCompleted = true;
+        try
+        {
+            await LearnerTrainingService.CompleteBlockAsync(UserId, CourseId, LessonId, Block.BlockId);
+            Block.IsCompleted = true;
+            await InvokeAsync(StateHasChanged);
+            await OnCompleted.InvokeAsync();
+        }
+        catch (ObjectDisposedException) { }
+    }
+
+    [JSInvokable] public Task OnAvatarTimeUpdate(double currentTime) => Task.CompletedTask;
+    [JSInvokable] public Task OnAvatarMetadata(double duration) => Task.CompletedTask;
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        if (_module is not null && _hasAvatarVideo)
+        {
+            try { await _module.InvokeVoidAsync("destroyPlayer", _avatarId); } catch { }
+            try { await _module.DisposeAsync(); } catch { }
+        }
+        _dotNetRef?.Dispose();
+    }
+}

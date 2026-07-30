@@ -1,0 +1,72 @@
+@using AlgoaBayBMT.Services.Models
+
+<div class="training-panel tp-progress-panel">
+    <div class="training-panel-header tp-panel-header-soft">
+        <div class="tp-panel-header-copy">
+            <div class="tp-panel-header-kicker">Progress</div>
+            <div class="tp-panel-header-title-row">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                <span>Lesson Progress</span>
+            </div>
+        </div>
+    </div>
+    <div class="training-panel-body">
+        @if (CurrentLesson is not null)
+        {
+            <div class="tp-progress-lesson-label">
+                @CurrentLesson.Title
+            </div>
+
+            <div class="tp-progress-group">
+                <div class="tp-progress-group-head">
+                    <span>Lesson completion</span>
+                    <strong>@($"{CurrentLesson.ProgressPercent:0.##}")%</strong>
+                </div>
+                <div class="tp-lesson-progress-bar">
+                    <div class="tp-lesson-progress-fill" style="width:@($"{CurrentLesson.ProgressPercent:0.##}%")"></div>
+                </div>
+            </div>
+
+            <div class="tp-progress-block-list" style="margin-top:0.9rem;">
+                @foreach (var block in CurrentLesson.Blocks)
+                {
+                    <div class="tp-progress-block-item @(block.IsCurrent ? "is-current" : string.Empty) @(block.IsCompleted ? "is-completed" : string.Empty)" @key="block.BlockId">
+                        @if (block.IsCompleted)
+                        {
+                            <svg class="tp-block-status tp-block-status--complete" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                        }
+                        else if (block.IsCurrent)
+                        {
+                            <svg class="tp-block-status tp-block-status--inprogress" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        }
+                        else if (block.IsLocked)
+                        {
+                            <svg class="tp-block-status tp-block-status--locked" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        }
+                        else
+                        {
+                            <svg class="tp-block-status tp-block-status--notstarted" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+                        }
+                        <span class="tp-progress-block-copy">@block.DisplayType@(string.IsNullOrWhiteSpace(block.Title) ? string.Empty : $": {block.Title}")</span>
+                    </div>
+                }
+            </div>
+
+            <div class="tp-progress-group tp-progress-group--course">
+                <div class="tp-progress-group-head">
+                    <span>Overall course progress</span>
+                    <strong>@($"{CourseProgressPercent:0.##}")%</strong>
+                </div>
+                <div class="tp-lesson-progress-fill" style="width:@($"{CurrentLesson.ProgressPercent:0.##}%")"></div>
+                <div class="tp-lesson-progress-bar" style="margin-top:0.45rem;">
+                    <div class="tp-lesson-progress-fill tp-lesson-progress-fill--course" style="width:@($"{CourseProgressPercent:0.##}%")"></div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public TrainingPlayerLessonModel? CurrentLesson { get; set; }
+    [Parameter] public decimal CourseProgressPercent { get; set; }
+}

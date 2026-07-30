@@ -1,0 +1,2001 @@
+﻿/* ═══════════════════════════════════════════════════════════════════
+   Training page top action buttons — loaded LAST so these rules win.
+   Syncfusion renders IconCss as: <span class="e-btn-icon e-icons e-add e-icon-left">
+   ═══════════════════════════════════════════════════════════════════ */
+
+.pf-training-page-action-btn.e-btn {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    white-space: nowrap !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    /* kill any gradient from global rules */
+    background-image: none !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18) !important;
+    transition: filter 120ms ease !important;
+    transform: none !important;
+}
+
+/* Icon glyph — Syncfusion wraps it in .e-btn-icon */
+.pf-training-page-action-btn.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-style: normal !important;
+    font-variant: normal !important;
+    font-weight: normal !important;
+    speak: none !important;
+    -webkit-font-smoothing: antialiased;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* ── Reset Training Data — subtle red ─────────────────── */
+.pf-training-reset-data-btn.e-btn,
+.pf-training-reset-data-btn.e-btn:focus,
+.pf-training-reset-data-btn.e-btn:active {
+    background: #c0392b !important;
+    background-image: none !important;
+    border-color: #96281b !important;
+    color: #ffffff !important;
+}
+
+.pf-training-reset-data-btn.e-btn:hover {
+    background: #96281b !important;
+    background-image: none !important;
+    border-color: #7b2218 !important;
+    color: #ffffff !important;
+    filter: none !important;
+}
+
+/* ── Create Course — subtle green ─────────────────────── */
+.pf-training-create-course-btn.e-btn,
+.pf-training-create-course-btn.e-btn:focus,
+.pf-training-create-course-btn.e-btn:active {
+    background: #27ae60 !important;
+    background-image: none !important;
+    border-color: #1e8449 !important;
+    color: #ffffff !important;
+}
+
+.pf-training-create-course-btn.e-btn:hover {
+    background: #1e8449 !important;
+    background-image: none !important;
+    border-color: #196f3d !important;
+    color: #ffffff !important;
+    filter: none !important;
+}
+
+/* ── Create Course dialog overrides: Syncfusion dialogs render outside scoped CSS boundaries. ── */
+.pf-course-create-dialog.e-dialog .e-dlg-content { margin-top: 10px !important; }
+.pf-course-create-dialog.e-dialog .e-dlg-header-content { min-height: 52px !important; padding: 0.6rem 1.15rem !important; display: flex !important; align-items: center !important; background: #ddecf0 !important; border-bottom: 1px solid #b8d8e0 !important; box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset !important; }
+.pf-course-create-dialog.e-dialog .e-dlg-header { min-height: 30px !important; display: flex !important; align-items: center !important; background: transparent !important; color: #000000 !important; font-size: 1.05rem !important; font-weight: 700 !important; line-height: 1.2 !important; flex: 1 !important; order: 1 !important; }
+.pf-course-create-dialog.e-dialog .e-dlg-closeicon-btn { align-self: center !important; margin-left: auto !important; margin-top: 0 !important; color: #000000 !important; order: 2 !important; flex-shrink: 0 !important; }
+.pf-course-create-dialog-actions { display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 0.65rem !important; margin-top: 1rem !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   Edit User / Add User dialog — styled identically to Create Course.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Dialog chrome — same dark-teal header as Create Course */
+.pf-user-edit-dialog.e-dialog .e-dlg-content { margin-top: 10px !important; }
+.pf-user-edit-dialog.e-dialog .e-dlg-header-content { min-height: 42px !important; padding: 0.45rem 1.15rem !important; display: flex !important; align-items: center !important; background: linear-gradient(180deg, #0f5f64 0%, #0a4c52 52%, #073a40 100%) !important; border-bottom: 1px solid rgba(3,45,49,0.72) !important; box-shadow: 0 1px 0 rgba(255,255,255,0.12) inset, 0 8px 18px rgba(7,58,64,0.20) !important; }
+.pf-user-edit-dialog.e-dialog .e-dlg-header { min-height: 30px !important; display: flex !important; align-items: center !important; background: transparent !important; color: #ffffff !important; font-size: 0.98rem !important; font-weight: 800 !important; line-height: 1.1 !important; }
+.pf-user-edit-dialog.e-dialog .e-dlg-closeicon-btn { align-self: center !important; margin-top: 0 !important; }
+
+/* Actions row */
+.pf-user-edit-dialog-actions { display: flex !important; align-items: center !important; justify-content: flex-end !important; gap: 0.65rem !important; margin-top: 1rem !important; }
+
+/* Shared button base — 145x40px */
+.pf-user-edit-dialog-btn.e-btn { width: 145px !important; min-width: 145px !important; height: 40px !important; min-height: 40px !important; max-height: 40px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0 !important; padding: 0 0.6rem !important; border-radius: 8px !important; border-width: 1px !important; border-style: solid !important; color: inherit !important; font-size: 0.72rem !important; font-weight: 700 !important; line-height: 1.1 !important; text-decoration: none !important; white-space: nowrap !important; background-image: none !important; box-shadow: 0 1px 0 rgba(255,255,255,0.50) inset, 0 2px 5px rgba(0,0,0,0.14) !important; transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important; }
+.pf-user-edit-dialog-btn.e-btn .e-btn-icon { font-family: 'e-icons' !important; font-size: 0.95rem !important; font-style: normal !important; font-weight: normal !important; line-height: 1 !important; margin: 0 4px 0 0 !important; padding: 0 !important; color: inherit !important; display: inline-block !important; width: auto !important; height: auto !important; flex-shrink: 0 !important; }
+
+/* Cancel — pastel gray */
+.pf-user-edit-dialog-btn--cancel.e-btn,
+.pf-user-edit-dialog-btn--cancel.e-btn:focus,
+.pf-user-edit-dialog-btn--cancel.e-btn:active { background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important; border-color: #adb2ba !important; color: #2d3748 !important; text-shadow: none !important; }
+.pf-user-edit-dialog-btn--cancel.e-btn:hover { background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important; border-color: #969ca6 !important; color: #1a2433 !important; filter: none !important; transform: translateY(-1px); }
+.pf-user-edit-dialog-btn--cancel.e-btn .e-btn-icon { color: #2d3748 !important; }
+
+/* Save — pastel green */
+.pf-user-edit-dialog-btn--save.e-btn,
+.pf-user-edit-dialog-btn--save.e-btn:focus,
+.pf-user-edit-dialog-btn--save.e-btn:active { background: linear-gradient(180deg, #c8ecd5 0%, #b8e4c8 52%, #a0d4b4 100%) !important; border-color: #82c49c !important; color: #1a5c34 !important; text-shadow: none !important; }
+.pf-user-edit-dialog-btn--save.e-btn:hover { background: linear-gradient(180deg, #a8d8b8 0%, #94ccaa 52%, #80be98 100%) !important; border-color: #62a87c !important; color: #134426 !important; filter: none !important; transform: translateY(-1px); }
+.pf-user-edit-dialog-btn--save.e-btn .e-btn-icon { color: #1a5c34 !important; }
+
+/* Re-send Email — pastel amber */
+.pf-user-edit-dialog-btn--resend.e-btn,
+.pf-user-edit-dialog-btn--resend.e-btn:focus,
+.pf-user-edit-dialog-btn--resend.e-btn:active { background: linear-gradient(180deg, #fdf0d4 0%, #f5e0a8 52%, #eacc7a 100%) !important; border-color: #d4b054 !important; color: #6b4b06 !important; text-shadow: none !important; }
+.pf-user-edit-dialog-btn--resend.e-btn:hover { background: linear-gradient(180deg, #eacc7a 0%, #ddb84e 52%, #cc9e2c 100%) !important; border-color: #b88c28 !important; color: #4a3204 !important; filter: none !important; transform: translateY(-1px); }
+.pf-user-edit-dialog-btn--resend.e-btn .e-btn-icon { color: #6b4b06 !important; }
+
+@media (max-width: 640px) {
+    .pf-user-edit-dialog-actions { display: grid !important; grid-template-columns: 1fr !important; }
+    .pf-user-edit-dialog-btn.e-btn { width: 100% !important; min-width: 0 !important; }
+}
+.pf-course-create-dialog-btn.e-btn { width: 155px !important; min-width: 155px !important; height: 46px !important; min-height: 46px !important; max-height: 46px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; gap: 0 !important; padding: 0 0.6rem !important; border-radius: 8px !important; border-width: 1px !important; border-style: solid !important; color: #ffffff !important; font-size: 0.72rem !important; font-weight: 700 !important; line-height: 1.1 !important; text-decoration: none !important; white-space: nowrap !important; background-image: none !important; box-shadow: 0 1px 0 rgba(255,255,255,0.16) inset, 0 2px 5px rgba(0,0,0,0.22) !important; transition: filter 120ms ease, transform 120ms ease, box-shadow 140ms ease !important; }
+.pf-course-create-dialog-btn.e-btn .e-btn-icon { font-family: 'e-icons' !important; font-size: 0.95rem !important; font-style: normal !important; font-weight: normal !important; line-height: 1 !important; margin: 0 4px 0 0 !important; padding: 0 !important; color: #ffffff !important; display: inline-block !important; width: auto !important; height: auto !important; flex-shrink: 0 !important; }
+.pf-course-create-dialog-btn--cancel.e-btn, .pf-course-create-dialog-btn--cancel.e-btn:focus, .pf-course-create-dialog-btn--cancel.e-btn:active { background: linear-gradient(180deg, #6b7280 0%, #4b5563 58%, #374151 100%) !important; border-color: #313a46 !important; }
+.pf-course-create-dialog-btn--cancel.e-btn:hover { background: linear-gradient(180deg, #5f6673 0%, #434c59 58%, #313a46 100%) !important; border-color: #27313c !important; filter: none !important; transform: translateY(-1px); }
+.pf-course-create-dialog-btn--save.e-btn, .pf-course-create-dialog-btn--save.e-btn:focus, .pf-course-create-dialog-btn--save.e-btn:active { background: linear-gradient(180deg, #27ae60 0%, #229954 58%, #1e8449 100%) !important; border-color: #1e8449 !important; }
+.pf-course-create-dialog-btn--save.e-btn:hover { background: linear-gradient(180deg, #229954 0%, #1e8449 58%, #196f3d 100%) !important; border-color: #196f3d !important; filter: none !important; transform: translateY(-1px); }
+@media (max-width: 640px) { .pf-course-create-dialog-actions { display: grid !important; grid-template-columns: 1fr !important; } .pf-course-create-dialog-btn.e-btn { width: 100% !important; min-width: 0 !important; } }
+
+
+/* -------------------------------------------------------------------
+   COURSE BUILDER � page-action button colours, treeview, RTE toolbar.
+   Placed here (last-loaded file) so rules win over portflow-modern.css.
+   ------------------------------------------------------------------- */
+
+/* -- Kill portflow ::before shimmer on all cb- buttons ----------- */
+.cb-btn-back-courses.e-btn::before,
+.cb-btn-create-version.e-btn::before,
+.cb-btn-publish-version.e-btn::before,
+.cb-btn-up.e-btn::before,
+.cb-btn-down.e-btn::before,
+.cb-btn-delete.e-btn::before,
+.cb-btn-new-lesson.e-btn::before,
+.cb-btn-save-module.e-btn::before {
+    display: none !important;
+}
+
+/* -- Per-button icon colour (overrides base white on light pastels) */
+.cb-btn-back-courses.e-btn .e-btn-icon    { color: #0f2d4a !important; }
+.cb-btn-create-version.e-btn .e-btn-icon  { color: #0f3319 !important; }
+.cb-btn-publish-version.e-btn .e-btn-icon { color: #0a2d2b !important; }
+.cb-btn-up.e-btn .e-btn-icon              { color: #2d3748 !important; }
+.cb-btn-down.e-btn .e-btn-icon            { color: #2d3748 !important; }
+.cb-btn-delete.e-btn .e-btn-icon          { color: #5c0f0d !important; }
+.cb-btn-new-lesson.e-btn .e-btn-icon      { color: #4a2800 !important; }
+.cb-btn-save-module.e-btn .e-btn-icon     { color: #2a1456 !important; }
+.cb-btn-add-module.e-btn .e-btn-icon      { color: #0f3319 !important; }
+
+/* -- Back to Courses � pastel blue ------------------------------ */
+a.cb-btn-back-courses.e-btn,
+a.cb-btn-back-courses.e-btn:visited,
+a.cb-btn-back-courses.e-btn:focus,
+a.cb-btn-back-courses.e-btn:active,
+.cb-btn-back-courses.e-btn,
+.cb-btn-back-courses.e-btn:focus,
+.cb-btn-back-courses.e-btn:active {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+a.cb-btn-back-courses.e-btn:hover,
+.cb-btn-back-courses.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- Create Next Version � pastel green ------------------------- */
+.cb-btn-create-version.e-btn,
+.cb-btn-create-version.e-btn:focus,
+.cb-btn-create-version.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-create-version.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- Publish Current Version � pastel teal ---------------------- */
+.cb-btn-publish-version.e-btn,
+.cb-btn-publish-version.e-btn:focus,
+.cb-btn-publish-version.e-btn:active {
+    background: linear-gradient(180deg, #b4e8e4 0%, #8fd8d3 52%, #6ac8c2 100%) !important;
+    border-color: #4ab8b2 !important;
+    color: #0a2d2b !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-publish-version.e-btn:hover {
+    background: linear-gradient(180deg, #8fd8d3 0%, #6ac8c2 52%, #46b5af 100%) !important;
+    border-color: #2e9e98 !important;
+    color: #061d1c !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- + Module button � pastel green, 80�30 --------------------- */
+.cb-btn-add-module.e-btn,
+.cb-btn-add-module.e-btn:focus,
+.cb-btn-add-module.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+    /* Override pf-training-page-action-btn 155�46 */
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    font-size: 0.68rem !important;
+    padding: 0 0.4rem !important;
+}
+.cb-btn-add-module.e-btn::before { display: none !important; }
+.cb-btn-add-module.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.18) !important;
+}
+
+/* -- Up � pastel gray ------------------------------------------- */
+.cb-btn-up.e-btn,
+.cb-btn-up.e-btn:focus,
+.cb-btn-up.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-up.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* -- Down � pastel gray ----------------------------------------- */
+.cb-btn-down.e-btn,
+.cb-btn-down.e-btn:focus,
+.cb-btn-down.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-down.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* -- Delete � pastel red ---------------------------------------- */
+.cb-btn-delete.e-btn,
+.cb-btn-delete.e-btn:focus,
+.cb-btn-delete.e-btn:active {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    border-color: #dd6b68 !important;
+    color: #5c0f0d !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-delete.e-btn:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    border-color: #c9504d !important;
+    color: #3d0909 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.18) !important;
+}
+
+/* -- New Lesson � pastel orange --------------------------------- */
+.cb-btn-new-lesson.e-btn,
+.cb-btn-new-lesson.e-btn:focus,
+.cb-btn-new-lesson.e-btn:active {
+    background: linear-gradient(180deg, #fce4c2 0%, #f8d09a 52%, #f3b878 100%) !important;
+    border-color: #e89e52 !important;
+    color: #4a2800 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-new-lesson.e-btn:hover {
+    background: linear-gradient(180deg, #f8d09a 0%, #f3b878 52%, #ea9d4e 100%) !important;
+    border-color: #d4872c !important;
+    color: #2e1800 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.18) !important;
+}
+
+/* -- Save Module / Save Lesson � pastel purple ------------------ */
+.cb-btn-save-module.e-btn,
+.cb-btn-save-module.e-btn:focus,
+.cb-btn-save-module.e-btn:active {
+    background: linear-gradient(180deg, #e0d4f5 0%, #cdbded 52%, #b8a6e0 100%) !important;
+    border-color: #9d87d0 !important;
+    color: #2a1456 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.cb-btn-save-module.e-btn:hover {
+    background: linear-gradient(180deg, #cdbded 0%, #b8a6e0 52%, #a08dd2 100%) !important;
+    border-color: #8370c0 !important;
+    color: #1a0b3d !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.18) !important;
+}
+
+/* -- + Add Lesson (treeview) � pastel green 3D, max 30px high --- */
+.cb-btn-add-lesson-3d.e-btn,
+.cb-btn-add-lesson-3d.e-btn:focus,
+.cb-btn-add-lesson-3d.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 3px 6px rgba(10,80,20,0.20) !important;
+    border-radius: 6px !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    width: calc(100% - 1.1rem) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    margin: 0.2rem 0 0 1.1rem !important;
+    padding: 0 0.6rem !important;
+}
+.cb-btn-add-lesson-3d.e-btn::before { display: none !important; }
+.cb-btn-add-lesson-3d.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 5px 10px rgba(10,80,20,0.24) !important;
+}
+.cb-btn-add-lesson-3d.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.82rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* -- Icon colour in all cb- action buttons ---------------------- */
+a.cb-btn-back-courses.e-btn .e-btn-icon,
+.cb-btn-create-version.e-btn .e-btn-icon,
+.cb-btn-publish-version.e-btn .e-btn-icon,
+.cb-btn-add-module.e-btn .e-btn-icon,
+.cb-btn-up.e-btn .e-btn-icon,
+.cb-btn-down.e-btn .e-btn-icon,
+.cb-btn-delete.e-btn .e-btn-icon,
+.cb-btn-new-lesson.e-btn .e-btn-icon,
+.cb-btn-save-module.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* -- Flatten treeview module/lesson items completely ------------ */
+/* Kill all 3D effects: box-shadow, ::before shimmer, transform lift, filter from portflow-modern */
+.tp-journey-module-toggle,
+.tp-journey-module-toggle:hover,
+.tp-journey-module-toggle:focus,
+.tp-journey-module-toggle.is-selected,
+.tp-journey-module-toggle.is-open {
+    box-shadow: none !important;
+    background: #f4f6f8 !important;
+    border: 1px solid #e0e6ea !important;
+    border-radius: 5px !important;
+    transform: none !important;
+    filter: none !important;
+}
+.tp-journey-module-toggle:hover {
+    background: #eaf0f4 !important;
+    border-color: #c8d8e0 !important;
+    transform: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+}
+.tp-journey-module-toggle.is-selected {
+    background: #eef2ff !important;
+    border-color: #b0beee !important;
+    color: #2a3f8a !important;
+}
+/* Kill portflow ::before shimmer on these native <button> elements */
+.tp-journey-module-toggle::before,
+.tp-journey-lesson::before {
+    display: none !important;
+}
+/* Flatten lesson rows */
+.tp-journey-lesson {
+    box-shadow: none !important;
+    background: transparent !important;
+    border-left: 2px solid #d9e4e8 !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    border-radius: 0 !important;
+    transform: none !important;
+    filter: none !important;
+}
+.tp-journey-lesson:hover {
+    background: #f4f8fa !important;
+    box-shadow: none !important;
+    border-left-color: #9cb8c8 !important;
+    transform: none !important;
+    filter: none !important;
+}
+.tp-journey-lesson:active,
+.tp-journey-module-toggle:active {
+    transform: none !important;
+    filter: none !important;
+    box-shadow: none !important;
+}
+.tp-journey-lesson.is-current {
+    border-left-color: var(--tp-accent, #2f7c89) !important;
+    background: #f0f8fa !important;
+    box-shadow: none !important;
+}
+
+/* -- Module label: Bold; Lesson label: Normal weight ----------- */
+.tp-journey-module-toggle .pf-training-tree-label {
+    font-weight: 700 !important;
+    color: #0f3247 !important;
+}
+.tp-journey-lesson .pf-training-tree-label {
+    font-weight: 400 !important;
+    color: #3d5a70 !important;
+}
+
+/* -- RichTextEditor � compact Word-style toolbar (Syncfusion Fluent2) ------ */
+/* Use high-specificity selectors to beat the Fluent2 theme */
+/* Toolbar header: 3D pastel teal (matches the app's nav/teal palette) */
+.cb-richtext-editor.e-richtexteditor .e-toolbar.e-rte-toolbar,
+.cb-richtext-editor .e-toolbar.e-rte-toolbar {
+    background: transparent !important;
+    border-bottom: 1px solid #d0d7e2 !important;
+    box-shadow: none !important;
+    padding: 2px 4px !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+/* Toolbar wrapper must not add extra height */
+.cb-richtext-editor.e-richtexteditor .e-toolbar-wrapper,
+.cb-richtext-editor .e-toolbar-wrapper {
+    height: auto !important;
+    min-height: 0 !important;
+    background: transparent !important;
+    border-radius: 4px 4px 0 0 !important;
+}
+/* Individual toolbar item containers */
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item,
+.cb-richtext-editor .e-toolbar .e-toolbar-items .e-toolbar-item {
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+}
+/* The actual button element inside each toolbar item */
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    border-radius: 3px !important;
+    width: 28px !important;
+    min-width: 28px !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+    padding: 2px 3px !important;
+    color: #1f2937 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.1s, border-color 0.1s !important;
+}
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn::before,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn::before {
+    display: none !important;
+}
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn:hover,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn:hover {
+    background: #dde4ee !important;
+    border-color: #b8c4d4 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+    color: #111827 !important;
+}
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item.e-active .e-tbar-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item.e-active .e-tbar-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn:active {
+    background: #d0daf0 !important;
+    border-color: #7a9cd0 !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.10) !important;
+    color: #0e2060 !important;
+}
+/* Icons inside toolbar buttons � must be fixed size, not 100% height */
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn .e-btn-icon,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn .e-btn-icon,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn .e-icons {
+    font-size: 14px !important;
+    width: 16px !important;
+    height: 16px !important;
+    line-height: 16px !important;
+    color: #1f2937 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* Dropdown buttons in toolbar (Formats, FontName, FontSize) */
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-dropdown-btn.e-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #1f2937 !important;
+    font-size: 0.76rem !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    border-radius: 3px !important;
+    padding: 0 5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn::before,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-dropdown-btn.e-btn::before {
+    display: none !important;
+}
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn:hover,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-dropdown-btn.e-btn:hover {
+    background: #dde4ee !important;
+    border-color: #b8c4d4 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+}
+/* Toolbar item buttons: transparent bg � dark text/icons */
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn {
+    color: #1f2937 !important;
+}
+.cb-richtext-editor.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn .e-btn-icon,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn .e-btn-icon,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn .e-icons {
+    color: #1f2937 !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn:hover {
+    background: #dde4ee !important;
+    border-color: #b8c4d4 !important;
+    color: #111827 !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item.e-active .e-tbar-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-tbar-btn.e-btn:active {
+    background: #d0daf0 !important;
+    border-color: #7a9cd0 !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.12) !important;
+    color: #0e2060 !important;
+}
+/* Dropdown buttons */
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-dropdown-btn.e-btn {
+    color: #1f2937 !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-dropdown-btn.e-btn:hover {
+    background: #dde4ee !important;
+    border-color: #b8c4d4 !important;
+    color: #111827 !important;
+}
+/* Separator lines */
+.cb-richtext-editor .e-toolbar .e-separator {
+    border-color: #c8d0dc !important;
+    margin: 3px 4px !important;
+    height: 18px !important;
+    align-self: center !important;
+}
+
+/* -- FontColor / BackgroundColor split-button colorpicker fix -----
+   Syncfusion renders these as .e-split-btn-wrapper containing
+   .e-split-colorpicker.e-split-btn.e-btn + .e-dropdown-btn.e-btn
+   The GlobalStyles gray-gradient now excludes .e-split-btn, but we
+   also need to ensure they look transparent on the teal toolbar.     */
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    height: 26px !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-btn.e-btn,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-colorpicker.e-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
+    padding: 2px 3px !important;
+    border-radius: 3px 0 0 3px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transform: none !important;
+    filter: none !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-btn.e-btn::before,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-colorpicker.e-btn::before {
+    display: none !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-btn.e-btn:hover,
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-colorpicker.e-btn:hover {
+    background: #dde4ee !important;
+    border-color: #b8c4d4 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transform: none !important;
+}
+/* The dropdown arrow half of the split button */
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-dropdown-btn.e-btn {
+    border-radius: 0 3px 3px 0 !important;
+    min-width: 14px !important;
+    width: 16px !important;
+    padding: 2px 2px !important;
+}
+/* The selected-color preview swatch inside the split button */
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-colorpicker .e-selected-color {
+    width: 18px !important;
+    height: 18px !important;
+}
+.cb-richtext-editor .e-toolbar .e-toolbar-item .e-split-btn-wrapper .e-split-colorpicker .e-selected-color .e-split-preview {
+    border-radius: 2px !important;
+}
+
+/* ??????????????????????????????????????????????????????????????????????????
+   CONTENT BLOCKS PANEL � header + Add Block + Save Block
+   ?????????????????????????????????????????????????????????????????????????? */
+
+/* Content-blocks section-header strip: #ddecf0 with 3D shadow */
+.cb-section-header.cb-blocks-header-shell,
+.training-panel-header.cb-section-header.cb-blocks-header-shell {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    color: #1a3a4a !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+
+/* -- "+ Add Block" button � pastel gray-blue, 155�46 (matches Reset Training Data) */
+.cb-btn-add-block.e-btn,
+.cb-btn-add-block.e-btn:focus,
+.cb-btn-add-block.e-btn:active {
+    background: linear-gradient(180deg, #d4dff0 0%, #b8cce4 52%, #9fbad8 100%) !important;
+    border-color: #7fa3cc !important;
+    color: #142d50 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+    /* match pf-training-page-action-btn dimensions exactly */
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    transform: none !important;
+}
+.cb-btn-add-block.e-btn::before { display: none !important; }
+.cb-btn-add-block.e-btn:hover {
+    background: linear-gradient(180deg, #b8cce4 0%, #9fbad8 52%, #85a8cc 100%) !important;
+    border-color: #5e90be !important;
+    color: #0c2240 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+.cb-btn-add-block.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* -- "Save Block" button � primary blue, 155�46 */
+.cb-btn-save-block.e-btn,
+.cb-btn-save-block.e-btn:focus,
+.cb-btn-save-block.e-btn:active {
+    background: linear-gradient(180deg, #3d7bd4 0%, #2563c4 52%, #1952ad 100%) !important;
+    border-color: #1245a0 !important;
+    color: #ffffff !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 2px 5px rgba(0,0,0,0.20) !important;
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    transform: none !important;
+}
+.cb-btn-save-block.e-btn::before { display: none !important; }
+.cb-btn-save-block.e-btn:hover {
+    background: linear-gradient(180deg, #2563c4 0%, #1952ad 52%, #123f96 100%) !important;
+    border-color: #0d348a !important;
+    color: #ffffff !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.20) inset, 0 4px 8px rgba(0,0,0,0.22) !important;
+}
+.cb-btn-save-block.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: #ffffff !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* -- "Add Card" � pastel green, matches Save Lesson dimensions ---- */
+.cb-btn-add-card.e-btn,
+.cb-btn-add-card.e-btn:focus,
+.cb-btn-add-card.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border: 1px solid #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    transform: none !important;
+}
+.cb-btn-add-card.e-btn::before { display: none !important; }
+.cb-btn-add-card.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 8px rgba(10,80,20,0.22) !important;
+}
+.cb-btn-add-card.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* -- "Remove" (flashcard) � pastel red, matches Save Lesson dimensions */
+.cb-btn-remove-card.e-btn,
+.cb-btn-remove-card.e-btn:focus,
+.cb-btn-remove-card.e-btn:active {
+    background: linear-gradient(180deg, #f5d4d4 0%, #edbcbc 52%, #e0a4a4 100%) !important;
+    border: 1px solid #cc8585 !important;
+    color: #4a1414 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(80,10,10,0.16) !important;
+    width: 130px !important;
+    min-width: 130px !important;
+    height: 38px !important;
+    min-height: 38px !important;
+    max-height: 38px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    transform: none !important;
+}
+.cb-btn-remove-card.e-btn::before { display: none !important; }
+.cb-btn-remove-card.e-btn:hover {
+    background: linear-gradient(180deg, #edbcbc 0%, #e0a4a4 52%, #d08c8c 100%) !important;
+    border-color: #b06868 !important;
+    color: #2e0a0a !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(80,10,10,0.20) !important;
+}
+.cb-btn-remove-card.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* ============================================================== */
+/* GLOBAL Syncfusion RichTextEditor toolbar � pastel light gray 3D */
+/* Applied to ALL RTE instances across the application.           */
+/* Covers main toolbar, extended/overflow row, and toolbar-wrapper */
+/* ============================================================== */
+.e-richtexteditor .e-toolbar.e-rte-toolbar,
+.e-richtexteditor .e-rte-toolbar-extended,
+.e-richtexteditor .e-toolbar-wrapper,
+.e-richtexteditor .e-rte-toolbar-expanded {
+    background: linear-gradient(180deg, #f4f6fa 0%, #e6eaf1 52%, #d8dee8 100%) !important;
+    border-bottom: 1px solid #b8c1d0 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.80) inset, 0 2px 4px rgba(20,40,70,0.10) !important;
+    border-radius: 0 !important;
+}
+/* Top toolbar row keeps rounded top corners */
+.e-richtexteditor .e-toolbar-wrapper {
+    border-radius: 4px 4px 0 0 !important;
+}
+.e-richtexteditor .e-toolbar.e-rte-toolbar {
+    padding: 3px 5px !important;
+}
+.e-richtexteditor .e-rte-toolbar-extended {
+    padding: 2px 5px !important;
+    border-top: 1px solid #c8d0dc !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #1f2937 !important;
+    border-radius: 3px !important;
+    transition: background 0.1s, border-color 0.1s !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn::before {
+    display: none !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn:hover {
+    background: rgba(255,255,255,0.70) !important;
+    border-color: #9aa6ba !important;
+    color: #0f1827 !important;
+    filter: none !important;
+    transform: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.80) inset, 0 1px 2px rgba(20,40,70,0.10) !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item.e-active .e-tbar-btn.e-btn,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn.e-btn:active {
+    background: #d0daf0 !important;
+    border-color: #7a9cd0 !important;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,0.10) !important;
+    color: #0e2060 !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn .e-btn-icon,
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-tbar-btn .e-icons {
+    color: #1f2937 !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+    color: #1f2937 !important;
+    border-radius: 3px !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn::before {
+    display: none !important;
+}
+.e-richtexteditor .e-toolbar .e-toolbar-items .e-toolbar-item .e-dropdown-btn.e-btn:hover {
+    background: rgba(255,255,255,0.70) !important;
+    border-color: #9aa6ba !important;
+    color: #0f1827 !important;
+    filter: none !important;
+    transform: none !important;
+}
+
+
+/* -- Create Course dialog: Cancel (pastel gray) + Save (pastel green) buttons -- */
+.pf-course-create-dialog-btn.e-btn,
+.pf-course-create-dialog-btn.e-btn:focus,
+.pf-course-create-dialog-btn.e-btn:active {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+    transform: none !important;
+}
+.pf-course-create-dialog-btn.e-btn::before { display: none !important; }
+.pf-course-create-dialog-btn.e-btn .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-size: 0.9rem !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    line-height: 1 !important;
+    margin: 0 5px 0 0 !important;
+    padding: 0 !important;
+    color: inherit !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    flex-shrink: 0 !important;
+}
+
+/* Cancel — pastel gray */
+.pf-course-create-dialog-btn--cancel.e-btn,
+.pf-course-create-dialog-btn--cancel.e-btn:focus,
+.pf-course-create-dialog-btn--cancel.e-btn:active {
+    background: linear-gradient(180deg, #e8eaf0 0%, #d4d8e4 52%, #c0c6d4 100%) !important;
+    border-color: #9aa4b8 !important;
+    color: #1e2a3a !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(20,30,50,0.14) !important;
+}
+.pf-course-create-dialog-btn--cancel.e-btn:hover {
+    background: linear-gradient(180deg, #d4d8e4 0%, #c0c6d4 52%, #aab2c4 100%) !important;
+    border-color: #7a86a0 !important;
+    color: #111827 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(20,30,50,0.18) !important;
+}
+
+/* Save — pastel green */
+.pf-course-create-dialog-btn--save.e-btn,
+.pf-course-create-dialog-btn--save.e-btn:focus,
+.pf-course-create-dialog-btn--save.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+}
+.pf-course-create-dialog-btn--save.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 8px rgba(10,80,20,0.22) !important;
+}
+
+/* -- Training Reset dialog header — matches panel header standard -- */
+.pf-training-reset-dialog.e-dialog .e-dlg-header-content {
+    min-height: 52px !important;
+    padding: 0.6rem 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #ddecf0 !important;
+    border-bottom: 1px solid #b8d8e0 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset !important;
+}
+.pf-training-reset-dialog.e-dialog .e-dlg-header {
+    display: flex !important;
+    align-items: center !important;
+    background: transparent !important;
+    color: #0f3247 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    flex: 1 !important;
+    order: 1 !important;
+}
+.pf-training-reset-dialog.e-dialog .e-dlg-closeicon-btn {
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-top: 0 !important;
+    color: #0f3247 !important;
+    order: 2 !important;
+    flex-shrink: 0 !important;
+}
+
+/* ============================================================
+   HIGH-SPECIFICITY DIALOG BUTTON OVERRIDES
+   (dialog context + button class = specificity [0,3,0],
+    beats all flat [0,2,0] rules regardless of load order)
+   ============================================================ */
+
+/* -- Training Reset dialog: Cancel (pastel gray) -- */
+.pf-training-reset-dialog .e-btn.ab-btn-gray,
+.pf-training-reset-dialog .e-btn.ab-btn-gray:focus,
+.pf-training-reset-dialog .e-btn.ab-btn-gray:active {
+    background: linear-gradient(180deg, #e8eaf0 0%, #d4d8e4 52%, #c0c6d4 100%) !important;
+    border-color: #9aa4b8 !important;
+    color: #1e2a3a !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(20,30,50,0.14) !important;
+    text-shadow: none !important;
+}
+.pf-training-reset-dialog .e-btn.ab-btn-gray:hover {
+    background: linear-gradient(180deg, #d4d8e4 0%, #c0c6d4 52%, #aab2c4 100%) !important;
+    border-color: #7a86a0 !important;
+    color: #111827 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(20,30,50,0.18) !important;
+    text-shadow: none !important;
+}
+.pf-training-reset-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.pf-training-reset-dialog .e-btn.ab-btn-gray .e-icons {
+    color: #1e2a3a !important;
+}
+
+/* -- Training Reset dialog: Confirm Reset (pastel red) -- */
+.pf-training-reset-dialog .e-btn.ab-btn-red,
+.pf-training-reset-dialog .e-btn.ab-btn-red:focus,
+.pf-training-reset-dialog .e-btn.ab-btn-red:active {
+    background: linear-gradient(180deg, #f5d4d4 0%, #edbcbc 52%, #e0a4a4 100%) !important;
+    border-color: #cc8585 !important;
+    color: #4a1414 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(80,10,10,0.18) !important;
+    text-shadow: none !important;
+}
+.pf-training-reset-dialog .e-btn.ab-btn-red:hover {
+    background: linear-gradient(180deg, #edbcbc 0%, #e0a4a4 52%, #d08c8c 100%) !important;
+    border-color: #b06868 !important;
+    color: #2e0a0a !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(80,10,10,0.22) !important;
+    text-shadow: none !important;
+}
+.pf-training-reset-dialog .e-btn.ab-btn-red .e-btn-icon,
+.pf-training-reset-dialog .e-btn.ab-btn-red .e-icons {
+    color: #4a1414 !important;
+}
+
+/* -- Create Course dialog: Cancel (pastel gray) -- */
+.pf-course-create-dialog .e-btn.ab-btn-gray,
+.pf-course-create-dialog .e-btn.ab-btn-gray:focus,
+.pf-course-create-dialog .e-btn.ab-btn-gray:active {
+    background: linear-gradient(180deg, #e8eaf0 0%, #d4d8e4 52%, #c0c6d4 100%) !important;
+    border-color: #9aa4b8 !important;
+    color: #1e2a3a !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(20,30,50,0.14) !important;
+    text-shadow: none !important;
+}
+.pf-course-create-dialog .e-btn.ab-btn-gray:hover {
+    background: linear-gradient(180deg, #d4d8e4 0%, #c0c6d4 52%, #aab2c4 100%) !important;
+    border-color: #7a86a0 !important;
+    color: #111827 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(20,30,50,0.18) !important;
+    text-shadow: none !important;
+}
+.pf-course-create-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.pf-course-create-dialog .e-btn.ab-btn-gray .e-icons {
+    color: #1e2a3a !important;
+}
+
+/* -- Create Course dialog: Save (pastel green) -- */
+.pf-course-create-dialog .e-btn.ab-btn-green,
+.pf-course-create-dialog .e-btn.ab-btn-green:focus,
+.pf-course-create-dialog .e-btn.ab-btn-green:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+    text-shadow: none !important;
+}
+.pf-course-create-dialog .e-btn.ab-btn-green:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 8px rgba(10,80,20,0.22) !important;
+    text-shadow: none !important;
+}
+.pf-course-create-dialog .e-btn.ab-btn-green .e-btn-icon,
+.pf-course-create-dialog .e-btn.ab-btn-green .e-icons {
+    color: #0f3319 !important;
+}
+
+/* ============================================================
+   ABMT-DIALOG SCOPED OVERRIDES
+   Covers both Create and Edit dialog instances (share .abmt-dialog)
+   ============================================================ */
+
+/* Gray (Cancel) */
+.abmt-dialog .e-btn.ab-btn-gray,
+.abmt-dialog .e-btn.ab-btn-gray:focus,
+.abmt-dialog .e-btn.ab-btn-gray:active {
+    background: linear-gradient(180deg, #e8eaf0 0%, #d4d8e4 52%, #c0c6d4 100%) !important;
+    border-color: #9aa4b8 !important;
+    color: #1e2a3a !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(20,30,50,0.14) !important;
+    text-shadow: none !important;
+}
+.abmt-dialog .e-btn.ab-btn-gray:hover {
+    background: linear-gradient(180deg, #d4d8e4 0%, #c0c6d4 52%, #aab2c4 100%) !important;
+    border-color: #7a86a0 !important;
+    color: #111827 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(20,30,50,0.18) !important;
+    text-shadow: none !important;
+}
+.abmt-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.abmt-dialog .e-btn.ab-btn-gray .e-icons { color: #1e2a3a !important; }
+
+/* Green (Save) */
+.abmt-dialog .e-btn.ab-btn-green,
+.abmt-dialog .e-btn.ab-btn-green:focus,
+.abmt-dialog .e-btn.ab-btn-green:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+    text-shadow: none !important;
+}
+.abmt-dialog .e-btn.ab-btn-green:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 8px rgba(10,80,20,0.22) !important;
+    text-shadow: none !important;
+}
+.abmt-dialog .e-btn.ab-btn-green .e-btn-icon,
+.abmt-dialog .e-btn.ab-btn-green .e-icons { color: #0f3319 !important; }
+
+/* Red (Confirm Reset) */
+.abmt-dialog .e-btn.ab-btn-red,
+.abmt-dialog .e-btn.ab-btn-red:focus,
+.abmt-dialog .e-btn.ab-btn-red:active {
+    background: linear-gradient(180deg, #f5d4d4 0%, #edbcbc 52%, #e0a4a4 100%) !important;
+    border-color: #cc8585 !important;
+    color: #4a1414 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(80,10,10,0.18) !important;
+    text-shadow: none !important;
+}
+.abmt-dialog .e-btn.ab-btn-red:hover {
+    background: linear-gradient(180deg, #edbcbc 0%, #e0a4a4 52%, #d08c8c 100%) !important;
+    border-color: #b06868 !important;
+    color: #2e0a0a !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(80,10,10,0.22) !important;
+    text-shadow: none !important;
+}
+.abmt-dialog .e-btn.ab-btn-red .e-btn-icon,
+.abmt-dialog .e-btn.ab-btn-red .e-icons { color: #4a1414 !important; }
+
+/* ============================================================
+   DIALOG BUTTON SIZING — matches pf-training-page-action-btn exactly
+   155px x 46px  |  0.72rem / 600  |  radius 8px
+   High specificity [0,3,0] beats abmt-dialog-action-btn [0,2,0]
+   ============================================================ */
+.pf-training-reset-dialog .e-btn.ab-btn-gray,
+.pf-training-reset-dialog .e-btn.ab-btn-red,
+.pf-course-create-dialog .e-btn.ab-btn-gray,
+.pf-course-create-dialog .e-btn.ab-btn-green,
+.abmt-dialog .e-btn.ab-btn-gray,
+.abmt-dialog .e-btn.ab-btn-green,
+.abmt-dialog .e-btn.ab-btn-red {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    transform: none !important;
+}
+.pf-training-reset-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.pf-training-reset-dialog .e-btn.ab-btn-red .e-btn-icon,
+.pf-course-create-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.pf-course-create-dialog .e-btn.ab-btn-green .e-btn-icon,
+.abmt-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.abmt-dialog .e-btn.ab-btn-green .e-btn-icon,
+.abmt-dialog .e-btn.ab-btn-red .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* ============================================================
+   EDIT COURSE DIALOG — header + button overrides
+   Targets pf-course-edit-dialog to beat the broad abmt-dialog
+   teal gradient rules in AlgoaBayBMT.GlobalStyles.css
+   ============================================================ */
+
+/* Header: #ddecf0 background, BLACK title text, X right-aligned */
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content {
+    min-height: 52px !important;
+    padding: 0.6rem 1.15rem !important;
+    display: flex !important;
+    align-items: center !important;
+    background: #ddecf0 !important;
+    border-bottom: 1px solid #b8d8e0 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset !important;
+    text-shadow: none !important;
+}
+.pf-course-edit-dialog.e-dialog .e-dlg-header,
+.pf-course-edit-dialog.e-dialog .e-dlg-header *,
+.pf-course-edit-dialog.e-dialog .e-dlg-header .e-title-text,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content .e-dlg-header,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content .e-dlg-header *,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content label,
+.pf-course-edit-dialog.e-dialog .e-dlg-header-content span {
+    background: transparent !important;
+    color: #000000 !important;
+    font-size: 1.05rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    flex: 1 !important;
+    order: 1 !important;
+    text-shadow: none !important;
+}
+.pf-course-edit-dialog.e-dialog .e-dlg-closeicon-btn {
+    align-self: center !important;
+    margin-left: auto !important;
+    margin-top: 0 !important;
+    color: #000000 !important;
+    order: 2 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Cancel + Save: identical sizing — 155px x 46px, 0.72rem/600 */
+.pf-course-edit-dialog .e-btn.ab-btn-gray,
+.pf-course-edit-dialog .e-btn.ab-btn-green {
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    max-height: 46px !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0 !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    transform: none !important;
+}
+.pf-course-edit-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.pf-course-edit-dialog .e-btn.ab-btn-green .e-btn-icon {
+    font-family: 'e-icons' !important;
+    font-style: normal !important;
+    font-weight: normal !important;
+    font-size: 1rem !important;
+    line-height: 1 !important;
+    margin: 0 4px 0 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    display: inline-block !important;
+    flex-shrink: 0 !important;
+}
+
+/* Cancel — 3D pastel gray */
+.pf-course-edit-dialog .e-btn.ab-btn-gray,
+.pf-course-edit-dialog .e-btn.ab-btn-gray:focus,
+.pf-course-edit-dialog .e-btn.ab-btn-gray:active {
+    background: linear-gradient(180deg, #e8eaf0 0%, #d4d8e4 52%, #c0c6d4 100%) !important;
+    border-color: #9aa4b8 !important;
+    color: #1e2a3a !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(20,30,50,0.14) !important;
+    text-shadow: none !important;
+}
+.pf-course-edit-dialog .e-btn.ab-btn-gray:hover {
+    background: linear-gradient(180deg, #d4d8e4 0%, #c0c6d4 52%, #aab2c4 100%) !important;
+    border-color: #7a86a0 !important;
+    color: #111827 !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(20,30,50,0.18) !important;
+    text-shadow: none !important;
+}
+.pf-course-edit-dialog .e-btn.ab-btn-gray .e-btn-icon,
+.pf-course-edit-dialog .e-btn.ab-btn-gray .e-icons { color: #1e2a3a !important; }
+
+/* Save — 3D pastel green */
+.pf-course-edit-dialog .e-btn.ab-btn-green,
+.pf-course-edit-dialog .e-btn.ab-btn-green:focus,
+.pf-course-edit-dialog .e-btn.ab-btn-green:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+    text-shadow: none !important;
+}
+.pf-course-edit-dialog .e-btn.ab-btn-green:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 8px rgba(10,80,20,0.22) !important;
+    text-shadow: none !important;
+}
+.pf-course-edit-dialog .e-btn.ab-btn-green .e-btn-icon,
+.pf-course-edit-dialog .e-btn.ab-btn-green .e-icons { color: #0f3319 !important; }
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   PASTEL BUTTON CLASSES — Bootstrap native buttons matching template
+   pf-training-page-action-btn sizing: 155px × 46px, border-radius 8px,
+   font-size 0.72rem, font-weight 600, padding 0 0.6rem
+   ═══════════════════════════════════════════════════════════════════ */
+
+.btn-bmt {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 155px !important;
+    min-width: 155px !important;
+    height: 46px !important;
+    padding: 0 0.6rem !important;
+    border-radius: 8px !important;
+    font-size: 0.72rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    background-image: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+    transition: box-shadow 140ms ease, filter 120ms ease, transform 120ms ease !important;
+}
+.btn-bmt:hover {
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+.btn-bmt::before { display: none !important; }
+
+/* Pastel colours — 3D gradient matching the course-builder button system */
+.btn.btn-pastel-green,
+.btn.btn-pastel-green:focus,
+.btn.btn-pastel-green:active,
+.btn.btn-bmt.btn-pastel-green,
+a.btn.btn-pastel-green {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    color: #0f3319 !important;
+    border-color: #66c475 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-green:hover,
+a.btn.btn-pastel-green:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    color: #081f0f !important;
+    border-color: #48b05a !important;
+}
+
+.btn.btn-pastel-orange,
+.btn.btn-pastel-orange:focus,
+.btn.btn-pastel-orange:active,
+.btn.btn-bmt.btn-pastel-orange,
+a.btn.btn-pastel-orange {
+    background: linear-gradient(180deg, #fce4c2 0%, #f8d09a 52%, #f3b878 100%) !important;
+    color: #4a2800 !important;
+    border-color: #e89e52 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-orange:hover,
+a.btn.btn-pastel-orange:hover {
+    background: linear-gradient(180deg, #f8d09a 0%, #f3b878 52%, #ea9d4e 100%) !important;
+    color: #2e1800 !important;
+    border-color: #d4872c !important;
+}
+
+.btn.btn-pastel-purple,
+.btn.btn-pastel-purple:focus,
+.btn.btn-pastel-purple:active,
+.btn.btn-bmt.btn-pastel-purple,
+a.btn.btn-pastel-purple {
+    background: linear-gradient(180deg, #e0d4f5 0%, #cdbded 52%, #b8a6e0 100%) !important;
+    color: #2a1456 !important;
+    border-color: #9d87d0 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-purple:hover,
+a.btn.btn-pastel-purple:hover {
+    background: linear-gradient(180deg, #cdbded 0%, #b8a6e0 52%, #a08dd2 100%) !important;
+    color: #1a0b3d !important;
+    border-color: #8370c0 !important;
+}
+
+.btn.btn-pastel-blue,
+.btn.btn-pastel-blue:focus,
+.btn.btn-pastel-blue:active,
+.btn.btn-bmt.btn-pastel-blue,
+a.btn.btn-pastel-blue {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    color: #0f2d4a !important;
+    border-color: #7aabe8 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-blue:hover,
+a.btn.btn-pastel-blue:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    color: #0a1f33 !important;
+    border-color: #5e94c7 !important;
+}
+
+.btn.btn-pastel-red,
+.btn.btn-pastel-red:focus,
+.btn.btn-pastel-red:active,
+.btn.btn-bmt.btn-pastel-red,
+a.btn.btn-pastel-red {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    color: #5c0f0d !important;
+    border-color: #dd6b68 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-red:hover,
+a.btn.btn-pastel-red:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    color: #3d0909 !important;
+    border-color: #c9504d !important;
+}
+
+.btn.btn-pastel-gray,
+.btn.btn-pastel-gray:focus,
+.btn.btn-pastel-gray:active,
+.btn.btn-bmt.btn-pastel-gray,
+a.btn.btn-pastel-gray {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    color: #2d3748 !important;
+    border-color: #adb2ba !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-gray:hover,
+a.btn.btn-pastel-gray:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    color: #1a2433 !important;
+    border-color: #969ca6 !important;
+}
+
+.btn.btn-pastel-grayblue,
+.btn.btn-pastel-grayblue:focus,
+.btn.btn-pastel-grayblue:active,
+.btn.btn-bmt.btn-pastel-grayblue,
+a.btn.btn-pastel-grayblue {
+    background: linear-gradient(180deg, #d8e4f0 0%, #c2d4e8 52%, #accadf 100%) !important;
+    color: #1b2a3b !important;
+    border-color: #92b5d4 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-grayblue:hover,
+a.btn.btn-pastel-grayblue:hover {
+    background: linear-gradient(180deg, #c2d4e8 0%, #accadf 52%, #95bad4 100%) !important;
+    color: #0e1820 !important;
+    border-color: #78a4c8 !important;
+}
+
+/* -- btn-pastel-teal -------------------------------------------- */
+.btn.btn-pastel-teal,
+.btn.btn-pastel-teal:focus,
+.btn.btn-pastel-teal:active,
+.btn.btn-bmt.btn-pastel-teal,
+a.btn.btn-pastel-teal {
+    background: linear-gradient(180deg, #c0eed9 0%, #a2e2c5 52%, #84d4b0 100%) !important;
+    color: #0a3325 !important;
+    border-color: #5cbf98 !important;
+    text-shadow: none !important;
+}
+.btn.btn-pastel-teal:hover,
+a.btn.btn-pastel-teal:hover {
+    background: linear-gradient(180deg, #a2e2c5 0%, #84d4b0 52%, #5cbf98 100%) !important;
+    color: #061f17 !important;
+    border-color: #3daa7e !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   CHECKLIST — normal weight labels
+   ═══════════════════════════════════════════════════════════════════ */
+
+.checklist-normal label,
+.checklist-normal .form-check-label {
+    font-weight: normal !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DIALOG HEADER — modal-header-bmt-dialog (SfDialog CssClass)
+   Targets the Syncfusion dialog header rendered inside .modal-header-bmt-dialog
+   ═══════════════════════════════════════════════════════════════════ */
+
+.modal-header-bmt-dialog .e-dlg-header-content,
+.modal-header-bmt-dialog .e-dlg-header {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    color: #1a3a4a !important;
+    font-weight: normal !important;
+    font-size: 1rem !important;
+    border-bottom: 1px solid rgba(15,87,96,0.18) !important;
+}
+.modal-header-bmt-dialog .e-dlg-closeicon-btn .e-icon-dlg-close {
+    color: #000000 !important;
+    filter: none !important;
+    opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   BADGE TEMPLATE — exact c
+   font-size 0.65rem, padding 1px 6px, border-radius 4px,
+   font-weight 400, line-height 1.4
+   ═══════════════════════════════════════════════════════════════════ */
+
+.badge-bmt {
+    font-size: 0.65rem !important;
+    padding: 1px 6px !important;
+    border-radius: 4px !important;
+    font-weight: 400 !important;
+    line-height: 1.4 !important;
+    letter-spacing: 0.01em !important;
+    white-space: nowrap !important;
+    display: inline-block !important;
+    text-align: center !important;
+    border-width: 1px !important;
+    border-style: solid !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.75) inset, 0 2px 6px rgba(15,35,56,0.08) !important;
+}
+
+.badge-bmt-teal   { background-color: rgba(18,181,203,0.12) !important; color: #0f3247 !important; border-color: rgba(18,181,203,0.28) !important; }
+.badge-bmt-green  { background-color:#d4edda !important; color:#155724 !important; border-color:#b1dfbb !important; }
+.badge-bmt-red    { background-color:#f8d7da !important; color:#721c24 !important; border-color:#f1aeb5 !important; }
+.badge-bmt-orange { background-color:#ffe5cc !important; color:#7a4000 !important; border-color:#ffcc99 !important; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PANEL HEADER — matches courseBuilder training-panel-header bg
+   ═══════════════════════════════════════════════════════════════════ */
+
+.panel-header-bmt {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    color: #1a3a4a !important;
+    border-bottom: 1px solid rgba(15,87,96,0.18) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+    font-weight: 600 !important;
+    font-size: 0.82rem !important;
+    letter-spacing: 0.04em !important;
+    text-transform: uppercase !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   APP-WIDE PASTEL BUTTON OVERRIDE
+   Converts every semantic button class across all pages to the same
+   pastel-gradient palette used by the learner training pages.
+   Loaded last — these !important rules win over all earlier CSS.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* -- Kill ::before shimmer on all app semantic buttons ----------- */
+.abmt-btn-save.e-btn::before,
+.abmt-btn-cancel.e-btn::before,
+.abmt-btn-search.e-btn::before,
+.abmt-btn-manage.e-btn::before,
+.abmt-btn-primary-3d.e-btn::before,
+.abmt-btn-gray-3d.e-btn::before,
+.abmt-btn-red-3d.e-btn::before,
+.ab-btn-success.e-btn::before,
+.ab-btn-neutral.e-btn::before,
+.ab-btn-danger.e-btn::before,
+.ab-btn-blue.e-btn::before,
+.ab-btn-orange.e-btn::before,
+.ab-btn-back.e-btn::before,
+a.ab-btn-success.e-btn::before,
+a.ab-btn-neutral.e-btn::before,
+a.ab-btn-danger.e-btn::before,
+a.ab-btn-blue.e-btn::before,
+a.ab-btn-back.e-btn::before,
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn)::before {
+    display: none !important;
+}
+
+/* -- Per-button icon colour ---------------------------------------- */
+.abmt-btn-save.e-btn .e-btn-icon      { color: #0f3319 !important; }
+.abmt-btn-cancel.e-btn .e-btn-icon    { color: #2d3748 !important; }
+.abmt-btn-search.e-btn .e-btn-icon    { color: #0a2d2b !important; }
+.abmt-btn-manage.e-btn .e-btn-icon    { color: #0f2d4a !important; }
+.abmt-btn-primary-3d.e-btn .e-btn-icon { color: #0f2d4a !important; }
+.abmt-btn-gray-3d.e-btn .e-btn-icon   { color: #2d3748 !important; }
+.abmt-btn-red-3d.e-btn .e-btn-icon    { color: #5c0f0d !important; }
+
+/* -- abmt-btn-save → pastel green --------------------------------- */
+.abmt-btn-save.e-btn,
+.abmt-btn-save.e-btn:focus,
+.abmt-btn-save.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-save.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-cancel → pastel gray -------------------------------- */
+.abmt-btn-cancel.e-btn,
+.abmt-btn-cancel.e-btn:focus,
+.abmt-btn-cancel.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-cancel.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* -- abmt-btn-search → pastel teal -------------------------------- */
+.abmt-btn-search.e-btn,
+.abmt-btn-search.e-btn:focus,
+.abmt-btn-search.e-btn:active {
+    background: linear-gradient(180deg, #b4e8e4 0%, #8fd8d3 52%, #6ac8c2 100%) !important;
+    border-color: #4ab8b2 !important;
+    color: #0a2d2b !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-search.e-btn:hover {
+    background: linear-gradient(180deg, #8fd8d3 0%, #6ac8c2 52%, #46b5af 100%) !important;
+    border-color: #2e9e98 !important;
+    color: #061d1c !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-manage → pastel blue -------------------------------- */
+.abmt-btn-manage.e-btn,
+.abmt-btn-manage.e-btn:focus,
+.abmt-btn-manage.e-btn:active {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-manage.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-primary-3d / ab-btn → pastel blue ------------------- */
+.abmt-btn-primary-3d.e-btn,
+.abmt-btn-primary-3d.e-btn:focus,
+.abmt-btn-primary-3d.e-btn:active,
+a.abmt-btn-primary-3d.e-btn,
+a.abmt-btn-primary-3d.e-btn:visited,
+a.abmt-btn-primary-3d.e-btn:focus {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-primary-3d.e-btn:hover,
+a.abmt-btn-primary-3d.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+
+/* -- abmt-btn-gray-3d → pastel gray ------------------------------- */
+.abmt-btn-gray-3d.e-btn,
+.abmt-btn-gray-3d.e-btn:focus,
+.abmt-btn-gray-3d.e-btn:active,
+a.abmt-btn-gray-3d.e-btn {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-gray-3d.e-btn:hover,
+a.abmt-btn-gray-3d.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.16) !important;
+}
+
+/* -- abmt-btn-red-3d → pastel red --------------------------------- */
+.abmt-btn-red-3d.e-btn,
+.abmt-btn-red-3d.e-btn:focus,
+.abmt-btn-red-3d.e-btn:active,
+a.abmt-btn-red-3d.e-btn {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    border-color: #dd6b68 !important;
+    color: #5c0f0d !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.abmt-btn-red-3d.e-btn:hover,
+a.abmt-btn-red-3d.e-btn:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    border-color: #c9504d !important;
+    color: #3d0909 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 8px rgba(0,0,0,0.18) !important;
+}
+
+/* -- pf-training-page-action-btn (no colour modifier) → pastel blue */
+/* (coloured variants have their own rules; crew-action-btn-* are also excluded) */
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue),
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue):focus,
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue):active {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue):hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 4px 10px rgba(0,0,0,0.18) !important;
+}
+.pf-training-page-action-btn.e-btn:not(.pf-training-create-course-btn):not(.pf-training-reset-data-btn):not(.crew-action-btn-green):not(.crew-action-btn-teal):not(.crew-action-btn-blue) .e-btn-icon {
+    color: #0f2d4a !important;
+}
+
+/* -- ab-btn-success (algobay-global) → pastel green (already pastel; re-assert here) */
+.ab-btn-success.e-btn,
+.ab-btn-success.e-btn:focus,
+.ab-btn-success.e-btn:active,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:focus,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:active {
+    background: linear-gradient(180deg, #c8f0cd 0%, #a8e3b0 52%, #88d492 100%) !important;
+    border-color: #66c475 !important;
+    color: #0f3319 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 2px 5px rgba(10,80,20,0.18) !important;
+}
+.ab-btn-success.e-btn:hover,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn:hover {
+    background: linear-gradient(180deg, #a8e3b0 0%, #88d492 52%, #66c475 100%) !important;
+    border-color: #48b05a !important;
+    color: #081f0f !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.60) inset, 0 4px 10px rgba(10,80,20,0.22) !important;
+}
+.ab-btn-success.e-btn .e-btn-icon,
+.abmt-dialog.e-dialog .e-dlg-content .ab-btn-success.e-btn .e-btn-icon { color: #0f3319 !important; }
+
+/* -- ab-btn-neutral (algobay-global) → pastel gray (already pastel; re-assert here) */
+.ab-btn-neutral.e-btn,
+.ab-btn-neutral.e-btn:focus,
+.ab-btn-neutral.e-btn:active {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-neutral.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-neutral.e-btn .e-btn-icon { color: #2d3748 !important; }
+
+/* -- ab-btn-back → pastel gray (back/nav buttons) --------------- */
+.ab-btn-back.e-btn,
+.ab-btn-back.e-btn:focus,
+.ab-btn-back.e-btn:active,
+a.ab-btn-back.e-btn {
+    background: linear-gradient(180deg, #e8eaed 0%, #d4d7dc 52%, #c0c4ca 100%) !important;
+    border-color: #adb2ba !important;
+    color: #2d3748 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-back.e-btn:hover,
+a.ab-btn-back.e-btn:hover {
+    background: linear-gradient(180deg, #d0d4d9 0%, #bdc2c9 52%, #aaafb7 100%) !important;
+    border-color: #969ca6 !important;
+    color: #1a2433 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-back.e-btn .e-btn-icon { color: #2d3748 !important; }
+
+/* -- ab-btn-blue → pastel blue ----------------------------------- */
+.ab-btn-blue.e-btn,
+.ab-btn-blue.e-btn:focus,
+.ab-btn-blue.e-btn:active,
+a.ab-btn-blue.e-btn {
+    background: linear-gradient(180deg, #c7dff5 0%, #aecfe8 52%, #93bcd9 100%) !important;
+    border-color: #7aabe8 !important;
+    color: #0f2d4a !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-blue.e-btn:hover,
+a.ab-btn-blue.e-btn:hover {
+    background: linear-gradient(180deg, #aecfe8 0%, #93bcd9 52%, #78a8cc 100%) !important;
+    border-color: #5e94c7 !important;
+    color: #0a1f33 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-blue.e-btn .e-btn-icon { color: #0f2d4a !important; }
+
+/* -- ab-btn-orange → pastel orange ------------------------------ */
+.ab-btn-orange.e-btn,
+.ab-btn-orange.e-btn:focus,
+.ab-btn-orange.e-btn:active,
+a.ab-btn-orange.e-btn {
+    background: linear-gradient(180deg, #fce4c2 0%, #f8d09a 52%, #f3b878 100%) !important;
+    border-color: #e89e52 !important;
+    color: #4a2800 !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-orange.e-btn:hover,
+a.ab-btn-orange.e-btn:hover {
+    background: linear-gradient(180deg, #f8d09a 0%, #f3b878 52%, #ea9d4e 100%) !important;
+    border-color: #d4872c !important;
+    color: #2e1800 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-orange.e-btn .e-btn-icon { color: #4a2800 !important; }
+
+/* -- ab-btn-danger → pastel red --------------------------------- */
+.ab-btn-danger.e-btn,
+.ab-btn-danger.e-btn:focus,
+.ab-btn-danger.e-btn:active,
+a.ab-btn-danger.e-btn {
+    background: linear-gradient(180deg, #f7c7c5 0%, #f0a8a5 52%, #e88885 100%) !important;
+    border-color: #dd6b68 !important;
+    color: #5c0f0d !important;
+    text-shadow: none !important;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.55) inset, 0 2px 5px rgba(0,0,0,0.14) !important;
+}
+.ab-btn-danger.e-btn:hover,
+a.ab-btn-danger.e-btn:hover {
+    background: linear-gradient(180deg, #f0a8a5 0%, #e88885 52%, #de6663 100%) !important;
+    border-color: #c9504d !important;
+    color: #3d0909 !important;
+    filter: none !important;
+    transform: translateY(-1px) !important;
+}
+.ab-btn-danger.e-btn .e-btn-icon { color: #5c0f0d !important; }

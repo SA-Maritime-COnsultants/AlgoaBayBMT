@@ -1,0 +1,103 @@
+/* ============================================================
+   Login Page — Scoped Styles
+   Extracted design tokens from CourseBuilder template:
+     Panel bg:           #ffffff
+     Panel border:       1px solid rgba(216,228,236,0.95); radius 16px
+     Panel shadow:       var(--pf-modern-shadow-panel)
+     Panel header bg:    linear-gradient(180deg,#eaf3f6 0%,#ddecf0 52%,#cee5eb 100%)
+     Panel header text:  #1a3a4a; font-weight 600
+     Label:              color #12304d; font-weight 700
+     Link colour:        #12304d; hover #0b1f33
+   ============================================================ */
+
+/* Local account panel — match template pf-card-shell surface */
+:deep(.local-account-panel) {
+    background: #ffffff;
+    border: 1px solid rgba(216, 228, 236, 0.95);
+    border-radius: 16px;
+    box-shadow: 0 1px 2px rgba(15, 35, 56, 0.05), 0 10px 24px rgba(15, 35, 56, 0.08);
+    overflow: hidden;
+}
+
+:deep(.local-account-panel .auth-surface-header) {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(216, 228, 236, 0.8);
+}
+
+:deep(.local-account-panel .auth-surface-title) {
+    color: #1a3a4a;
+    font-weight: 600;
+    font-size: 0.92rem;
+}
+
+:deep(.local-account-panel .auth-surface-subtitle) {
+    color: #2c4f5f;
+    font-size: 0.78rem;
+}
+
+:deep(.local-account-panel .auth-surface-body) {
+    padding: 16px;
+    background: #ffffff;
+}
+
+/* Form labels */
+:deep(.local-account-panel .pf-field-label) {
+    color: #12304d;
+    font-weight: 700;
+    font-size: 0.78rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* Form controls */
+:deep(.local-account-panel .auth-form-control) {
+    border: 1px solid rgba(216, 228, 236, 0.95);
+    border-radius: 8px;
+    padding: 0.45rem 0.75rem;
+    background: #f8fbfd;
+    font-size: 0.84rem;
+    width: 100%;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+:deep(.local-account-panel .auth-form-control:focus) {
+    border-color: rgba(18, 181, 203, 0.70);
+    box-shadow: 0 0 0 3px rgba(18, 181, 203, 0.16);
+    outline: none;
+    background: #ffffff;
+}
+
+/* Remember me */
+:deep(.local-account-panel .auth-checkbox-label) {
+    color: #12304d;
+    font-weight: 600;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    cursor: pointer;
+}
+
+/* Links */
+:deep(.local-account-panel a),
+:deep(.local-account-panel .auth-links a) {
+    color: #12304d;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+:deep(.local-account-panel a:hover),
+:deep(.local-account-panel .auth-links a:hover) {
+    color: #0b1f33;
+    text-decoration: underline;
+}
+
+/* Auth links layout */
+:deep(.local-account-panel .auth-links) {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 1rem;
+}

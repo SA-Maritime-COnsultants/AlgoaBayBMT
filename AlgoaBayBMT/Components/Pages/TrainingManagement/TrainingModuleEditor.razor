@@ -1,0 +1,148 @@
+@using AlgoaBayBMT.Services.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.RichTextEditor
+
+<div class="cb-module-editor-shell">
+    <div class="cb-module-editor-body">
+        <EditForm Model="Model" OnValidSubmit="HandleSaveAsync" FormName="@GetFormName()">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-message" />
+
+            <!-- Row 1: Title (wide) + Est. Minutes (compact) -->
+            <div class="cb-module-editor-title-row">
+                <div class="cb-module-editor-title-field">
+                    <label class="pf-field-label">Module Title</label>
+                    <SfTextBox @bind-Value="Model.Title" Placeholder="Enter module title" FloatLabelType="FloatLabelType.Never" CssClass="cb-title-input" />
+                </div>
+                <div class="cb-module-editor-minutes-field">
+                    <label class="pf-field-label">Est. Minutes</label>
+                    <InputNumber @bind-Value="Model.EstimatedMinutes" class="form-control" placeholder="e.g. 30" />
+                </div>
+                <div class="cb-module-editor-active-field">
+                    <label class="pf-field-label">&nbsp;</label>
+                    <label class="pf-inline-check">
+                        <InputCheckbox @bind-Value="Model.IsActive" />
+                        <span>Active</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Row 2: Description -->
+            <div class="cb-module-editor-row">
+                <label class="pf-field-label">Description</label>
+                <SfRichTextEditor @bind-Value="Model.Description" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--module">
+                    <RichTextEditorToolbarSettings Items="@EditorToolbarItems" Type="ToolbarType.MultiRow" />
+                </SfRichTextEditor>
+            </div>
+
+            <!-- Row 3: Assessment toggle -->
+            <div class="cb-module-editor-row">
+                <hr class="pf-divider" />
+                <label class="pf-inline-check">
+                    <InputCheckbox @bind-Value="Model.HasModuleAssessment" />
+                    <span class="pf-field-label" style="margin:0;">Enable module-level assessment (required before module completes)</span>
+                </label>
+            </div>
+
+            @if (Model.HasModuleAssessment)
+            {
+                <div class="cb-module-editor-row">
+                    <div class="pf-form-grid">
+                        <div class="pf-col-12">
+                            <label class="pf-field-label">Select Assessment</label>
+                            <SfDropDownList TValue="Guid?" TItem="TrainingCourseAssessmentEditModel"
+                                            DataSource="@AssessmentOptions" @bind-Value="Model.AssessmentId"
+                                            Placeholder="Select an assessment from the bank">
+                                <DropDownListFieldSettings Text="Name" Value="TrainingCourseAssessmentId" />
+                            </SfDropDownList>
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Pass Mark %</label>
+                            <InputNumber @bind-Value="Model.AssessmentPassMarkPercent" class="form-control" />
+                        </div>
+                        <div class="pf-col-6">
+                            <label class="pf-field-label">Max Attempts</label>
+                            <InputNumber @bind-Value="Model.AssessmentMaxAttempts" class="form-control" />
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Actions -->
+            <div class="pf-dialog-actions pf-dialog-actions--split" style="margin-top:16px;">
+                <div class="pf-grid-actions pf-grid-actions--compact">
+                    <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-up" IconCss="e-icons e-chevron-up" IconPosition="IconPosition.Left" OnClick="MoveUpAsync">Up</SfButton>
+                    <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-down" IconCss="e-icons e-chevron-down" IconPosition="IconPosition.Left" OnClick="MoveDownAsync">Down</SfButton>
+                    @if (Model.ModuleId.HasValue)
+                    {
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-delete" IconCss="e-icons e-trash" IconPosition="IconPosition.Left" OnClick="DeleteAsync">Delete</SfButton>
+                    }
+                </div>
+                <div class="pf-grid-actions pf-grid-actions--compact">
+                    @if (Model.ModuleId.HasValue)
+                    {
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-new-lesson" IconCss="e-icons e-file-new" IconPosition="IconPosition.Left" OnClick="CreateLessonAsync">New Lesson</SfButton>
+                    }
+                    <SfButton CssClass="pf-training-page-action-btn cb-btn-save-module" IsPrimary="true" IconCss="e-icons e-save" IconPosition="IconPosition.Left" type="submit">Save Module</SfButton>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TrainingModuleEditModel Model { get; set; } = new();
+
+    [Parameter]
+    public IReadOnlyList<TrainingCourseAssessmentEditModel> AssessmentOptions { get; set; } = Array.Empty<TrainingCourseAssessmentEditModel>();
+
+    [Parameter] public EventCallback<TrainingModuleEditModel> SaveRequested { get; set; }
+    [Parameter] public EventCallback DeleteRequested { get; set; }
+    [Parameter] public EventCallback<int> MoveRequested { get; set; }
+    [Parameter] public EventCallback CreateLessonRequested { get; set; }
+
+    private List<ToolbarItemModel> EditorToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.StrikeThrough },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.FontSize },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.BackgroundColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Formats },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Indent },
+        new() { Command = ToolbarCommand.Outdent },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.OrderedList },
+        new() { Command = ToolbarCommand.UnorderedList },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.CreateLink },
+        new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.CreateTable },
+        new() { Command = ToolbarCommand.HorizontalLine },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.ClearFormat },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo }
+    ];
+
+    private string GetFormName() => Model.ModuleId.HasValue
+        ? $"training-module-{Model.ModuleId.Value:N}"
+        : $"training-module-new-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Model)}";
+
+    private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
+    private async Task DeleteAsync() => await DeleteRequested.InvokeAsync();
+    private async Task MoveUpAsync() => await MoveRequested.InvokeAsync(-1);
+    private async Task MoveDownAsync() => await MoveRequested.InvokeAsync(1);
+    private async Task CreateLessonAsync() => await CreateLessonRequested.InvokeAsync();
+}
+

@@ -1,0 +1,68 @@
+@namespace AlgoaBayBMT.Components.Pages.Emergency
+@using AlgoaBayBMT.Emergency.OilSpill.Visualization
+@using Syncfusion.Blazor.Charts
+
+<div class="oilspill-charts">
+    @if (ChartPoints.Count == 0)
+    {
+        <div class="alert alert-secondary mb-0">No trajectory data to chart.</div>
+    }
+    else
+    {
+        <div class="oilspill-chart-block">
+            <SfChart Title="Drift Distance Over Time" Width="100%" Height="46%">
+                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"
+                                   LabelRotation="-45" Title="Time">
+                    <ChartAxisMajorGridLines Width="0" />
+                </ChartPrimaryXAxis>
+                <ChartPrimaryYAxis Title="Distance (km)" />
+                <ChartZoomSettings EnableMouseWheelZooming="true" EnablePinchZooming="true"
+                                   EnableSelectionZooming="true" EnablePan="true" />
+                <ChartTooltipSettings Enable="true" Shared="false" />
+                <ChartLegendSettings Visible="true" Position="Syncfusion.Blazor.Charts.LegendPosition.Top" />
+                <ChartSeriesCollection>
+                    <ChartSeries DataSource="ChartPoints" XName="TimeLabel" YName="DistanceKm"
+                                 Name="Drift Distance" Type="ChartSeriesType.Line" Width="2.5"
+                                 Fill="#0d6efd">
+                        <ChartMarker Visible="true" Width="7" Height="7" />
+                    </ChartSeries>
+                    @if (_highlightDistance.Count > 0)
+                    {
+                        <ChartSeries DataSource="_highlightDistance" XName="TimeLabel" YName="DistanceKm"
+                                     Name="Current Step" Type="ChartSeriesType.Scatter" Fill="#ffc107">
+                            <ChartMarker Visible="true" Width="14" Height="14" Shape="ChartShape.Diamond" />
+                        </ChartSeries>
+                    }
+                </ChartSeriesCollection>
+            </SfChart>
+        </div>
+
+        <div class="oilspill-chart-block">
+            <SfChart Title="Slick Area Growth" Width="100%" Height="46%">
+                <ChartPrimaryXAxis ValueType="Syncfusion.Blazor.Charts.ValueType.Category"
+                                   LabelRotation="-45" Title="Time">
+                    <ChartAxisMajorGridLines Width="0" />
+                </ChartPrimaryXAxis>
+                <ChartPrimaryYAxis Title="Area (km²)" />
+                <ChartZoomSettings EnableMouseWheelZooming="true" EnablePinchZooming="true"
+                                   EnableSelectionZooming="true" EnablePan="true" />
+                <ChartTooltipSettings Enable="true" Shared="false" />
+                <ChartLegendSettings Visible="true" Position="Syncfusion.Blazor.Charts.LegendPosition.Top" />
+                <ChartSeriesCollection>
+                    <ChartSeries DataSource="ChartPoints" XName="TimeLabel" YName="AreaSqKm"
+                                 Name="Slick Area" Type="ChartSeriesType.Area" Opacity="0.5"
+                                 Fill="#b24c1f">
+                        <ChartMarker Visible="true" Width="6" Height="6" />
+                    </ChartSeries>
+                    @if (_highlightArea.Count > 0)
+                    {
+                        <ChartSeries DataSource="_highlightArea" XName="TimeLabel" YName="AreaSqKm"
+                                     Name="Current Step" Type="ChartSeriesType.Scatter" Fill="#ffc107">
+                            <ChartMarker Visible="true" Width="14" Height="14" Shape="ChartShape.Diamond" />
+                        </ChartSeries>
+                    }
+                </ChartSeriesCollection>
+            </SfChart>
+        </div>
+    }
+</div>

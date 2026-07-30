@@ -1,0 +1,115 @@
+@using AlgoaBayBMT.Services.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.RichTextEditor
+
+<div class="cb-module-editor-shell">
+    <div class="cb-module-editor-body">
+        <EditForm Model="Model" OnValidSubmit="HandleSaveAsync" FormName="@GetFormName()">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="validation-message" />
+
+            <!-- Title row: wide title + est. minutes -->
+            <div class="cb-module-editor-title-row">
+                <div class="cb-module-editor-title-field">
+                    <label class="pf-field-label">Lesson Title</label>
+                    <SfTextBox @bind-Value="Model.Title" Placeholder="Enter lesson title" FloatLabelType="FloatLabelType.Never" CssClass="cb-title-input" />
+                </div>
+                <div class="cb-module-editor-minutes-field">
+                    <label class="pf-field-label">Est. Minutes</label>
+                    <InputNumber @bind-Value="Model.EstimatedMinutes" class="form-control" placeholder="e.g. 15" />
+                </div>
+                <div class="cb-module-editor-active-field">
+                    <label class="pf-field-label">&nbsp;</label>
+                    <label class="pf-inline-check">
+                        <InputCheckbox @bind-Value="Model.IsActive" />
+                        <span>Active</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="cb-module-editor-row">
+                <label class="pf-field-label">Summary</label>
+                <SfRichTextEditor @bind-Value="Model.Summary" Height="220px" EnableResize="true" CssClass="cb-richtext-editor cb-richtext-editor--lesson">
+                    <RichTextEditorToolbarSettings Items="@EditorToolbarItems" Type="ToolbarType.MultiRow" />
+                </SfRichTextEditor>
+            </div>
+
+            <div class="cb-module-editor-row">
+                <label class="pf-inline-check">
+                    <InputCheckbox @bind-Value="Model.IsPreview" />
+                    <span>Preview lesson (visible before enrolment)</span>
+                </label>
+            </div>
+
+            <div class="pf-dialog-actions pf-dialog-actions--split" style="margin-top:16px;">
+                <div class="pf-grid-actions pf-grid-actions--compact">
+                    <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-up" IconCss="e-icons e-chevron-up" IconPosition="IconPosition.Left" OnClick="MoveUpAsync">Up</SfButton>
+                    <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-down" IconCss="e-icons e-chevron-down" IconPosition="IconPosition.Left" OnClick="MoveDownAsync">Down</SfButton>
+                    @if (Model.LessonId.HasValue)
+                    {
+                        <SfButton type="button" CssClass="pf-training-page-action-btn cb-btn-delete" IconCss="e-icons e-delete" IconPosition="IconPosition.Left" OnClick="DeleteAsync">Delete</SfButton>
+                    }
+                </div>
+                <SfButton CssClass="pf-training-page-action-btn cb-btn-save-module" IsPrimary="true" IconCss="e-icons e-save" IconPosition="IconPosition.Left" type="submit">Save Lesson</SfButton>
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public TrainingLessonEditModel Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<TrainingLessonEditModel> SaveRequested { get; set; }
+
+    [Parameter]
+    public EventCallback DeleteRequested { get; set; }
+
+    [Parameter]
+    public EventCallback<int> MoveRequested { get; set; }
+
+    [Parameter]
+    public EventCallback CreateBlockRequested { get; set; }
+
+    private List<ToolbarItemModel> EditorToolbarItems { get; } =
+    [
+        new() { Command = ToolbarCommand.Bold },
+        new() { Command = ToolbarCommand.Italic },
+        new() { Command = ToolbarCommand.Underline },
+        new() { Command = ToolbarCommand.StrikeThrough },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.FontName },
+        new() { Command = ToolbarCommand.FontSize },
+        new() { Command = ToolbarCommand.FontColor },
+        new() { Command = ToolbarCommand.BackgroundColor },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.Formats },
+        new() { Command = ToolbarCommand.Alignments },
+        new() { Command = ToolbarCommand.Indent },
+        new() { Command = ToolbarCommand.Outdent },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.OrderedList },
+        new() { Command = ToolbarCommand.UnorderedList },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.CreateLink },
+        new() { Command = ToolbarCommand.Image },
+        new() { Command = ToolbarCommand.CreateTable },
+        new() { Command = ToolbarCommand.HorizontalLine },
+        new() { Command = ToolbarCommand.Separator },
+        new() { Command = ToolbarCommand.ClearFormat },
+        new() { Command = ToolbarCommand.Undo },
+        new() { Command = ToolbarCommand.Redo }
+    ];
+
+    private string GetFormName() => Model.LessonId.HasValue
+        ? $"training-lesson-{Model.LessonId.Value:N}"
+        : $"training-lesson-new-{System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode(Model)}";
+
+    private async Task HandleSaveAsync() => await SaveRequested.InvokeAsync(Model);
+    private async Task DeleteAsync() => await DeleteRequested.InvokeAsync();
+    private async Task MoveUpAsync() => await MoveRequested.InvokeAsync(-1);
+    private async Task MoveDownAsync() => await MoveRequested.InvokeAsync(1);
+}

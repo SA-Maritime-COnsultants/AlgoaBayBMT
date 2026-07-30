@@ -1,0 +1,643 @@
+@page "/crewing/sign-on"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.CrewComplianceManagement)]
+
+@inject IVesselService VesselService
+@inject ICrewService CrewService
+@inject ICrewAssignmentService AssignmentService
+@inject ICrewComplianceWorkflowService ComplianceWorkflowService
+@inject IUserManagementService UserMgmtService
+@inject IOperatorService OperatorService
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager NavigationManager
+@using AlgoaBayBMT.Shared.Security
+
+<PageTitle>Sign On / Off</PageTitle>
+
+<HeadContent>
+    <link rel="stylesheet" href="@Assets["css/crew.css"]" />
+</HeadContent>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Crew Sign-On / Sign-Off</h1>
+            <div class="page-subtitle">Compliance-gated crew sign-on and sign-off per vessel.</div>
+        </div>
+        @if (_canManageCrew)
+        {
+            <div class="pf-grid-actions pf-grid-actions--compact">
+                <SfButton CssClass="pf-training-page-action-btn so-btn-sign-on" IconCss="e-icons e-people" IconPosition="IconPosition.Left" OnClick="OpenSignOnDialog">Sign On Crew</SfButton>
+            </div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    @* ── Vessel / Operator selectors ── *@
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Vessel Selection" SubTitle="Choose the vessel to manage crew for." />
+        <CardContent>
+            <div class="pf-form-grid">
+                @if (_isAdmin)
+                {
+                    <div class="pf-col-4">
+                        <label class="pf-field-label">Bunker Operator</label>
+                        <SfDropDownList TValue="int" TItem="BunkerOperator" DataSource="@Operators" @bind-Value="SelectedOperatorId" Placeholder="Select operator" PopupHeight="280px">
+                            <DropDownListEvents TValue="int" TItem="BunkerOperator" ValueChange="OnOperatorChanged" />
+                            <DropDownListFieldSettings Value="Id" Text="Name" />
+                        </SfDropDownList>
+                    </div>
+                }
+                @if (_isAdmin || _isCompanyManager)
+                {
+                    <div class="pf-col-4">
+                        <label class="pf-field-label">Vessel</label>
+                        <SfDropDownList TValue="int" TItem="Vessel" DataSource="@Vessels" @bind-Value="SelectedVesselId" Placeholder="Select vessel" PopupHeight="280px">
+                            <DropDownListEvents TValue="int" TItem="Vessel" ValueChange="OnVesselChanged" />
+                            <DropDownListFieldSettings Value="Id" Text="Name" />
+                        </SfDropDownList>
+                    </div>
+                }
+                else
+                {
+                    @* Crew managers see their vessel as read-only context *@
+                    <div class="pf-col-4">
+                        <label class="pf-field-label">Vessel</label>
+                        <div class="pf-field-readonly">@SelectedVesselName</div>
+                    </div>
+                }
+            </div>
+        </CardContent>
+    </SfCard>
+
+    @* ── Active crew grid ── *@
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="@($"Active Crew — {SelectedVesselName}")" SubTitle="Currently signed-on crew for the selected vessel." />
+        <CardContent>
+            <div class="so-filter-row">
+                <div class="so-filter-field">
+                    <label class="pf-field-label">Compliance Filter</label>
+                    <SfDropDownList TValue="string" TItem="ComplianceFilterOption"
+                                    DataSource="@ComplianceFilterOptions"
+                                    @bind-Value="_complianceFilterKey"
+                                    Placeholder="All crew"
+                                    PopupHeight="220px"
+                                    CssClass="so-filter-dropdown">
+                        <DropDownListFieldSettings Value="Key" Text="Label" />
+                    </SfDropDownList>
+                </div>
+                <div class="so-filter-action">
+                    <SfButton CssClass="pf-training-page-action-btn crew-action-btn-teal so-search-btn"
+                              IconCss="e-icons e-search"
+                              IconPosition="IconPosition.Left"
+                              OnClick="ApplyComplianceFilter">Search</SfButton>
+                    <SfButton CssClass="pf-training-page-action-btn so-clear-btn"
+                              IconCss="e-icons e-close"
+                              IconPosition="IconPosition.Left"
+                              OnClick="ClearComplianceFilter">Clear</SfButton>
+                </div>
+            </div>
+            <div class="pf-training-responsive-grid">
+                <SfGrid DataSource="@FilteredAssignments" TValue="CrewAssignment" AllowPaging="true" AllowSorting="true" CssClass="pf-grid--compact pf-courses-grid">
+                    <GridPageSettings PageSize="10" />
+                    <GridColumns>
+                        <GridColumn HeaderText="Crew Member" Width="220">
+                            <Template>
+                                @{ var a = context as CrewAssignment; }
+                                <strong>@a?.CrewMember?.LastName, @a?.CrewMember?.FirstName</strong>
+                            </Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Rank" Width="160">
+                            <Template>@((context as CrewAssignment)?.RankOnAssignment.GetDisplayName())</Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Sign On" Width="180">
+                            <Template>@FormatLocal((context as CrewAssignment)?.SignOnDateUtc)</Template>
+                        </GridColumn>
+                        <GridColumn Field="@nameof(CrewAssignment.PortOfSignOn)" HeaderText="Port (On)" Width="140" />
+                        <GridColumn HeaderText="Sign Off" Width="180">
+                            <Template>@FormatLocal((context as CrewAssignment)?.SignOffDateUtc)</Template>
+                        </GridColumn>
+                        <GridColumn HeaderText="Compliance" Width="170" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var a = context as CrewAssignment; }
+                                @if (a is not null && ComplianceStatuses.TryGetValue(a.CrewMemberId, out var cs))
+                                {
+                                    <a href="/crewing/crew/@a.CrewMemberId" style="text-decoration:none;" title="@ComplianceTooltip(a.CrewMemberId)">
+                                        <span class="crew-status-badge @ComplianceBadgeCss(cs)">@ComplianceText(cs)</span>
+                                    </a>
+                                }
+                                else if (a is not null)
+                                {
+                                    <span class="crew-status-badge crew-badge-blue-gray">—</span>
+                                }
+                            </Template>
+                        </GridColumn>
+                        @if (_isAdmin || _isCompanyManager)
+                        {
+                            <GridColumn HeaderText="Mgr" Width="80" TextAlign="TextAlign.Center">
+                                <Template>
+                                    @{ var a = context as CrewAssignment; }
+                                    @if (a?.CrewMember?.ApplicationUserId is not null && _crewManagerMap.TryGetValue(a.CrewMember.ApplicationUserId, out var isMgr))
+                                    {
+                                        <SfSwitch TChecked="bool" Checked="@isMgr" ValueChange="@((Syncfusion.Blazor.Buttons.ChangeEventArgs<bool> e) => ToggleCrewManagerAsync(a.CrewMember.ApplicationUserId, e.Checked))" />
+                                    }
+                                </Template>
+                            </GridColumn>
+                        }
+                        <GridColumn HeaderText="Actions" Width="160" TextAlign="TextAlign.Center">
+                            <Template>
+                                @{ var a = context as CrewAssignment; }
+                                @if (a is not null && _canManageCrew)
+                                {
+                                    <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                        @if (a.Status == CrewAssignmentStatus.SignedOn)
+                                        {
+                                            <span class="pf-icon-action" title="Sign Off">
+                                                <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-toggle" IconCss="e-icons e-export" OnClick="@(() => OpenSignOffDialog(a))" />
+                                            </span>
+                                        }
+                                        @if (ComplianceStatuses.TryGetValue(a.CrewMemberId, out var st) && st != CrewComplianceOverallStatus.FullyCompliant)
+                                                        {
+                                                            <span class="pf-icon-action" title="Register for Training">
+                                                                <SfButton CssClass="e-flat so-btn-register-training pf-btn-icon pf-btn-square abmt-grid-action-builder" IconCss="e-icons e-graduation-cap" OnClick="@(() => NavigateToTraining(a.CrewMemberId))" />
+                                                            </span>
+                                                        }
+                                    </div>
+                                }
+                            </Template>
+                        </GridColumn>
+                    </GridColumns>
+                </SfGrid>
+            </div>
+        </CardContent>
+    </SfCard>
+</div>
+
+@* ══════════════════════════════════════════════════════════
+   SIGN-ON DIALOG
+   ══════════════════════════════════════════════════════════ *@
+<SfDialog Width="860px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsSignOnDialogVisible">
+    <DialogTemplates>
+        <Header>Sign On Crew Member</Header>
+        <Content>
+            <EditForm Model="SignOnModel" OnValidSubmit="CommitSignOnAsync" FormName="signon-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Crew Member</label>
+                        <SfDropDownList TValue="int" TItem="CrewOption" DataSource="@CrewList" @bind-Value="SignOnModel.CrewMemberId" Placeholder="Select crew" AllowFiltering="true" PopupHeight="280px">
+                            <DropDownListFieldSettings Value="Id" Text="DisplayName" />
+                        </SfDropDownList>
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Rank on Assignment</label>
+                        <SfDropDownList TValue="CrewRank" TItem="CrewRankOption" DataSource="@RankOptions" @bind-Value="SignOnModel.Rank" Placeholder="Select rank">
+                            <DropDownListFieldSettings Value="Value" Text="Text" />
+                        </SfDropDownList>
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Port of Sign-On</label>
+                        <SfTextBox @bind-Value="SignOnModel.Port" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Sign-On Date/Time (Local — GMT+2)</label>
+                        <SfDateTimePicker TValue="DateTime" @bind-Value="SignOnModel.LocalDateTime" Format="dd MMM yyyy HH:mm" />
+                    </div>
+                    @* ── Add new crew member section ── *@
+                    <div class="pf-col-12">
+                        <SfCheckBox @bind-Checked="SignOnModel.CreateNewCrew" Label="Create new crew member account" />
+                    </div>
+                    @if (SignOnModel.CreateNewCrew)
+                    {
+                        <div class="pf-col-4"><label class="pf-field-label">First Name</label><SfTextBox @bind-Value="SignOnModel.NewFirstName" /></div>
+                        <div class="pf-col-4"><label class="pf-field-label">Last Name</label><SfTextBox @bind-Value="SignOnModel.NewLastName" /></div>
+                        <div class="pf-col-4"><label class="pf-field-label">Email</label><SfTextBox @bind-Value="SignOnModel.NewEmail" /></div>
+                        <div class="pf-col-4"><label class="pf-field-label">Phone</label><SfTextBox @bind-Value="SignOnModel.NewPhone" /></div>
+                        <div class="pf-col-4"><label class="pf-field-label">Nationality</label><SfTextBox @bind-Value="SignOnModel.NewNationality" /></div>
+                        <div class="pf-col-4"><label class="pf-field-label">SID Number</label><SfTextBox @bind-Value="SignOnModel.NewSidNumber" /></div>
+                    }
+                </div>
+                <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseSignOnDialog">Cancel</SfButton>
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-check-circled" IconPosition="IconPosition.Left" type="submit" IsPrimary="true">Confirm Sign On</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@* ══════════════════════════════════════════════════════════
+   SIGN-OFF DIALOG
+   ══════════════════════════════════════════════════════════ *@
+<SfDialog Width="700px" CssClass="abmt-dialog pf-course-create-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="IsSignOffDialogVisible">
+    <DialogTemplates>
+        <Header>Sign Off — @SignOffModel.CrewName</Header>
+        <Content>
+            <EditForm Model="SignOffModel" OnValidSubmit="CommitSignOffAsync" FormName="signoff-form">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                <div class="pf-form-grid">
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Port of Sign-Off</label>
+                        <SfTextBox @bind-Value="SignOffModel.Port" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Sign-Off Date/Time (Local — GMT+2)</label>
+                        <SfDateTimePicker TValue="DateTime" @bind-Value="SignOffModel.LocalDateTime" Format="dd MMM yyyy HH:mm" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Rank at Sign-Off</label>
+                        <SfDropDownList TValue="CrewRank" TItem="CrewRankOption" DataSource="@RankOptions" @bind-Value="SignOffModel.Rank" Placeholder="Select rank">
+                            <DropDownListFieldSettings Value="Value" Text="Text" />
+                        </SfDropDownList>
+                    </div>
+                </div>
+                <div class="pf-dialog-actions pf-training-dialog-actions pf-course-create-dialog-actions">
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--cancel" IconCss="e-icons e-close" IconPosition="IconPosition.Left" type="button" OnClick="CloseSignOffDialog">Cancel</SfButton>
+                    <SfButton CssClass="pf-course-create-dialog-btn pf-course-create-dialog-btn--save" IconCss="e-icons e-export" IconPosition="IconPosition.Left" type="submit" IsPrimary="true">Confirm Sign Off</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    // GMT+2 South Africa Standard Time
+    private static readonly TimeZoneInfo SastZone =
+        TimeZoneInfo.FindSystemTimeZoneById("South Africa Standard Time");
+
+    // ── Query param ──────────────────────────────────────────────────
+    [SupplyParameterFromQuery] public int? VesselId { get; set; }
+
+    // ── Role flags ───────────────────────────────────────────────────
+    private bool _isAdmin;
+    private bool _isCompanyManager;
+    private bool _isCrewManager;
+    private bool _canManageCrew => _isAdmin || _isCompanyManager || _isCrewManager;
+    private int? _scopedCompanyId;
+    private int? _scopedVesselId;      // set when user is a crew manager
+    private string? _currentUserId;
+
+    // ── Data ─────────────────────────────────────────────────────────
+    private List<BunkerOperator> Operators { get; set; } = [];
+    private List<Vessel> Vessels { get; set; } = [];
+    private List<CrewOption> CrewList { get; set; } = [];
+    private List<CrewAssignment> ActiveAssignments { get; set; } = [];
+    private Dictionary<int, CrewComplianceOverallStatus> ComplianceStatuses { get; set; } = [];
+    private Dictionary<string, bool> _crewManagerMap = [];
+    private CrewComplianceOverallStatus? _complianceFilter;
+    private string _complianceFilterKey = "";
+    private List<CrewRankOption> RankOptions { get; set; } = [];
+
+    // ── Compliance filter dropdown options ──────────────────────────
+    public record ComplianceFilterOption(string Key, string Label);
+    private static readonly List<ComplianceFilterOption> ComplianceFilterOptions =
+    [
+        new("", "All Crew"),
+        new("Compliant", "✅ Compliant"),
+        new("NonCompliant", "⚠️ Non-Compliant"),
+        new("Expired", "🔴 Expired")
+    ];
+
+    private int SelectedOperatorId { get; set; }
+    private int SelectedVesselId { get; set; }
+    private string SelectedVesselName => Vessels.FirstOrDefault(v => v.Id == SelectedVesselId)?.Name ?? "(no vessel selected)";
+
+    private string? Message;
+    private bool IsError;
+
+    // ── Dialog state ─────────────────────────────────────────────────
+    private bool IsSignOnDialogVisible { get; set; }
+    private bool IsSignOffDialogVisible { get; set; }
+    private SignOnDialogModel SignOnModel { get; set; } = new();
+    private SignOffDialogModel SignOffModel { get; set; } = new();
+
+    // ── Filter ───────────────────────────────────────────────────────
+    private List<CrewAssignment> FilteredAssignments => _complianceFilter is null
+        ? ActiveAssignments
+        : ActiveAssignments.Where(a => ComplianceStatuses.TryGetValue(a.CrewMemberId, out var s) && s == _complianceFilter).ToList();
+
+
+    // ── Dialog models ─────────────────────────────────────────────────
+    public class CrewOption { public int Id { get; set; } public string DisplayName { get; set; } = ""; }
+
+    public class SignOnDialogModel
+    {
+        public int CrewMemberId { get; set; }
+        public CrewRank Rank { get; set; }
+        public string? Port { get; set; }
+        public DateTime LocalDateTime { get; set; } = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("South Africa Standard Time"));
+        public bool CreateNewCrew { get; set; }
+        public string? NewFirstName { get; set; }
+        public string? NewLastName { get; set; }
+        public string? NewEmail { get; set; }
+        public string? NewPhone { get; set; }
+        public string? NewNationality { get; set; }
+        public string? NewSidNumber { get; set; }
+    }
+
+    public class SignOffDialogModel
+    {
+        public int AssignmentId { get; set; }
+        public string CrewName { get; set; } = "";
+        public CrewRank Rank { get; set; }
+        public string? Port { get; set; }
+        public DateTime LocalDateTime { get; set; } = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("South Africa Standard Time"));
+    }
+
+    // ── Lifecycle ─────────────────────────────────────────────────────
+    protected override async Task OnInitializedAsync()
+    {
+        RankOptions = CrewRankExtensions.All.ToList();
+
+        var auth = await AuthState.GetAuthenticationStateAsync();
+        _currentUserId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+        _isCompanyManager = !_isAdmin && auth.User.IsInRole(RoleNames.CompanyManager);
+
+        if (_isAdmin)
+        {
+            Operators = (await OperatorService.GetAllAsync()).Where(o => o.IsActive).ToList();
+            Vessels = await VesselService.GetAllAsync();
+        }
+        else if (_currentUserId is not null)
+        {
+            var userModel = await UserMgmtService.GetUserEditorAsync(_currentUserId);
+            _scopedCompanyId = userModel?.CompanyId;
+            _isCrewManager = userModel?.IsCrewManager ?? false;
+
+            if (_scopedCompanyId.HasValue)
+                Vessels = await VesselService.GetByCompanyAsync(_scopedCompanyId.Value);
+
+            // Crew managers are locked to a specific vessel (first active assignment vessel)
+            if (_isCrewManager && !_isCompanyManager)
+            {
+                // Scope to the vessel they manage — use VesselId query param or first available
+                if (VesselId.HasValue)
+                    _scopedVesselId = VesselId.Value;
+                else if (Vessels.Count > 0)
+                    _scopedVesselId = Vessels.First().Id;
+            }
+        }
+
+        if (VesselId.HasValue && !_isCrewManager)
+            SelectedVesselId = VesselId.Value;
+        else if (_scopedVesselId.HasValue)
+            SelectedVesselId = _scopedVesselId.Value;
+        else if (Vessels.Count > 0)
+            SelectedVesselId = Vessels.First().Id;
+
+        // Auto-set operator selection from the selected vessel
+        if (_isAdmin && SelectedVesselId != 0)
+        {
+            var v = Vessels.FirstOrDefault(x => x.Id == SelectedVesselId);
+            SelectedOperatorId = v?.OwningOperatorId ?? 0;
+        }
+
+        await RefreshCrewListAsync();
+        await ReloadActiveAsync();
+    }
+
+    private async Task OnOperatorChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int, BunkerOperator> args)
+    {
+        SelectedOperatorId = args.Value;
+        Vessels = SelectedOperatorId > 0
+            ? await VesselService.GetByCompanyAsync(SelectedOperatorId)
+            : await VesselService.GetAllAsync();
+        SelectedVesselId = Vessels.FirstOrDefault()?.Id ?? 0;
+        await RefreshCrewListAsync();
+        await ReloadActiveAsync();
+    }
+
+    private async Task OnVesselChanged(Syncfusion.Blazor.DropDowns.ChangeEventArgs<int, Vessel> args)
+    {
+        SelectedVesselId = args.Value;
+        await RefreshCrewListAsync();
+        await ReloadActiveAsync();
+    }
+
+    private async Task RefreshCrewListAsync()
+    {
+        List<CrewMember> crews;
+        if (_isAdmin)
+            crews = SelectedOperatorId > 0
+                ? await CrewService.GetByCompanyAsync(SelectedOperatorId)
+                : await CrewService.GetAllAsync();
+        else if (_scopedCompanyId.HasValue)
+            crews = await CrewService.GetByCompanyAsync(_scopedCompanyId.Value);
+        else
+            crews = [];
+
+        CrewList = crews.Select(c => new CrewOption
+        {
+            Id = c.Id,
+            DisplayName = $"{c.LastName}, {c.FirstName}" + (c.Rank.HasValue ? $" ({c.Rank.Value.GetDisplayName()})" : "")
+        }).ToList();
+    }
+
+    private async Task ReloadActiveAsync()
+    {
+        if (SelectedVesselId == 0) { ActiveAssignments = []; ComplianceStatuses = []; _crewManagerMap = []; return; }
+
+        ActiveAssignments = await AssignmentService.GetActiveByVesselAsync(SelectedVesselId);
+        var ids = ActiveAssignments.Select(a => a.CrewMemberId);
+        ComplianceStatuses = await ComplianceWorkflowService.GetCrewComplianceSummaryAsync(ids);
+
+        // Build crew-manager map from ApplicationUserId → IsCrewManager
+        _crewManagerMap = [];
+        foreach (var a in ActiveAssignments)
+        {
+            var uid = a.CrewMember?.ApplicationUserId;
+            if (uid is not null && !_crewManagerMap.ContainsKey(uid))
+            {
+                var u = await UserMgmtService.GetUserEditorAsync(uid);
+                _crewManagerMap[uid] = u?.IsCrewManager ?? false;
+            }
+        }
+    }
+
+    // ── Sign-On dialog ────────────────────────────────────────────────
+    private void OpenSignOnDialog()
+    {
+        SignOnModel = new SignOnDialogModel
+        {
+            LocalDateTime = LocalNow()
+        };
+        IsSignOnDialogVisible = true;
+    }
+
+    private void CloseSignOnDialog() => IsSignOnDialogVisible = false;
+
+    private async Task CommitSignOnAsync()
+    {
+        try
+        {
+            Message = null;
+            int crewId = SignOnModel.CrewMemberId;
+
+            if (SignOnModel.CreateNewCrew)
+            {
+                if (string.IsNullOrWhiteSpace(SignOnModel.NewFirstName) || string.IsNullOrWhiteSpace(SignOnModel.NewLastName))
+                {
+                    Message = "First Name and Last Name are required for a new crew member.";
+                    IsError = true;
+                    return;
+                }
+
+                var operatorId = _isAdmin ? (SelectedOperatorId > 0 ? SelectedOperatorId : (int?)null)
+                                           : _scopedCompanyId;
+
+                var newCrew = new CrewMember
+                {
+                    FirstName = SignOnModel.NewFirstName!,
+                    LastName = SignOnModel.NewLastName!,
+                    Email = SignOnModel.NewEmail,
+                    Phone = SignOnModel.NewPhone,
+                    Nationality = SignOnModel.NewNationality,
+                    SidNumber = SignOnModel.NewSidNumber,
+                    Rank = SignOnModel.Rank,
+                    EmployerOperatorId = operatorId,
+                    IsActive = true
+                };
+
+                // Determine portal base URL from NavigationManager is not injected; use relative path
+                var provisionResult = await CrewService.CreateWithIdentityAsync(newCrew, _currentUserId, "");
+                if (!provisionResult.Succeeded)
+                {
+                    Message = $"Could not create crew account: {string.Join("; ", provisionResult.Errors)}";
+                    IsError = true;
+                    return;
+                }
+                crewId = provisionResult.CrewMember!.Id;
+                await RefreshCrewListAsync();
+            }
+
+            if (crewId == 0) { Message = "Select or create a crew member."; IsError = true; return; }
+            if (SelectedVesselId == 0) { Message = "No vessel selected."; IsError = true; return; }
+
+            // Convert local time to UTC for persistence
+            var utcSignOn = TimeZoneInfo.ConvertTimeToUtc(SignOnModel.LocalDateTime, SastZone);
+
+            var result = await AssignmentService.SignOnAsync(crewId, SelectedVesselId, SignOnModel.Rank, SignOnModel.Port, _currentUserId);
+            if (!result.Succeeded)
+            {
+                Message = $"Sign-on blocked: {result.Message}";
+                IsError = true;
+                return;
+            }
+
+            Message = "Crew member signed on successfully.";
+            IsError = false;
+            IsSignOnDialogVisible = false;
+            await ReloadActiveAsync();
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    // ── Sign-Off dialog ───────────────────────────────────────────────
+    private void OpenSignOffDialog(CrewAssignment a)
+    {
+        SignOffModel = new SignOffDialogModel
+        {
+            AssignmentId = a.Id,
+            CrewName = $"{a.CrewMember?.LastName}, {a.CrewMember?.FirstName}",
+            Rank = a.RankOnAssignment,
+            Port = a.PortOfSignOn,
+            LocalDateTime = LocalNow()
+        };
+        IsSignOffDialogVisible = true;
+    }
+
+    private void CloseSignOffDialog() => IsSignOffDialogVisible = false;
+
+    private async Task CommitSignOffAsync()
+    {
+        try
+        {
+            await AssignmentService.SignOffAsync(SignOffModel.AssignmentId, SignOffModel.Port, _currentUserId);
+            Message = "Crew member signed off.";
+            IsError = false;
+            IsSignOffDialogVisible = false;
+            await ReloadActiveAsync();
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    // ── Crew manager toggle ───────────────────────────────────────────
+    private async Task ToggleCrewManagerAsync(string applicationUserId, bool isManager)
+    {
+        var result = await UserMgmtService.SetCrewManagerAsync(applicationUserId, isManager);
+        if (result.Succeeded)
+        {
+            _crewManagerMap[applicationUserId] = isManager;
+            Message = isManager ? "Crew Manager flag set." : "Crew Manager flag cleared.";
+            IsError = false;
+        }
+        else
+        {
+            Message = $"Could not update Crew Manager flag: {result.Message}";
+            IsError = true;
+        }
+    }
+
+    private void NavigateToTraining(int crewMemberId)
+        => NavigationManager.NavigateTo($"/crewing/crew/{crewMemberId}");
+
+    // ── Compliance filter actions ────────────────────────────────────
+    private void ApplyComplianceFilter()
+    {
+        _complianceFilter = _complianceFilterKey switch
+        {
+            "Compliant"   => CrewComplianceOverallStatus.FullyCompliant,
+            "NonCompliant" => CrewComplianceOverallStatus.PendingTraining,
+            "Expired"     => CrewComplianceOverallStatus.Expired,
+            _             => null
+        };
+    }
+
+    private void ClearComplianceFilter()
+    {
+        _complianceFilterKey = "";
+        _complianceFilter = null;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────
+
+    // Local now in SAST (GMT+2)
+    private static DateTime LocalNow()
+        => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SastZone);
+
+    // Display UTC values as local SAST
+    private static string FormatLocal(DateTime? utc)
+        => utc.HasValue ? TimeZoneInfo.ConvertTimeFromUtc(utc.Value, SastZone).ToString("dd MMM yyyy HH:mm") : "—";
+
+    private static string ComplianceBadgeCss(CrewComplianceOverallStatus s) => s switch
+    {
+        CrewComplianceOverallStatus.FullyCompliant => "crew-badge-green",
+        CrewComplianceOverallStatus.PendingTraining => "crew-badge-yellow",
+        CrewComplianceOverallStatus.PendingApproval => "crew-badge-yellow",
+        CrewComplianceOverallStatus.PendingPayment => "crew-badge-yellow",
+        CrewComplianceOverallStatus.Expired => "crew-badge-red",
+        _ => "crew-badge-blue-gray"
+    };
+
+    private static string ComplianceText(CrewComplianceOverallStatus s) => s switch
+    {
+        CrewComplianceOverallStatus.FullyCompliant => "✅ Compliant",
+        CrewComplianceOverallStatus.PendingTraining => "⚠️ Non-Compliant",
+        CrewComplianceOverallStatus.PendingApproval => "⚠️ Pending",
+        CrewComplianceOverallStatus.PendingPayment => "⚠️ Pending",
+        CrewComplianceOverallStatus.Expired => "🔴 Expired",
+        _ => "❓ Unknown"
+    };
+
+    private string ComplianceTooltip(int crewId)
+        => ComplianceStatuses.TryGetValue(crewId, out var s)
+            ? (s == CrewComplianceOverallStatus.FullyCompliant ? "Fully compliant" : "Non-compliant — click to view details")
+            : string.Empty;
+}

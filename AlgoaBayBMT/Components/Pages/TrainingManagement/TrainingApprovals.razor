@@ -1,0 +1,245 @@
+@page "/training-management/approvals"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.TrainingApproval)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Security
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Grids
+
+@inject ICrewComplianceWorkflowService CrewComplianceWorkflowService
+@inject IOperatorService OperatorService
+@inject IUserManagementService UserMgmtService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Training Approvals</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Training Approvals</h1>
+            <div class="page-subtitle">Review pending crew training registrations, approve them, and trigger invoice generation with learner access notifications.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <SfButton CssClass="pf-training-page-action-btn" IconCss="e-icons e-refresh" OnClick="ReloadAsync">Refresh</SfButton>
+            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn"
+                      IconCss="e-icons e-check"
+                      Disabled="@(!SelectedAssignmentIds.Any())"
+                      OnClick="ApproveSelectedAsync">
+                Approve Selected
+            </SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Filter" SubTitle="Limit approvals to a specific bunker operator when needed." />
+        <CardContent>
+            <div class="pf-form-grid">
+                @if (_isAdmin)
+                {
+                <div class="pf-col-6">
+                    <label class="pf-field-label">Operator</label>
+                    <SfDropDownList TValue="int?"
+                                    TItem="BunkerOperator"
+                                    DataSource="@Operators"
+                                    @bind-Value="SelectedOperatorId"
+                                    Placeholder="All operators">
+                        <DropDownListFieldSettings Value="Id" Text="Name" />
+                        <DropDownListEvents TValue="int?" TItem="BunkerOperator" ValueChange="@(async _ => await ReloadAsync())" />
+                    </SfDropDownList>
+                </div>
+                }
+            </div>
+        </CardContent>
+    </SfCard>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Pending Registrations" SubTitle="Only registrations awaiting company approval appear here." />
+        <CardContent>
+            @if (Items.Count == 0)
+            {
+                <div class="pf-empty-state">No training registrations are currently waiting for approval.</div>
+            }
+            else
+            {
+                <div class="pf-training-responsive-grid">
+                    <SfGrid DataSource="@Items" TValue="TrainingApprovalQueueItemModel" AllowPaging="true" AllowSorting="true" CssClass="pf-grid--compact pf-courses-grid">
+                        <GridPageSettings PageSize="12" />
+                        <GridColumns>
+                            <GridColumn Width="70" TextAlign="TextAlign.Center">
+                                <HeaderTemplate>Select</HeaderTemplate>
+                                <Template>
+                                    @{ var item = context as TrainingApprovalQueueItemModel; }
+                                    @if (item is not null)
+                                    {
+                                        <input type="checkbox"
+                                               checked="@SelectedAssignmentIds.Contains(item.AssignmentId)"
+                                               @onchange="@(args => ToggleAssignment(item.AssignmentId, args.Value as bool? == true))" />
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Crew Member" Width="220">
+                                <Template>
+                                    @{ var item = context as TrainingApprovalQueueItemModel; }
+                                    @if (item is not null)
+                                    {
+                                        <a class="pf-training-panel-link" href="@($"/crewing/crew/{item.CrewMemberId}")">@item.CrewMemberName</a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Operator" Width="200">
+                                <Template>@((context as TrainingApprovalQueueItemModel)?.OperatorName ?? "—")</Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Course" Width="260">
+                                <Template>
+                                    @{ var item = context as TrainingApprovalQueueItemModel; }
+                                    @if (item is not null)
+                                    {
+                                        <div>
+                                            <strong>@item.CourseTitle</strong>
+                                            <div class="page-subtitle">@item.CourseCode</div>
+                                        </div>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Cost" Width="110" TextAlign="TextAlign.Right">
+                                <Template>@(((context as TrainingApprovalQueueItemModel)?.CourseCost ?? 0m).ToString("N2"))</Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Registered" Width="140">
+                                <Template>@FormatUtc((context as TrainingApprovalQueueItemModel)?.RegisteredOnUtc)</Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Reason" Width="260">
+                                <Template>@((context as TrainingApprovalQueueItemModel)?.Reason ?? "—")</Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Actions" Width="120" TextAlign="TextAlign.Center">
+                                <Template>
+                                    @{ var item = context as TrainingApprovalQueueItemModel; }
+                                    @if (item is not null)
+                                    {
+                                        <div class="pf-grid-actions pf-grid-actions--compact pf-courses-grid-actions">
+                                            <span class="pf-icon-action" title="Approve registration">
+                                                <SfButton CssClass="e-flat pf-btn-edit pf-btn-icon pf-btn-square abmt-grid-action-edit"
+                                                          IconCss="e-icons e-check"
+                                                          OnClick="@(() => ApproveSingleAsync(item.AssignmentId))" />
+                                            </span>
+                                        </div>
+                                    }
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private List<BunkerOperator> Operators { get; set; } = [];
+    private List<TrainingApprovalQueueItemModel> Items { get; set; } = [];
+    private HashSet<Guid> SelectedAssignmentIds { get; set; } = [];
+    private int? SelectedOperatorId { get; set; }
+    private string? Message;
+    private bool IsError;
+    private bool _isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _isAdmin = auth.User.IsInRole(RoleNames.Admin);
+        var allOperators = (await OperatorService.GetAllAsync()).Where(x => x.IsActive).ToList();
+
+        if (_isAdmin)
+        {
+            Operators = allOperators;
+        }
+        else
+        {
+            var userId = auth.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (userId is not null)
+            {
+                var userModel = await UserMgmtService.GetUserEditorAsync(userId);
+                if (userModel?.CompanyId is int cid)
+                {
+                    Operators = allOperators.Where(x => x.Id == cid).ToList();
+                    SelectedOperatorId = cid;
+                }
+            }
+        }
+        await ReloadAsync();
+    }
+
+    private async Task ReloadAsync()
+    {
+        Items = await CrewComplianceWorkflowService.GetPendingApprovalsAsync(SelectedOperatorId);
+        SelectedAssignmentIds.RemoveWhere(id => Items.All(x => x.AssignmentId != id));
+    }
+
+    private void ToggleAssignment(Guid assignmentId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            SelectedAssignmentIds.Add(assignmentId);
+        }
+        else
+        {
+            SelectedAssignmentIds.Remove(assignmentId);
+        }
+    }
+
+    private async Task ApproveSingleAsync(Guid assignmentId)
+    {
+        SelectedAssignmentIds = [assignmentId];
+        await ApproveSelectedAsync();
+    }
+
+    private async Task ApproveSelectedAsync()
+    {
+        try
+        {
+            if (SelectedAssignmentIds.Count == 0)
+            {
+                Message = "Select at least one training registration to approve.";
+                IsError = true;
+                return;
+            }
+
+            var userId = await CurrentUserIdAsync();
+            var result = await CrewComplianceWorkflowService.ApproveRegistrationsAsync(SelectedAssignmentIds, userId, NavigationManager.BaseUri);
+            if (!result.Succeeded || result.Data is null)
+            {
+                Message = result.Message ?? string.Join(", ", result.Errors);
+                IsError = true;
+                return;
+            }
+
+            Message = result.Data.InvoiceIds.Count > 0
+                ? $"Approved {result.Data.ApprovedCount} registration(s). Invoice(s): {string.Join(", ", result.Data.InvoiceIds)}."
+                : result.Message ?? $"Approved {result.Data.ApprovedCount} registration(s).";
+            IsError = false;
+            SelectedAssignmentIds.Clear();
+            await ReloadAsync();
+        }
+        catch (Exception ex)
+        {
+            Message = ex.Message;
+            IsError = true;
+        }
+    }
+
+    private async Task<string?> CurrentUserIdAsync()
+    {
+        var auth = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return auth.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+    }
+
+    private static string FormatUtc(DateTime? date) => date?.ToString("dd MMM yyyy") ?? "—";
+}

@@ -3,32 +3,35 @@
 
 @inject SignInManager<ApplicationUser> SignInManager
 
-<ul class="nav nav-pills flex-column">
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Email">Email</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/ChangePassword">Password</NavLink>
-    </li>
-    @if (hasExternalLogins)
-    {
-        <li class="nav-item">
-            <NavLink class="nav-link" href="Account/Manage/ExternalLogins">External logins</NavLink>
+<nav class="pf-manage-nav">
+    <div class="pf-manage-nav-title card-header-bmt">Manage Sections</div>
+    <ul class="pf-manage-nav-list">
+        <li>
+            <NavLink class="pf-manage-nav-link" href="Account/Manage" Match="NavLinkMatch.All">Profile</NavLink>
         </li>
-    }
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/TwoFactorAuthentication">Two-factor authentication</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/Passkeys">Passkeys</NavLink>
-    </li>
-    <li class="nav-item">
-        <NavLink class="nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
-    </li>
-</ul>
+        <li>
+            <NavLink class="pf-manage-nav-link" href="Account/Manage/Email">Email</NavLink>
+        </li>
+        <li>
+            <NavLink class="pf-manage-nav-link" href="Account/Manage/ChangePassword">Password</NavLink>
+        </li>
+        @if (hasExternalLogins)
+        {
+            <li>
+                <NavLink class="pf-manage-nav-link" href="Account/Manage/ExternalLogins">External logins</NavLink>
+            </li>
+        }
+        <li>
+            <NavLink class="pf-manage-nav-link" href="Account/Manage/TwoFactorAuthentication">Two-factor authentication</NavLink>
+        </li>
+        <li>
+            <NavLink class="pf-manage-nav-link" href="Account/Manage/Passkeys">Passkeys</NavLink>
+        </li>
+        <li>
+            <NavLink class="pf-manage-nav-link" href="Account/Manage/PersonalData">Personal data</NavLink>
+        </li>
+    </ul>
+</nav>
 
 @code {
     private bool hasExternalLogins;

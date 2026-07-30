@@ -1,0 +1,196 @@
+.pf-training-admin-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pf-training-dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    align-items: stretch;
+}
+
+.pf-training-dashboard-grid--compact {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pf-training-responsive-grid {
+    width: 100%;
+    overflow-x: auto;
+}
+
+/* Button sizing and colours are in abmt-training-buttons.css (loaded last in App.razor). */
+
+
+.pf-training-courses-panel--participation {
+    margin-top: 5px;
+}
+
+.pf-training-reset-dialog-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.pf-training-reset-dialog-subtitle {
+    margin: 0;
+    color: var(--pf-modern-muted, #607284);
+    line-height: 1.45;
+}
+
+.pf-training-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+/* Reusable subtle pastel maritime DataGrid action-button palette.
+   Edit Course: #d7e6f3; Open Builder: #d4eef8; Question Bank: #d8f0ed;
+   Create Next Version: #f1e6c8; Toggle Active: #dcefdc. */
+.pf-courses-grid-actions,
+::deep .pf-courses-grid-actions,
+::deep .pf-courses-grid-actions .pf-icon-action {
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+::deep .pf-courses-grid .e-rowcell {
+    padding-block: 2px !important;
+    line-height: 1.2;
+}
+
+::deep .pf-courses-grid .e-gridcontent .e-row,
+::deep .pf-courses-grid .e-gridcontent .e-rowcell {
+    min-height: 32px !important;
+}
+
+::deep .pf-courses-grid .e-gridcontent .e-rowcell:has(.pf-courses-grid-actions) {
+    padding: 0 !important;
+}
+
+::deep .pf-courses-grid-actions .e-btn.pf-btn-icon,
+::deep .pf-courses-grid-actions a.e-btn.pf-btn-icon {
+    width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-radius: 6px !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.70), 0 1px 2px rgba(19, 45, 56, 0.10) !important;
+}
+
+::deep .pf-courses-grid-actions .e-btn.pf-btn-icon:hover,
+::deep .pf-courses-grid-actions a.e-btn.pf-btn-icon:hover {
+    filter: none;
+    transform: none !important;
+}
+
+::deep .abmt-grid-action-edit.e-btn {
+    background: #d7e6f3 !important;
+    border-color: #b7cfe3 !important;
+    color: #244d70 !important;
+}
+
+::deep .abmt-grid-action-edit.e-btn:hover {
+    background: #a8c7df !important;
+    border-color: #87b0cf !important;
+    color: #173852 !important;
+}
+
+::deep .abmt-grid-action-builder.e-btn {
+    background: #d4eef8 !important;
+    border-color: #a9d8ea !important;
+    color: #075f8c !important;
+}
+
+::deep .abmt-grid-action-builder.e-btn:hover {
+    background: #9ed6ea !important;
+    border-color: #75bedb !important;
+    color: #044a70 !important;
+}
+
+::deep .abmt-grid-action-question-bank.e-btn {
+    background: #d8f0ed !important;
+    border-color: #acdcd6 !important;
+    color: #0b5f59 !important;
+}
+
+::deep .abmt-grid-action-question-bank.e-btn:hover {
+    background: #a6d9d2 !important;
+    border-color: #7cc4bb !important;
+    color: #084a45 !important;
+}
+
+::deep .abmt-grid-action-version.e-btn {
+    background: #f1e6c8 !important;
+    border-color: #ddca98 !important;
+    color: #6b4b06 !important;
+}
+
+::deep .abmt-grid-action-version.e-btn:hover {
+    background: #d9c27e !important;
+    border-color: #c5a958 !important;
+    color: #543a03 !important;
+}
+
+::deep .abmt-grid-action-toggle.e-btn {
+    background: #dcefdc !important;
+    border-color: #b9dab9 !important;
+    color: #236327 !important;
+}
+
+::deep .abmt-grid-action-toggle.e-btn:hover {
+    background: #acd6ac !important;
+    border-color: #87bf89 !important;
+    color: #194d1d !important;
+}
+
+::deep .pf-courses-grid-actions .e-icons {
+    color: currentColor !important;
+    font-size: 0.9rem;
+    line-height: 1;
+}
+
+@media (max-width: 1200px) {
+    .pf-training-dashboard-grid,
+    .pf-training-dashboard-grid--compact {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .pf-training-admin-shell {
+        gap: 0.85rem;
+    }
+
+    .page-header {
+        align-items: stretch;
+        gap: 1rem;
+    }
+
+    .page-header .pf-grid-actions {
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-dashboard-grid,
+    .pf-training-dashboard-grid--compact {
+        grid-template-columns: 1fr;
+    }
+
+    .pf-training-page-action-btn {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .pf-training-dialog-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+}

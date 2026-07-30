@@ -1,91 +1,452 @@
 ﻿@page "/Account/Manage"
+@rendermode InteractiveServer
 
-@using System.ComponentModel.DataAnnotations
-@using Microsoft.AspNetCore.Identity
 @using AlgoaBayBMT.Data
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Notifications
+@using System.Security.Claims
 
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject IUserManagementService UserManagementService
 @inject UserManager<ApplicationUser> UserManager
 @inject SignInManager<ApplicationUser> SignInManager
-@inject IdentityRedirectManager RedirectManager
+@inject NavigationManager NavigationManager
 
-<PageTitle>Profile</PageTitle>
+<PageTitle>Account Management</PageTitle>
 
-<h3>Profile</h3>
-<StatusMessage />
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
 
-<div class="row">
-    <div class="col-xl-6">
-        <EditForm Model="Input" FormName="profile" OnValidSubmit="OnValidSubmitAsync" method="post">
-            <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <input type="text" value="@username" id="username" class="form-control" placeholder="Choose your username." disabled />
-                <label for="username" class="form-label">Username</label>
+@if (ProfileModel is null)
+{
+    <SfCard CssClass="pf-card-shell">
+        <CardContent>
+            <div class="pf-empty-state">Loading your account profile...</div>
+        </CardContent>
+    </SfCard>
+}
+else
+{
+    <EditForm EditContext="EditContext" OnValidSubmit="SaveAsync">
+        <DataAnnotationsValidator />
+
+        <div class="pf-manage-overview profile-hero-bmt">
+            <div class="pf-profile-hero">
+                @if (!string.IsNullOrWhiteSpace(ProfileImagePreviewUrl))
+                {
+                    <img src="@ProfileImagePreviewUrl" alt="Profile picture preview" class="pf-profile-avatar-image" />
+                }
+                else
+                {
+                    <div class="pf-profile-avatar-placeholder" aria-hidden="true">@GetAvatarInitials()</div>
+                }
             </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.PhoneNumber" id="Input.PhoneNumber" class="form-control" placeholder="Enter your phone number" />
-                <label for="Input.PhoneNumber" class="form-label">Phone number</label>
-                <ValidationMessage For="() => Input.PhoneNumber" class="text-danger" />
+
+            <div class="pf-manage-overview-copy">
+                <h2 class="pf-manage-overview-title">@ProfileModel.FullName</h2>
+                <div class="pf-manage-overview-subtitle">@(ProfileModel.IsCrew ? "Crew profile" : "Operational user profile")</div>
+                <div class="pf-role-badge-list">
+                    <span class="e-badge pf-role-badge">@GetQualificationText()</span>
+                    <span class="e-badge pf-role-badge">@(ProfileModel.EmailConfirmed ? "Email Verified" : "Email Verification Pending")</span>
+                </div>
             </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Save</button>
-        </EditForm>
-    </div>
-</div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+        {
+            <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(InfoMessage))
+        {
+            <div class="pf-alert pf-alert--info" role="status">@InfoMessage</div>
+        }
+
+        <ValidationSummary class="validation-message" />
+
+        <SfTab CssClass="pf-manage-tabset">
+            <TabItems>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Profile"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell pf-manage-section-card">
+                            <CardHeader Title="Profile" SubTitle="Maintain your personal profile information used across the application." />
+                            <CardContent>
+                                <div class="pf-form-grid">
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Full Name</label>
+                                        <SfTextBox @bind-Value="ProfileModel.FullName" Placeholder="Full name" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.FullName" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Given Names</label>
+                                        <SfTextBox @bind-Value="ProfileModel.GivenNames" Placeholder="Given names" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.GivenNames" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Username</label>
+                                        <SfTextBox Value="@ProfileModel.UserName" Placeholder="Username" Readonly="true" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Qualification</label>
+                                        <SfDropDownList TValue="SeagoingCommercialQualification?" TItem="SeagoingCommercialQualificationOption" DataSource="@QualificationOptions" @bind-Value="ProfileModel.Qualification" Placeholder="Select qualification">
+                                            <DropDownListFieldSettings Text="Text" Value="Value" />
+                                        </SfDropDownList>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Contact Details"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell pf-manage-section-card">
+                            <CardHeader Title="Contact Details" SubTitle="Keep your personal contact information current for operational communications." />
+                            <CardContent>
+                                <div class="pf-form-grid">
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Email</label>
+                                        <SfTextBox Value="@ProfileModel.Email" Readonly="true" Placeholder="Email" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Cell Number</label>
+                                        <SfTextBox @bind-Value="ProfileModel.CellNo" Placeholder="Cell number" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.CellNo" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Country</label>
+                                        <SfTextBox @bind-Value="ProfileModel.Country" Placeholder="Country" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.Country" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">Address</label>
+                                        <SfTextBox @bind-Value="ProfileModel.Address" Placeholder="Address" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.Address" class="validation-message" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Seafarer Details"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell pf-manage-section-card">
+                            <CardHeader Title="Seafarer Details" SubTitle="Crew-specific identity information maintained against your signed-in profile." />
+                            <CardContent>
+                                @if (ProfileModel.IsCrew)
+                                {
+                                    <div class="pf-form-grid">
+                                        <div class="pf-col-4">
+                                            <label class="pf-field-label">Gender</label>
+                                            <SfTextBox @bind-Value="ProfileModel.Gender" Placeholder="Gender" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                            <ValidationMessage For="() => ProfileModel.Gender" class="validation-message" />
+                                        </div>
+                                        <div class="pf-col-4">
+                                            <label class="pf-field-label">Date of Birth</label>
+                                            <SfDatePicker TValue="DateTime?" @bind-Value="ProfileModel.DateOfBirth" Format="yyyy-MM-dd" />
+                                        </div>
+                                        <div class="pf-col-4">
+                                            <label class="pf-field-label">Nationality</label>
+                                            <SfTextBox @bind-Value="ProfileModel.Nationality" Placeholder="Nationality" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                            <ValidationMessage For="() => ProfileModel.Nationality" class="validation-message" />
+                                        </div>
+                                        <div class="pf-col-6">
+                                            <label class="pf-field-label">Place of Birth</label>
+                                            <SfTextBox @bind-Value="ProfileModel.PlaceOfBirth" Placeholder="Place of birth" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                            <ValidationMessage For="() => ProfileModel.PlaceOfBirth" class="validation-message" />
+                                        </div>
+                                        <div class="pf-col-6">
+                                            <label class="pf-field-label">Passport Number</label>
+                                            <SfTextBox @bind-Value="ProfileModel.PassportNumber" Placeholder="Passport number" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                            <ValidationMessage For="() => ProfileModel.PassportNumber" class="validation-message" />
+                                        </div>
+                                        <div class="pf-col-6">
+                                            <label class="pf-field-label">Passport Expiry</label>
+                                            <SfDatePicker TValue="DateTime?" @bind-Value="ProfileModel.PassportExpiry" Format="yyyy-MM-dd" />
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="pf-empty-state">Crew-only profile fields become available for accounts flagged as crew members.</div>
+                                }
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Identity Documents"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell pf-manage-section-card">
+                            <CardHeader Title="Identity Documents" SubTitle="Maintain your SID and related maritime identity document information." />
+                            <CardContent>
+                                <div class="pf-form-grid">
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">SID Number</label>
+                                        <SfTextBox @bind-Value="ProfileModel.SidNumber" Placeholder="SID number" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.SidNumber" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">SID Issuing Country</label>
+                                        <SfTextBox @bind-Value="ProfileModel.SidIssuingCountry" Placeholder="SID issuing country" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.SidIssuingCountry" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-6">
+                                        <label class="pf-field-label">SID Issuing Authority</label>
+                                        <SfTextBox @bind-Value="ProfileModel.SidIssuingAuthority" Placeholder="SID issuing authority" FloatLabelType="Syncfusion.Blazor.Inputs.FloatLabelType.Never" />
+                                        <ValidationMessage For="() => ProfileModel.SidIssuingAuthority" class="validation-message" />
+                                    </div>
+                                    <div class="pf-col-3">
+                                        <label class="pf-field-label">SID Issue Date</label>
+                                        <SfDatePicker TValue="DateTime?" @bind-Value="ProfileModel.SidIssueDate" Format="yyyy-MM-dd" />
+                                    </div>
+                                    <div class="pf-col-3">
+                                        <label class="pf-field-label">SID Expiry Date</label>
+                                        <SfDatePicker TValue="DateTime?" @bind-Value="ProfileModel.SidExpiryDate" Format="yyyy-MM-dd" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Profile Picture"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell pf-manage-section-card">
+                            <CardHeader Title="Profile Picture" SubTitle="Upload a current crew profile image. Image uploads are stored in the application database." />
+                            <CardContent>
+                                <div class="pf-manage-picture-grid">
+                                    <div class="pf-manage-picture-preview">
+                                        @if (!string.IsNullOrWhiteSpace(ProfileImagePreviewUrl))
+                                        {
+                                            <img src="@ProfileImagePreviewUrl" alt="Current profile picture" class="pf-profile-picture-preview" />
+                                        }
+                                        else
+                                        {
+                                            <div class="pf-profile-picture-empty">No profile picture uploaded</div>
+                                        }
+                                    </div>
+                                    <div class="pf-manage-picture-actions">
+                                        <label class="pf-field-label" for="profile-picture-upload">Select Image</label>
+                                        <InputFile id="profile-picture-upload" OnChange="OnProfilePictureSelectedAsync" accept="image/png,image/jpeg,image/webp,image/gif" class="form-control" />
+                                        <div class="page-subtitle">Accepted formats: PNG, JPG, WEBP, GIF. Maximum size: 2 MB.</div>
+                                        @if (!string.IsNullOrWhiteSpace(PendingProfilePictureName))
+                                        {
+                                            <div class="pf-alert pf-alert--info" role="status">Ready to save: @PendingProfilePictureName</div>
+                                        }
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+                <TabItem>
+                    <ChildContent>
+                        <TabHeader Text="Security"></TabHeader>
+                    </ChildContent>
+                    <ContentTemplate>
+                        <SfCard CssClass="pf-card-shell pf-manage-section-card">
+                            <CardHeader Title="Security" SubTitle="Manage email verification, password changes, multifactor options, and personal-data export." />
+                            <CardContent>
+                                <div class="pf-vessel-details pf-vessel-details--single-column">
+                                    <div class="pf-vessel-detail-row">
+                                        <dt class="pf-vessel-label">Current Email</dt>
+                                        <dd class="pf-vessel-value">@ProfileModel.Email</dd>
+                                    </div>
+                                    <div class="pf-vessel-detail-row">
+                                        <dt class="pf-vessel-label">Email Status</dt>
+                                        <dd class="pf-vessel-value">@(ProfileModel.EmailConfirmed ? "Verified" : "Verification pending")</dd>
+                                    </div>
+                                </div>
+
+                                <div class="pf-toolbar-row pf-manage-security-actions">
+                                    <a class="btn btn-bmt btn-pastel-orange" href="Account/Manage/Email">
+                                        <i class="bi bi-envelope-fill me-2"></i>Manage Email
+                                    </a>
+                                    <a class="btn btn-bmt btn-pastel-red" href="Account/Manage/ChangePassword">
+                                        <i class="bi bi-shield-lock-fill me-2"></i>Change Password
+                                    </a>
+                                    <a class="btn btn-bmt btn-pastel-teal" href="Account/Manage/TwoFactorAuthentication">
+                                        <i class="bi bi-phone-fill me-2"></i>Two-Factor Authentication
+                                    </a>
+                                    <a class="btn btn-bmt btn-pastel-blue" href="Account/Manage/PersonalData">
+                                        <i class="bi bi-person-lines-fill me-2"></i>Personal Data
+                                    </a>
+                                </div>
+                            </CardContent>
+                        </SfCard>
+                    </ContentTemplate>
+                </TabItem>
+            </TabItems>
+        </SfTab>
+
+        <div class="pf-dialog-actions pf-manage-submit-row">
+            <button type="submit" class="btn btn-bmt btn-pastel-green">
+                <i class="bi bi-floppy-fill me-2"></i>Save Profile Changes
+            </button>
+        </div>
+    </EditForm>
+}
 
 @code {
-    private ApplicationUser? user;
-    private string? username;
-    private string? phoneNumber;
+    private const long MaxProfilePictureSize = 2 * 1024 * 1024;
 
-    [CascadingParameter]
-    private HttpContext HttpContext { get; set; } = default!;
+    private SfToast SuccessToast = default!;
+    private EditContext EditContext = default!;
+    private UserProfileManageModel? ProfileModel;
+    private string? CurrentUserId;
+    private string? ErrorMessage;
+    private string? InfoMessage;
+    private string? PendingProfilePictureName;
+    private string? ProfileImagePreviewUrl;
 
-    [SupplyParameterFromForm]
-    private InputModel Input { get; set; } = default!;
+    private IReadOnlyList<SeagoingCommercialQualificationOption> QualificationOptions => SeagoingCommercialQualificationExtensions.All;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await LoadProfileAsync();
+
+    private async Task LoadProfileAsync()
     {
-        Input ??= new();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        CurrentUserId = authState.User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-        user = await UserManager.GetUserAsync(HttpContext.User);
-        if (user is null)
+        if (string.IsNullOrWhiteSpace(CurrentUserId))
         {
-            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            NavigationManager.NavigateTo("/Account/Login", true);
             return;
         }
 
-        username = await UserManager.GetUserNameAsync(user);
-        phoneNumber = await UserManager.GetPhoneNumberAsync(user);
-
-        Input.PhoneNumber ??= phoneNumber;
-    }
-
-    private async Task OnValidSubmitAsync()
-    {
-        if (user is null)
+        ProfileModel = await UserManagementService.GetSelfProfileAsync(CurrentUserId);
+        if (ProfileModel is null)
         {
-            RedirectManager.RedirectToInvalidUser(UserManager, HttpContext);
+            ErrorMessage = "Unable to load your profile.";
             return;
         }
 
-        if (Input.PhoneNumber != phoneNumber)
-        {
-            var setPhoneResult = await UserManager.SetPhoneNumberAsync(user, Input.PhoneNumber);
-            if (!setPhoneResult.Succeeded)
-            {
-                RedirectManager.RedirectToCurrentPageWithStatus("Error: Failed to set phone number.", HttpContext);
-                return;
-            }
-        }
-
-        await SignInManager.RefreshSignInAsync(user);
-        RedirectManager.RedirectToCurrentPageWithStatus("Your profile has been updated", HttpContext);
+        EditContext = new EditContext(ProfileModel);
+        ProfileImagePreviewUrl = BuildImageUrl(ProfileModel.ProfilePicture, ProfileModel.ProfilePictureContentType);
+        ErrorMessage = null;
+        InfoMessage = null;
+        PendingProfilePictureName = null;
     }
 
-    private sealed class InputModel
+    private async Task OnProfilePictureSelectedAsync(InputFileChangeEventArgs args)
     {
-        [Phone]
-        [Display(Name = "Phone number")]
-        public string? PhoneNumber { get; set; }
+        if (ProfileModel is null)
+        {
+            return;
+        }
+
+        var file = args.File;
+        if (file is null)
+        {
+            return;
+        }
+
+        if (!file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            ErrorMessage = "Only image files can be uploaded as profile pictures.";
+            return;
+        }
+
+        if (file.Size > MaxProfilePictureSize)
+        {
+            ErrorMessage = "Profile picture must be 2 MB or smaller.";
+            return;
+        }
+
+        await using var stream = file.OpenReadStream(MaxProfilePictureSize);
+        using var memoryStream = new MemoryStream();
+        await stream.CopyToAsync(memoryStream);
+
+        ProfileModel.ProfilePicture = memoryStream.ToArray();
+        ProfileModel.ProfilePictureContentType = file.ContentType;
+        ProfileImagePreviewUrl = BuildImageUrl(ProfileModel.ProfilePicture, ProfileModel.ProfilePictureContentType);
+        PendingProfilePictureName = file.Name;
+        ErrorMessage = null;
+        InfoMessage = "Profile picture selected. Save your profile to apply the change.";
+    }
+
+    private async Task SaveAsync()
+    {
+        if (ProfileModel is null || string.IsNullOrWhiteSpace(CurrentUserId))
+        {
+            return;
+        }
+
+        var result = await UserManagementService.UpdateSelfProfileAsync(CurrentUserId, ProfileModel);
+        if (!result.Succeeded || result.Data is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+
+        ProfileModel = result.Data;
+        EditContext = new EditContext(ProfileModel);
+        ProfileImagePreviewUrl = BuildImageUrl(ProfileModel.ProfilePicture, ProfileModel.ProfilePictureContentType);
+        PendingProfilePictureName = null;
+        ErrorMessage = null;
+        InfoMessage = null;
+
+        var user = await UserManager.FindByIdAsync(CurrentUserId);
+        if (user is not null)
+        {
+            await SignInManager.RefreshSignInAsync(user);
+        }
+
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success",
+            Content = result.Message ?? "Your profile has been updated.",
+            CssClass = "e-toast-success",
+            ShowCloseButton = true,
+            Timeout = 4000
+        });
+    }
+
+    private string GetAvatarInitials()
+    {
+        if (string.IsNullOrWhiteSpace(ProfileModel?.FullName))
+        {
+            return "AB";
+        }
+
+        var parts = ProfileModel.FullName
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Take(2)
+            .Select(part => char.ToUpperInvariant(part[0]));
+
+        return string.Concat(parts);
+    }
+
+    private string GetQualificationText() => ProfileModel?.Qualification.GetDisplayName() ?? "Qualification not captured";
+
+    private static string? BuildImageUrl(byte[]? imageBytes, string? contentType)
+    {
+        if (imageBytes is null || imageBytes.Length == 0 || string.IsNullOrWhiteSpace(contentType))
+        {
+            return null;
+        }
+
+        return $"data:{contentType};base64,{Convert.ToBase64String(imageBytes)}";
     }
 }

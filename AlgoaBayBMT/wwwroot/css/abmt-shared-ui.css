@@ -1,0 +1,179 @@
+/* Shared AlgoaBayBMT UI primitives for reusable 3D panels, dialogs, and action buttons. */
+:root {
+    --abmt-dark-blue-top: #15635d;
+    --abmt-dark-blue-mid: #0e4d47;
+    --abmt-dark-blue-bottom: #073530;
+    --abmt-dark-blue-border: rgba(5, 45, 41, 0.82);
+    --abmt-gray-top: #66727d;
+    --abmt-gray-mid: #4b5560;
+    --abmt-gray-bottom: #343d46;
+    --abmt-gray-border: rgba(43, 51, 59, 0.82);
+    --abmt-red-top: #c94d4d;
+    --abmt-red-mid: #a93636;
+    --abmt-red-bottom: #7f2323;
+    --abmt-red-border: rgba(103, 25, 25, 0.84);
+    --abmt-3d-shadow: 0 1px 0 rgba(255, 255, 255, 0.34) inset, 0 2px 0 rgba(8, 28, 44, 0.28), 0 8px 18px rgba(15, 35, 56, 0.18);
+    --abmt-3d-shadow-hover: 0 1px 0 rgba(255, 255, 255, 0.42) inset, 0 3px 0 rgba(8, 28, 44, 0.30), 0 12px 26px rgba(15, 35, 56, 0.22);
+    --abmt-3d-overlay: linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.02) 52%, rgba(0,0,0,0.08) 100%);
+    --abmt-control-height: 62px;
+    --abmt-dialog-button-width: 168px;
+    --abmt-radius-sm: 10px;
+}
+
+.abmt-panel-3d {
+    overflow: hidden;
+}
+
+.abmt-panel-3d .e-card-header {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%) !important;
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18) !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08), 0 1px 0 rgba(255,255,255,0.75) inset !important;
+    color: #1a3a4a !important;
+    padding: 0.6875rem 1.15rem !important;
+    text-shadow: none;
+}
+
+.abmt-dialog .e-dlg-header-content {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--abmt-dark-blue-top) 0%, var(--abmt-dark-blue-mid) 52%, var(--abmt-dark-blue-bottom) 100%) !important;
+    border-bottom: 1px solid var(--abmt-dark-blue-border) !important;
+    box-shadow: var(--abmt-3d-shadow) !important;
+    color: #ffffff !important;
+    padding: 1rem 1.15rem !important;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.abmt-panel-3d .e-card-header::before {
+    display: none !important;
+}
+
+.abmt-dialog .e-dlg-header-content::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: var(--abmt-3d-overlay);
+}
+
+.abmt-panel-3d .e-card-header-title,
+.abmt-panel-3d .e-card-sub-title {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+    color: #1a3a4a !important;
+}
+
+.abmt-dialog .e-dlg-header,
+.abmt-dialog .e-dlg-header .e-title-text {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+    color: #ffffff !important;
+}
+
+/* Keep dialog header labels/text transparent so only the styled header surface is visible. */
+.e-dialog .e-dlg-header-content .e-dlg-header,
+.e-dialog .e-dlg-header-content .e-dlg-header *,
+.e-dialog .e-dlg-header-content .e-title-text,
+.e-dialog .e-dlg-header-content label,
+.e-dialog .e-dlg-header-content span {
+    background: transparent !important;
+}
+
+.abmt-panel-3d .e-card-sub-title {
+    color: rgba(26, 58, 74, 0.72) !important;
+    line-height: 1.35;
+}
+
+.abmt-dialog .e-dlg-closeicon-btn {
+    position: relative;
+    z-index: 2;
+    color: #ffffff !important;
+}
+
+.abmt-btn-primary-3d.e-btn,
+.abmt-btn-gray-3d.e-btn,
+.abmt-btn-red-3d.e-btn,
+a.abmt-btn-primary-3d.e-btn,
+a.abmt-btn-gray-3d.e-btn,
+a.abmt-btn-red-3d.e-btn {
+    min-height: var(--abmt-control-height) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 0.45rem !important;
+    padding: 0.65rem 1rem !important;
+    border-radius: var(--abmt-radius-sm) !important;
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.01em;
+    text-decoration: none !important;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25) !important;
+    box-shadow: var(--abmt-3d-shadow) !important;
+    transition: transform 110ms ease, box-shadow 140ms ease, filter 140ms ease !important;
+    white-space: nowrap;
+}
+
+.abmt-btn-primary-3d.e-btn {
+    background: linear-gradient(180deg, var(--abmt-dark-blue-top) 0%, var(--abmt-dark-blue-mid) 52%, var(--abmt-dark-blue-bottom) 100%) !important;
+    border-color: var(--abmt-dark-blue-border) !important;
+}
+
+.abmt-btn-gray-3d.e-btn {
+    background: linear-gradient(180deg, var(--abmt-gray-top) 0%, var(--abmt-gray-mid) 52%, var(--abmt-gray-bottom) 100%) !important;
+    border-color: var(--abmt-gray-border) !important;
+}
+
+.abmt-btn-red-3d.e-btn {
+    background: linear-gradient(180deg, var(--abmt-red-top) 0%, var(--abmt-red-mid) 52%, var(--abmt-red-bottom) 100%) !important;
+    border-color: var(--abmt-red-border) !important;
+}
+
+.abmt-btn-primary-3d.e-btn:hover,
+.abmt-btn-gray-3d.e-btn:hover,
+.abmt-btn-red-3d.e-btn:hover {
+    filter: brightness(1.04);
+    box-shadow: var(--abmt-3d-shadow-hover) !important;
+    transform: translateY(-1px);
+}
+
+.abmt-btn-primary-3d.e-btn .e-icons,
+.abmt-btn-gray-3d.e-btn .e-icons,
+.abmt-btn-red-3d.e-btn .e-icons {
+    color: currentColor !important;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.abmt-dialog-action-btn.e-btn {
+    width: var(--abmt-dialog-button-width);
+}
+
+/* Emergency / oil-spill visualiser panels adopt the pastel-teal 3D panel treatment. */
+.oilspill-visualizer .card {
+    border-radius: 12px;
+    border: 1px solid rgba(15, 87, 96, 0.14);
+    box-shadow: 0 6px 16px rgba(15, 35, 56, 0.10);
+    overflow: hidden;
+    background: #ffffff;
+}
+
+.oilspill-visualizer .card-header {
+    background: linear-gradient(180deg, #eaf3f6 0%, #ddecf0 52%, #cee5eb 100%);
+    border-bottom: 1px solid rgba(15, 87, 96, 0.18);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    color: #1a3a4a;
+    font-weight: 600;
+}
+
+@media (max-width: 640px) {
+    .abmt-dialog-action-btn.e-btn,
+    .abmt-btn-primary-3d.e-btn,
+    .abmt-btn-gray-3d.e-btn,
+    .abmt-btn-red-3d.e-btn {
+        width: 100%;
+    }
+}

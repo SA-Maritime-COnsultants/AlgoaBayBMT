@@ -1,0 +1,88 @@
+@page "/crewing/expiries"
+@rendermode InteractiveServer
+@attribute [Authorize(Policy = PolicyNames.AdminOnly)]
+
+@inject IComplianceService ComplianceService
+@inject IRegulatoryReportingService Reporting
+
+<PageTitle>Certificate Expiries</PageTitle>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Certificate Expiries</h1>
+            <div class="page-subtitle">Upcoming and expired crew certificates and identity documents.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <label class="pf-field-label" style="margin-right:.5rem;">Horizon (days)</label>
+            <SfNumericTextBox TValue="int" @bind-Value="HorizonDays" Min="1" Max="365" Width="120" />
+            <SfButton CssClass="pf-training-page-action-btn pf-training-create-course-btn" IconCss="e-icons e-refresh" OnClick="ScanAsync">Scan Now</SfButton>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Message))
+    {
+        <div class="pf-alert @(IsError ? "pf-alert--warning-strong" : "pf-status-message")" role="alert">@Message</div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardContent>
+            <div class="pf-training-responsive-grid">
+            <SfGrid DataSource="@Rows" TValue="ExpiringCertificateReportRow" AllowPaging="true" AllowSorting="true" AllowFiltering="true" CssClass="pf-grid--compact pf-courses-grid">
+                <GridPageSettings PageSize="20" />
+                <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                <GridColumns>
+                    <GridColumn Field="@nameof(ExpiringCertificateReportRow.CrewMemberName)" HeaderText="Crew Member" Width="220" />
+                    <GridColumn Field="@nameof(ExpiringCertificateReportRow.Source)" HeaderText="Source" Width="160" />
+                    <GridColumn Field="@nameof(ExpiringCertificateReportRow.ItemTitle)" HeaderText="Item" Width="240" />
+                    <GridColumn HeaderText="Expiry" Width="170"><Template>@FormatUtc((context as ExpiringCertificateReportRow)?.ExpiryDateUtc)</Template></GridColumn>
+                    <GridColumn Field="@nameof(ExpiringCertificateReportRow.DaysUntilExpiry)" HeaderText="Days Left" Width="120" TextAlign="TextAlign.Right" />
+                    <GridColumn HeaderText="Status" Width="140">
+                        <Template>
+                            @{ var r = context as ExpiringCertificateReportRow; }
+                            <span class="ab-badge @StatusBadge(r?.Status)">@r?.Status</span>
+                        </Template>
+                    </GridColumn>
+                </GridColumns>
+            </SfGrid>
+            </div>
+        </CardContent>
+    </SfCard>
+</div>
+
+@code {
+    private int HorizonDays { get; set; } = 60;
+    private List<ExpiringCertificateReportRow> Rows { get; set; } = [];
+    private string? Message;
+    private bool IsError;
+
+    protected override async Task OnInitializedAsync() => await LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        Rows = await Reporting.GetExpiringCertificatesReportAsync(HorizonDays);
+    }
+
+    private async Task ScanAsync()
+    {
+        try
+        {
+            var newEvents = await ComplianceService.ScanExpiriesAsync(HorizonDays);
+            Message = $"Scan complete. {newEvents} new expiry event(s) tracked.";
+            IsError = false;
+            await LoadAsync();
+        }
+        catch (Exception ex) { Message = ex.Message; IsError = true; }
+    }
+
+    private static string FormatUtc(DateTime? d) => d.HasValue ? d.Value.ToString("dd MMM yyyy - HH:mm") : "—";
+
+    private static string StatusBadge(ExpiryEventStatus? s) => s switch
+    {
+        ExpiryEventStatus.Pending => "ab-badge-warning",
+        ExpiryEventStatus.Notified => "ab-badge-warning",
+        ExpiryEventStatus.Acknowledged => "ab-badge-active",
+        ExpiryEventStatus.Expired => "ab-badge-inactive",
+        _ => ""
+    };
+}

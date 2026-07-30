@@ -1,0 +1,80 @@
+@using AlgoaBayBMT.Models.Training
+
+<div class="pf-training-check-card">
+    <div class="pf-training-check-header">
+        <span class="pf-training-check-type">@(Question.Kind == QuestionKind.TrueFalse ? "True / False" : "Knowledge Check")</span>
+        <h4>@Question.Prompt</h4>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Question.ScenarioContext))
+    {
+        <div class="pf-training-check-context">@Question.ScenarioContext</div>
+    }
+
+    <div class="pf-training-check-options">
+        @for (var index = 0; index < Question.Options.Count; index++)
+        {
+            var optionIndex = index;
+            <label class="pf-training-check-option @(SelectedIndexes.Contains(optionIndex) ? "is-selected" : string.Empty)">
+                @if (Question.AllowMultiple)
+                {
+                    <input type="checkbox" checked="@SelectedIndexes.Contains(optionIndex)" @onchange="args => ToggleSelection(optionIndex, args.Value as bool? == true)" />
+                }
+                else
+                {
+                    <input type="radio" name="@Question.QuestionId" checked="@SelectedIndexes.Contains(optionIndex)" @onchange="() => SelectSingle(optionIndex)" />
+                }
+                <span>@Question.Options[optionIndex]</span>
+            </label>
+        }
+    </div>
+
+    <div class="pf-grid-actions pf-grid-actions--compact pf-training-check-actions">
+        <SfButton CssClass="e-primary" OnClick="GradeAsync">Check Answer</SfButton>
+    </div>
+
+    @if (HasGraded)
+    {
+        <div class="pf-training-check-result @(IsCorrect ? "is-correct" : "is-incorrect")">
+            <strong>@(IsCorrect ? "Correct" : "Review Needed")</strong>
+            <p>@Question.Explanation</p>
+        </div>
+    }
+</div>
+
+@code {
+    private HashSet<int> SelectedIndexes { get; } = [];
+    private bool HasGraded;
+    private bool IsCorrect;
+
+    [Parameter, EditorRequired]
+    public Question Question { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<bool> Answered { get; set; }
+
+    private void ToggleSelection(int index, bool isSelected)
+    {
+        if (isSelected)
+        {
+            SelectedIndexes.Add(index);
+        }
+        else
+        {
+            SelectedIndexes.Remove(index);
+        }
+    }
+
+    private void SelectSingle(int index)
+    {
+        SelectedIndexes.Clear();
+        SelectedIndexes.Add(index);
+    }
+
+    private async Task GradeAsync()
+    {
+        HasGraded = true;
+        IsCorrect = SelectedIndexes.OrderBy(x => x).SequenceEqual(Question.CorrectOptionIndexes.OrderBy(x => x));
+        await Answered.InvokeAsync(IsCorrect);
+    }
+}

@@ -1,0 +1,12 @@
+@* The sidebar keeps the existing NavMenu behavior; visual presentation is handled by Sidebar.razor.css. *@
+<aside id="@Id" class="app-sidebar sidebar-surface" aria-label="Primary navigation">
+    <NavMenu OnNavigate="OnNavigate" />
+</aside>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = "app-sidebar";
+
+    [Parameter]
+    public EventCallback OnNavigate { get; set; }
+}
