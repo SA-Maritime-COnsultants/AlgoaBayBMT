@@ -3,6 +3,7 @@
 @inject NavigationManager NavigationManager
 @inject ICrewComplianceWorkflowService ComplianceWorkflowService
 @inject AuthenticationStateProvider AuthState
+@inject IWebHostEnvironment Environment
 
 <div class="app-shell @(isSidebarOpen ? "sidebar-open" : string.Empty)">
     <Sidebar Id="app-sidebar" OnNavigate="CloseSidebar" />
@@ -20,7 +21,32 @@
         <div class="app-overlay" @onclick="CloseSidebar"></div>
 
         <main id="main-content" class="app-content" tabindex="-1">
-            @Body
+            @* Keeps a page-level exception inside the content area instead of tearing down the
+               whole circuit — most pages call the database straight from OnInitializedAsync with
+               no try/catch, so a single transient failure used to blank the entire app. *@
+            <ErrorBoundary @ref="_errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent Context="pageError">
+                    <div class="pf-card-shell pf-page-error">
+                        <div class="pf-empty-state">
+                            <i class="bi bi-exclamation-triangle text-warning fs-3 d-block mb-2"></i>
+                            <div class="fw-semibold mb-1">This page could not be loaded.</div>
+                            <div class="text-muted mb-3">
+                                The server or database did not respond as expected. Your session is still active — try again.
+                            </div>
+                            @if (Environment.IsDevelopment())
+                            {
+                                <pre class="text-start small text-danger pf-page-error-detail">@pageError.ToString()</pre>
+                            }
+                            <button type="button" class="btn btn-bmt btn-pastel-green" @onclick="RecoverFromError">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Try again
+                            </button>
+                        </div>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </main>
     </div>
 </div>
@@ -32,6 +58,7 @@
 </div>
 
 @code {
+    private ErrorBoundary? _errorBoundary;
     private bool isSidebarOpen;
     private string currentPath = string.Empty;
     private CrewComplianceOverallStatus? _crewComplianceStatus;
@@ -126,8 +153,13 @@
     {
         currentPath = GetCurrentPath(e.Location);
         isSidebarOpen = false;
+        // Navigating away from a failed page must clear the boundary, otherwise the error
+        // markup stays on screen over the newly routed component.
+        _errorBoundary?.Recover();
         _ = InvokeAsync(StateHasChanged);
     }
+
+    private void RecoverFromError() => _errorBoundary?.Recover();
 
     private static string GetCurrentPath(string uri)
     {

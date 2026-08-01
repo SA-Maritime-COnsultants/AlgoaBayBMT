@@ -44,7 +44,7 @@ namespace AlgoaBayBMT.Services
                 ActiveCourses = await dbContext.Courses.AsNoTracking().CountAsync(x => x.IsActive && !x.IsDeleted, cancellationToken),
                 PublishedCourses = await dbContext.CourseVersions.AsNoTracking().CountAsync(x => x.Status == CourseVersionStatus.Published, cancellationToken),
                 DraftCourses = await dbContext.CourseVersions.AsNoTracking().CountAsync(x => x.Status == CourseVersionStatus.Draft, cancellationToken),
-                TotalModules = await dbContext.Modules.AsNoTracking().CountAsync(cancellationToken),
+                TotalModules = await dbContext.TrainingModules.AsNoTracking().CountAsync(x => !x.IsArchived, cancellationToken),
                 TotalLessons = await dbContext.Lessons.AsNoTracking().CountAsync(cancellationToken),
                 TotalContentBlocks = await dbContext.LessonBlocks.AsNoTracking().CountAsync(cancellationToken),
                 TotalQuestionBankQuestions = await dbContext.TrainingQuestionBankQuestions.AsNoTracking().CountAsync(cancellationToken),
@@ -84,12 +84,16 @@ namespace AlgoaBayBMT.Services
 
             var deletedCourseCount = await dbContext.Courses.AsNoTracking().CountAsync(cancellationToken);
 
-            await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-
+            await TransactionalExecution.ExecuteAsync(dbContext, cancellationToken, async transaction =>
+            {
             await dbContext.UserAssessmentResponses.ExecuteDeleteAsync(cancellationToken);
             await dbContext.UserAssessmentAttempts.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingQuestionBankOptions.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingQuestionBankQuestions.ExecuteDeleteAsync(cancellationToken);
+            // ModuleVersions -> TrainingCourseAssessments is NoAction (two cascade paths reach the
+            // same tables), so the back-reference must be cleared before the assessments go.
+            await dbContext.ModuleVersions.ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.AssessmentId, (Guid?)null), cancellationToken);
             await dbContext.TrainingCourseAssessments.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingCertificates.ExecuteDeleteAsync(cancellationToken);
             await dbContext.CourseCompletionRecords.ExecuteDeleteAsync(cancellationToken);
@@ -97,9 +101,18 @@ namespace AlgoaBayBMT.Services
             await dbContext.UserCourseProgress.ExecuteDeleteAsync(cancellationToken);
             await dbContext.UserTrainingAssignments.ExecuteDeleteAsync(cancellationToken);
             await dbContext.CourseAudienceRules.ExecuteDeleteAsync(cancellationToken);
+            // Rank configuration and course-module references come out before the course versions
+            // they hang off, and before the module versions they point at (both FKs are Restrict).
+            await dbContext.CourseRankModules.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.CourseRankProfiles.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.CourseModules.ExecuteDeleteAsync(cancellationToken);
             await dbContext.LessonBlocks.ExecuteDeleteAsync(cancellationToken);
             await dbContext.Lessons.ExecuteDeleteAsync(cancellationToken);
-            await dbContext.Modules.ExecuteDeleteAsync(cancellationToken);
+            // Clear the identity -> version pointer before deleting versions (Restrict FK).
+            await dbContext.TrainingModules.ExecuteUpdateAsync(
+                setters => setters.SetProperty(x => x.CurrentVersionId, (Guid?)null), cancellationToken);
+            await dbContext.ModuleVersions.ExecuteDeleteAsync(cancellationToken);
+            await dbContext.TrainingModules.ExecuteDeleteAsync(cancellationToken);
             await dbContext.CourseVersions.ExecuteDeleteAsync(cancellationToken);
             await dbContext.TrainingAuditLogs.ExecuteDeleteAsync(cancellationToken);
             await dbContext.Courses.ExecuteDeleteAsync(cancellationToken);
@@ -107,7 +120,9 @@ namespace AlgoaBayBMT.Services
                 .Where(x => x.RelativePath.StartsWith("uploads/training"))
                 .ExecuteDeleteAsync(cancellationToken);
 
-            await transaction.CommitAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return true;
+            });
 
             await trainingAssetStorageService.DeleteFilesAsync(trainingFileUrls, cancellationToken);
 
@@ -171,20 +186,20 @@ namespace AlgoaBayBMT.Services
                 })
                 .ToDictionaryAsync(x => x.CourseVersionId, cancellationToken);
 
-            var moduleCounts = await dbContext.Modules
+            var moduleCounts = await dbContext.CourseModules
                 .AsNoTracking()
                 .Where(x => currentVersionIds.Contains(x.CourseVersionId))
                 .GroupBy(x => x.CourseVersionId)
                 .Select(x => new { CourseVersionId = x.Key, Count = x.Count() })
                 .ToDictionaryAsync(x => x.CourseVersionId, x => x.Count, cancellationToken);
 
-            var lessonCounts = await dbContext.Modules
+            var lessonCounts = await dbContext.CourseModules
                 .AsNoTracking()
                 .Where(x => currentVersionIds.Contains(x.CourseVersionId))
                 .Join(dbContext.Lessons.AsNoTracking(),
-                    module => module.ModuleId,
-                    lesson => lesson.ModuleId,
-                    (module, lesson) => new { module.CourseVersionId, lesson.LessonId })
+                    courseModule => courseModule.ModuleVersionId,
+                    lesson => lesson.ModuleVersionId,
+                    (courseModule, lesson) => new { courseModule.CourseVersionId, lesson.LessonId })
                 .GroupBy(x => x.CourseVersionId)
                 .Select(x => new { CourseVersionId = x.Key, Count = x.Count() })
                 .ToDictionaryAsync(x => x.CourseVersionId, x => x.Count, cancellationToken);
@@ -585,75 +600,69 @@ namespace AlgoaBayBMT.Services
 
             if (course.CurrentVersionId.HasValue)
             {
-                var sourceModules = await dbContext.Modules.AsNoTracking()
+                // Copy REFERENCES only. Modules are shared authored records, so a new course
+                // version re-points at the same ModuleVersion rows — no lesson or content block
+                // is duplicated, and existing learner progress against those lessons stays valid.
+                var sourceCourseModules = await dbContext.CourseModules.AsNoTracking()
                     .Where(x => x.CourseVersionId == course.CurrentVersionId.Value)
                     .OrderBy(x => x.OrderIndex)
                     .ToListAsync(cancellationToken);
 
-                var sourceModuleIds = sourceModules.Select(x => x.ModuleId).ToList();
-                var sourceLessons = await dbContext.Lessons.AsNoTracking()
-                    .Where(x => sourceModuleIds.Contains(x.ModuleId))
-                    .OrderBy(x => x.OrderIndex)
-                    .ToListAsync(cancellationToken);
-
-                var sourceLessonIds = sourceLessons.Select(x => x.LessonId).ToList();
-                var sourceBlocks = await dbContext.LessonBlocks.AsNoTracking()
-                    .Where(x => sourceLessonIds.Contains(x.LessonId))
-                    .OrderBy(x => x.OrderIndex)
-                    .ToListAsync(cancellationToken);
-
-                var moduleMap = new Dictionary<Guid, Guid>();
-                foreach (var sourceModule in sourceModules)
+                var courseModuleMap = new Dictionary<Guid, Guid>();
+                foreach (var sourceCourseModule in sourceCourseModules)
                 {
-                    var newModuleId = Guid.NewGuid();
-                    moduleMap[sourceModule.ModuleId] = newModuleId;
-                    dbContext.Modules.Add(new TrainingModule
+                    var newCourseModuleId = Guid.NewGuid();
+                    courseModuleMap[sourceCourseModule.CourseModuleId] = newCourseModuleId;
+                    dbContext.CourseModules.Add(new CourseModule
                     {
-                        ModuleId = newModuleId,
+                        CourseModuleId = newCourseModuleId,
                         CourseVersionId = nextVersion.CourseVersionId,
-                        Title = sourceModule.Title,
-                        Description = sourceModule.Description,
-                        OrderIndex = sourceModule.OrderIndex,
-                        EstimatedMinutes = sourceModule.EstimatedMinutes,
-                        IsActive = sourceModule.IsActive
+                        ModuleVersionId = sourceCourseModule.ModuleVersionId,
+                        OrderIndex = sourceCourseModule.OrderIndex,
+                        IsRequired = sourceCourseModule.IsRequired
                     });
                 }
 
-                var lessonMap = new Dictionary<Guid, Guid>();
-                foreach (var sourceLesson in sourceLessons)
+                // Carry the rank configuration forward so the draft starts where the author left off.
+                var sourceRankProfiles = await dbContext.CourseRankProfiles.AsNoTracking()
+                    .Where(x => x.CourseVersionId == course.CurrentVersionId.Value)
+                    .OrderBy(x => x.OrderIndex)
+                    .ToListAsync(cancellationToken);
+
+                var sourceRankProfileIds = sourceRankProfiles.Select(x => x.CourseRankProfileId).ToList();
+                var sourceRankModules = await dbContext.CourseRankModules.AsNoTracking()
+                    .Where(x => sourceRankProfileIds.Contains(x.CourseRankProfileId))
+                    .ToListAsync(cancellationToken);
+
+                var rankProfileMap = new Dictionary<Guid, Guid>();
+                foreach (var sourceRankProfile in sourceRankProfiles)
                 {
-                    var newLessonId = Guid.NewGuid();
-                    lessonMap[sourceLesson.LessonId] = newLessonId;
-                    dbContext.Lessons.Add(new TrainingLesson
+                    var newCourseRankProfileId = Guid.NewGuid();
+                    rankProfileMap[sourceRankProfile.CourseRankProfileId] = newCourseRankProfileId;
+                    dbContext.CourseRankProfiles.Add(new CourseRankProfile
                     {
-                        LessonId = newLessonId,
-                        ModuleId = moduleMap[sourceLesson.ModuleId],
-                        Title = sourceLesson.Title,
-                        Summary = sourceLesson.Summary,
-                        OrderIndex = sourceLesson.OrderIndex,
-                        EstimatedMinutes = sourceLesson.EstimatedMinutes,
-                        IsPreview = sourceLesson.IsPreview,
-                        IsActive = sourceLesson.IsActive
+                        CourseRankProfileId = newCourseRankProfileId,
+                        CourseVersionId = nextVersion.CourseVersionId,
+                        RankProfileId = sourceRankProfile.RankProfileId,
+                        OrderIndex = sourceRankProfile.OrderIndex,
+                        IsActive = sourceRankProfile.IsActive
                     });
                 }
 
-                foreach (var sourceBlock in sourceBlocks)
+                foreach (var sourceRankModule in sourceRankModules)
                 {
-                    dbContext.LessonBlocks.Add(new LessonBlock
+                    if (!rankProfileMap.TryGetValue(sourceRankModule.CourseRankProfileId, out var newRankProfileId) ||
+                        !courseModuleMap.TryGetValue(sourceRankModule.CourseModuleId, out var newCourseModuleId))
                     {
-                        LessonBlockId = Guid.NewGuid(),
-                        LessonId = lessonMap[sourceBlock.LessonId],
-                        BlockType = sourceBlock.BlockType,
-                        Title = sourceBlock.Title,
-                        OrderIndex = sourceBlock.OrderIndex,
-                        MarkdownBody = sourceBlock.MarkdownBody,
-                        FileUrl = sourceBlock.FileUrl,
-                        ExternalUrl = sourceBlock.ExternalUrl,
-                        MimeType = sourceBlock.MimeType,
-                        DurationSeconds = sourceBlock.DurationSeconds,
-                        MetadataJson = sourceBlock.MetadataJson,
-                        MediaAssetId = sourceBlock.MediaAssetId,
-                        IsRequired = sourceBlock.IsRequired
+                        continue;
+                    }
+
+                    dbContext.CourseRankModules.Add(new CourseRankModule
+                    {
+                        CourseRankModuleId = Guid.NewGuid(),
+                        CourseRankProfileId = newRankProfileId,
+                        CourseModuleId = newCourseModuleId,
+                        IsIncluded = sourceRankModule.IsIncluded
                     });
                 }
             }
@@ -725,14 +734,19 @@ namespace AlgoaBayBMT.Services
                 return null;
             }
 
-            var modules = await dbContext.Modules.AsNoTracking()
+            // The course's modules are references, resolved through CourseModules in course order.
+            var modules = await dbContext.CourseModules.AsNoTracking()
                 .Where(x => x.CourseVersionId == version.CourseVersionId)
                 .OrderBy(x => x.OrderIndex)
+                .Join(dbContext.ModuleVersions.AsNoTracking(),
+                    courseModule => courseModule.ModuleVersionId,
+                    moduleVersion => moduleVersion.ModuleVersionId,
+                    (courseModule, moduleVersion) => new { courseModule, moduleVersion })
                 .ToListAsync(cancellationToken);
 
-            var moduleIds = modules.Select(x => x.ModuleId).ToList();
+            var moduleIds = modules.Select(x => x.moduleVersion.ModuleVersionId).ToList();
             var lessons = await dbContext.Lessons.AsNoTracking()
-                .Where(x => moduleIds.Contains(x.ModuleId))
+                .Where(x => moduleIds.Contains(x.ModuleVersionId))
                 .OrderBy(x => x.OrderIndex)
                 .ToListAsync(cancellationToken);
 
@@ -768,27 +782,31 @@ namespace AlgoaBayBMT.Services
                 CurrentVersionLabel = version.VersionLabel,
                 CurrentVersionStatus = version.Status,
                 PublishedOnUtc = version.ApprovedOnUtc,
-                Modules = modules.Select(module => new TrainingModuleEditModel
+                Modules = modules.Select(entry => new TrainingModuleEditModel
                 {
-                    ModuleId = module.ModuleId,
-                    CourseVersionId = module.CourseVersionId,
-                    Title = module.Title,
-                    Description = module.Description,
-                    OrderIndex = module.OrderIndex,
-                    EstimatedMinutes = module.EstimatedMinutes,
-                    IsActive = module.IsActive,
-                    HasModuleAssessment = module.HasModuleAssessment,
-                    AssessmentId = module.AssessmentId,
-                    AssessmentName = module.AssessmentId.HasValue ? assessmentLookup.GetValueOrDefault(module.AssessmentId.Value) : null,
-                    AssessmentPassMarkPercent = module.AssessmentPassMarkPercent,
-                    AssessmentMaxAttempts = module.AssessmentMaxAttempts,
+                    ModuleVersionId = entry.moduleVersion.ModuleVersionId,
+                    ModuleId = entry.moduleVersion.ModuleId,
+                    CourseModuleId = entry.courseModule.CourseModuleId,
+                    VersionNumber = entry.moduleVersion.VersionNumber,
+                    Status = entry.moduleVersion.Status,
+                    Title = entry.moduleVersion.Title,
+                    Description = entry.moduleVersion.Description,
+                    // Sequence position belongs to the course, not to the shared module.
+                    OrderIndex = entry.courseModule.OrderIndex,
+                    EstimatedMinutes = entry.moduleVersion.EstimatedMinutes,
+                    IsActive = entry.moduleVersion.IsActive,
+                    HasModuleAssessment = entry.moduleVersion.HasModuleAssessment,
+                    AssessmentId = entry.moduleVersion.AssessmentId,
+                    AssessmentName = entry.moduleVersion.AssessmentId.HasValue ? assessmentLookup.GetValueOrDefault(entry.moduleVersion.AssessmentId.Value) : null,
+                    AssessmentPassMarkPercent = entry.moduleVersion.AssessmentPassMarkPercent,
+                    AssessmentMaxAttempts = entry.moduleVersion.AssessmentMaxAttempts,
                     Lessons = lessons
-                        .Where(x => x.ModuleId == module.ModuleId)
+                        .Where(x => x.ModuleVersionId == entry.moduleVersion.ModuleVersionId)
                         .OrderBy(x => x.OrderIndex)
                         .Select(lesson => new TrainingLessonEditModel
                         {
                             LessonId = lesson.LessonId,
-                            ModuleId = lesson.ModuleId,
+                            ModuleVersionId = lesson.ModuleVersionId,
                             Title = lesson.Title,
                             Summary = lesson.Summary,
                             OrderIndex = lesson.OrderIndex,
@@ -847,120 +865,315 @@ namespace AlgoaBayBMT.Services
             };
         }
 
+        public async Task<List<TrainingLessonEditModel>> GetLessonsForModuleVersionAsync(Guid moduleVersionId, CancellationToken cancellationToken = default)
+        {
+            await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var lessons = await dbContext.Lessons.AsNoTracking()
+                .Where(x => x.ModuleVersionId == moduleVersionId)
+                .OrderBy(x => x.OrderIndex)
+                .ToListAsync(cancellationToken);
+
+            var lessonIds = lessons.Select(x => x.LessonId).ToList();
+            var blocks = await dbContext.LessonBlocks.AsNoTracking()
+                .Where(x => lessonIds.Contains(x.LessonId))
+                .OrderBy(x => x.OrderIndex)
+                .ToListAsync(cancellationToken);
+
+            var assessmentIds = blocks
+                .Select(x => DeserializeBlockMetadata(x.MetadataJson).LinkedAssessmentId)
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .Distinct()
+                .ToList();
+            var assessmentLookup = assessmentIds.Count == 0
+                ? new Dictionary<Guid, string>()
+                : await dbContext.TrainingCourseAssessments.AsNoTracking()
+                    .Where(x => assessmentIds.Contains(x.TrainingCourseAssessmentId))
+                    .ToDictionaryAsync(x => x.TrainingCourseAssessmentId, x => x.Name, cancellationToken);
+
+            return lessons.Select(lesson => new TrainingLessonEditModel
+            {
+                LessonId = lesson.LessonId,
+                ModuleVersionId = lesson.ModuleVersionId,
+                Title = lesson.Title,
+                Summary = lesson.Summary,
+                OrderIndex = lesson.OrderIndex,
+                EstimatedMinutes = lesson.EstimatedMinutes,
+                IsPreview = lesson.IsPreview,
+                IsActive = lesson.IsActive,
+                Blocks = blocks
+                    .Where(x => x.LessonId == lesson.LessonId)
+                    .OrderBy(x => x.OrderIndex)
+                    .Select(block =>
+                    {
+                        var metadata = DeserializeBlockMetadata(block.MetadataJson);
+                        return new TrainingLessonBlockEditModel
+                        {
+                            UiKey = block.LessonBlockId,
+                            LessonBlockId = block.LessonBlockId,
+                            LessonId = block.LessonId,
+                            BlockType = block.BlockType,
+                            Title = block.Title,
+                            Subtitle = block.Subtitle,
+                            OrderIndex = block.OrderIndex,
+                            ContentHtml = block.MarkdownBody,
+                            SecondaryContentHtml = metadata.SecondaryContentHtml,
+                            IntroTextHtml = metadata.IntroTextHtml,
+                            ThumbnailUrl = NormalizeStoredTrainingUrl(block.ThumbnailUrl),
+                            FileUrl = NormalizeStoredTrainingUrl(block.FileUrl),
+                            ExternalUrl = block.ExternalUrl,
+                            MimeType = block.MimeType,
+                            DurationSeconds = block.DurationSeconds,
+                            MetadataJson = block.MetadataJson,
+                            MediaAssetId = block.MediaAssetId,
+                            LinkedAssessmentId = metadata.LinkedAssessmentId,
+                            LinkedAssessmentName = metadata.LinkedAssessmentName ?? (metadata.LinkedAssessmentId.HasValue ? assessmentLookup.GetValueOrDefault(metadata.LinkedAssessmentId.Value) : null),
+                            QuizQuestions = NormalizeQuizQuestions(metadata.QuizQuestions),
+                            IsRequired = block.IsRequired,
+                            IsActive = block.IsActive
+                        };
+                    })
+                    .ToList()
+            }).ToList();
+        }
+
         public async Task<OperationResult<TrainingModuleEditModel>> SaveModuleAsync(TrainingModuleEditModel model, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-            TrainingModule module;
-            if (model.ModuleId.HasValue)
+            TrainingModuleVersion moduleVersion;
+            if (model.ModuleVersionId.HasValue)
             {
-                var existingModule = await dbContext.Modules.FirstOrDefaultAsync(x => x.ModuleId == model.ModuleId.Value, cancellationToken);
-                if (existingModule is null)
+                var existingVersion = await dbContext.ModuleVersions.FirstOrDefaultAsync(x => x.ModuleVersionId == model.ModuleVersionId.Value, cancellationToken);
+                if (existingVersion is null)
                 {
                     return OperationResult<TrainingModuleEditModel>.Failure("Module not found. It may have been deleted.");
                 }
-                module = existingModule;
+                if (existingVersion.Status != ModuleVersionStatus.Draft)
+                {
+                    return OperationResult<TrainingModuleEditModel>.Failure("This module version is published. Create a new version to make changes.");
+                }
+                moduleVersion = existingVersion;
             }
             else
             {
-                var nextOrder = await dbContext.Modules
-                    .Where(x => x.CourseVersionId == model.CourseVersionId)
-                    .MaxAsync(x => (int?)x.OrderIndex, cancellationToken) ?? 0;
+                // New module: a stable identity plus its first draft version.
+                var moduleId = Guid.NewGuid();
+                var moduleVersionId = Guid.NewGuid();
 
-                module = new TrainingModule
+                // TrainingModule.CurrentVersionId and ModuleVersion.ModuleId reference each other,
+                // so they cannot be inserted in a single SaveChanges. Identity first with a null
+                // pointer, then the version, then link.
+                var newModule = new TrainingModule
                 {
-                    ModuleId = Guid.NewGuid(),
-                    CourseVersionId = model.CourseVersionId,
-                    OrderIndex = nextOrder + 1
+                    ModuleId = moduleId,
+                    Code = await GenerateModuleCodeAsync(dbContext, cancellationToken),
+                    Title = model.Title.Trim(),
+                    Description = model.Description?.Trim(),
+                    CurrentVersionId = null,
+                    CreatedByUserId = changedByUserId,
+                    CreatedOnUtc = DateTime.UtcNow
                 };
-                dbContext.Modules.Add(module);
+                dbContext.TrainingModules.Add(newModule);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                moduleVersion = new TrainingModuleVersion
+                {
+                    ModuleVersionId = moduleVersionId,
+                    ModuleId = moduleId,
+                    VersionNumber = 1,
+                    VersionLabel = "v1",
+                    Status = ModuleVersionStatus.Draft,
+                    Title = model.Title.Trim(),
+                    CreatedOnUtc = DateTime.UtcNow
+                };
+                dbContext.ModuleVersions.Add(moduleVersion);
+                await dbContext.SaveChangesAsync(cancellationToken);
+
+                newModule.CurrentVersionId = moduleVersionId;
+
+                // Attach to the course that requested the creation, as a reference.
+                if (model.CourseVersionId.HasValue)
+                {
+                    var nextOrder = await dbContext.CourseModules
+                        .Where(x => x.CourseVersionId == model.CourseVersionId.Value)
+                        .MaxAsync(x => (int?)x.OrderIndex, cancellationToken) ?? 0;
+
+                    var courseModule = new CourseModule
+                    {
+                        CourseModuleId = Guid.NewGuid(),
+                        CourseVersionId = model.CourseVersionId.Value,
+                        ModuleVersionId = moduleVersionId,
+                        OrderIndex = nextOrder + 1
+                    };
+                    dbContext.CourseModules.Add(courseModule);
+                    model.CourseModuleId = courseModule.CourseModuleId;
+                    model.OrderIndex = courseModule.OrderIndex;
+                }
             }
 
-            module.Title = model.Title.Trim();
-            module.Description = model.Description?.Trim();
-            module.EstimatedMinutes = model.EstimatedMinutes;
-            module.IsActive = model.IsActive;
-            module.HasModuleAssessment = model.HasModuleAssessment;
-            module.AssessmentId = model.HasModuleAssessment ? model.AssessmentId : null;
-            module.AssessmentPassMarkPercent = model.HasModuleAssessment ? model.AssessmentPassMarkPercent : null;
-            module.AssessmentMaxAttempts = model.AssessmentMaxAttempts > 0 ? model.AssessmentMaxAttempts : 3;
+            moduleVersion.Title = model.Title.Trim();
+            moduleVersion.Description = model.Description?.Trim();
+            moduleVersion.EstimatedMinutes = model.EstimatedMinutes;
+            moduleVersion.IsActive = model.IsActive;
+            moduleVersion.HasModuleAssessment = model.HasModuleAssessment;
+            moduleVersion.AssessmentId = model.HasModuleAssessment ? model.AssessmentId : null;
+            moduleVersion.AssessmentPassMarkPercent = model.HasModuleAssessment ? model.AssessmentPassMarkPercent : null;
+            moduleVersion.AssessmentMaxAttempts = model.AssessmentMaxAttempts > 0 ? model.AssessmentMaxAttempts : 3;
+            moduleVersion.UpdatedOnUtc = DateTime.UtcNow;
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexModulesAsync(dbContext, module.CourseVersionId, cancellationToken);
-            await WriteAuditLogAsync(dbContext, "Module", module.ModuleId.ToString(), "Save", changedByUserId, notes: module.Title, cancellationToken: cancellationToken);
+            if (model.CourseVersionId.HasValue)
+            {
+                await ReindexCourseModulesAsync(dbContext, model.CourseVersionId.Value, cancellationToken);
+            }
+            await WriteAuditLogAsync(dbContext, "ModuleVersion", moduleVersion.ModuleVersionId.ToString(), "Save", changedByUserId, notes: moduleVersion.Title, cancellationToken: cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
-            model.ModuleId = module.ModuleId;
-            model.OrderIndex = module.OrderIndex;
+            model.ModuleVersionId = moduleVersion.ModuleVersionId;
+            model.ModuleId = moduleVersion.ModuleId;
+            model.VersionNumber = moduleVersion.VersionNumber;
+            model.Status = moduleVersion.Status;
             return OperationResult<TrainingModuleEditModel>.Success(model, "Module saved.");
         }
 
-        public async Task<OperationResult> DeleteModuleAsync(Guid moduleId, string? changedByUserId, CancellationToken cancellationToken = default)
+        /// <summary>
+        /// Removes a module from a course. The shared module version itself is untouched — other
+        /// courses that include it are unaffected, and no lesson or content block is deleted.
+        /// </summary>
+        public async Task<OperationResult> DeleteModuleAsync(Guid courseModuleId, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var module = await dbContext.Modules.FirstOrDefaultAsync(x => x.ModuleId == moduleId, cancellationToken);
-            if (module is null)
+            var courseModule = await dbContext.CourseModules.FirstOrDefaultAsync(x => x.CourseModuleId == courseModuleId, cancellationToken);
+            if (courseModule is null)
             {
-                return OperationResult.Failure("Module not found.");
+                return OperationResult.Failure("Module not found in this course.");
             }
 
-            var versionId = module.CourseVersionId;
-            dbContext.Modules.Remove(module);
-            await WriteAuditLogAsync(dbContext, "Module", moduleId.ToString(), "Delete", changedByUserId, notes: module.Title, cancellationToken: cancellationToken);
+            var versionId = courseModule.CourseVersionId;
+            await dbContext.CourseRankModules
+                .Where(x => x.CourseModuleId == courseModuleId)
+                .ExecuteDeleteAsync(cancellationToken);
+            dbContext.CourseModules.Remove(courseModule);
+            await WriteAuditLogAsync(dbContext, "CourseModule", courseModuleId.ToString(), "Remove", changedByUserId, notes: courseModule.ModuleVersionId.ToString(), cancellationToken: cancellationToken);
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
-                await ReindexModulesAsync(dbContext, versionId, cancellationToken);
+                await ReindexCourseModulesAsync(dbContext, versionId, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
-                logger.LogError(ex, "Failed to delete module {ModuleId}", moduleId);
-                return OperationResult.Failure("The module could not be deleted. Please try again.");
+                logger.LogError(ex, "Failed to remove course module {CourseModuleId}", courseModuleId);
+                return OperationResult.Failure("The module could not be removed. Please try again.");
             }
-            return OperationResult.Success("Module deleted.");
+            return OperationResult.Success("Module removed from course.");
         }
 
-        public async Task<OperationResult> MoveModuleAsync(Guid moduleId, int direction, string? changedByUserId, CancellationToken cancellationToken = default)
+        /// <summary>Reorders a module within one course. Other courses keep their own ordering.</summary>
+        public async Task<OperationResult> MoveModuleAsync(Guid courseModuleId, int direction, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
-            var module = await dbContext.Modules.FirstOrDefaultAsync(x => x.ModuleId == moduleId, cancellationToken);
-            if (module is null)
+            var courseModule = await dbContext.CourseModules.FirstOrDefaultAsync(x => x.CourseModuleId == courseModuleId, cancellationToken);
+            if (courseModule is null)
             {
-                return OperationResult.Failure("Module not found.");
+                return OperationResult.Failure("Module not found in this course.");
             }
 
-            var modules = await dbContext.Modules
-                .Where(x => x.CourseVersionId == module.CourseVersionId)
+            var courseModules = await dbContext.CourseModules
+                .Where(x => x.CourseVersionId == courseModule.CourseVersionId)
                 .OrderBy(x => x.OrderIndex)
                 .ToListAsync(cancellationToken);
 
-            var index = modules.FindIndex(x => x.ModuleId == moduleId);
+            var index = courseModules.FindIndex(x => x.CourseModuleId == courseModuleId);
             var targetIndex = index + direction;
-            if (index < 0 || targetIndex < 0 || targetIndex >= modules.Count)
+            if (index < 0 || targetIndex < 0 || targetIndex >= courseModules.Count)
             {
                 return OperationResult.Failure("Module cannot be moved further.");
             }
 
-            (modules[index].OrderIndex, modules[targetIndex].OrderIndex) = (modules[targetIndex].OrderIndex, modules[index].OrderIndex);
-            await WriteAuditLogAsync(dbContext, "Module", moduleId.ToString(), "Reorder", changedByUserId, notes: module.Title, cancellationToken: cancellationToken);
+            (courseModules[index].OrderIndex, courseModules[targetIndex].OrderIndex) = (courseModules[targetIndex].OrderIndex, courseModules[index].OrderIndex);
+            await WriteAuditLogAsync(dbContext, "CourseModule", courseModuleId.ToString(), "Reorder", changedByUserId, notes: null, cancellationToken: cancellationToken);
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
-                await ReindexModulesAsync(dbContext, module.CourseVersionId, cancellationToken);
+                await ReindexCourseModulesAsync(dbContext, courseModule.CourseVersionId, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
             {
-                logger.LogError(ex, "Failed to reorder module {ModuleId}", moduleId);
+                logger.LogError(ex, "Failed to reorder course module {CourseModuleId}", courseModuleId);
                 return OperationResult.Failure("The module order could not be updated. Please try again.");
             }
             return OperationResult.Success("Module order updated.");
         }
 
+        /// <summary>Allocates the next sequential module code (MOD-0001, MOD-0002, ...).</summary>
+        private static async Task<string> GenerateModuleCodeAsync(ApplicationDbContext dbContext, CancellationToken cancellationToken)
+        {
+            var existingCodes = await dbContext.TrainingModules
+                .AsNoTracking()
+                .Where(x => x.Code.StartsWith("MOD-"))
+                .Select(x => x.Code)
+                .ToListAsync(cancellationToken);
+
+            var highest = existingCodes
+                .Select(code => int.TryParse(code.AsSpan(4), out var value) ? value : 0)
+                .DefaultIfEmpty(0)
+                .Max();
+
+            return $"MOD-{highest + 1:D4}";
+        }
+
+        /// <summary>
+        /// Guards content edits against the immutability rule: once a module version is published
+        /// or archived, its lessons and content blocks are frozen, because learner progress,
+        /// completion records and certificates all reference them. Authors create a new version.
+        /// </summary>
+        private static async Task<OperationResult> EnsureModuleVersionEditableAsync(
+            ApplicationDbContext dbContext, Guid moduleVersionId, CancellationToken cancellationToken)
+        {
+            var status = await dbContext.ModuleVersions
+                .AsNoTracking()
+                .Where(x => x.ModuleVersionId == moduleVersionId)
+                .Select(x => (ModuleVersionStatus?)x.Status)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            if (status is null)
+            {
+                return OperationResult.Failure("Module not found. It may have been deleted.");
+            }
+
+            return status == ModuleVersionStatus.Draft
+                ? OperationResult.Success()
+                : OperationResult.Failure("This module version is published. Create a new version to make changes.");
+        }
+
+        /// <summary>Same guard, resolved from a lesson rather than a module version.</summary>
+        private static async Task<OperationResult> EnsureLessonEditableAsync(
+            ApplicationDbContext dbContext, Guid lessonId, CancellationToken cancellationToken)
+        {
+            var moduleVersionId = await dbContext.Lessons
+                .AsNoTracking()
+                .Where(x => x.LessonId == lessonId)
+                .Select(x => (Guid?)x.ModuleVersionId)
+                .FirstOrDefaultAsync(cancellationToken);
+
+            return moduleVersionId is null
+                ? OperationResult.Failure("Lesson not found. It may have been deleted.")
+                : await EnsureModuleVersionEditableAsync(dbContext, moduleVersionId.Value, cancellationToken);
+        }
+
         public async Task<OperationResult<TrainingLessonEditModel>> SaveLessonAsync(TrainingLessonEditModel model, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var editable = await EnsureModuleVersionEditableAsync(dbContext, model.ModuleVersionId, cancellationToken);
+            if (!editable.Succeeded)
+            {
+                return OperationResult<TrainingLessonEditModel>.Failure(editable.Message ?? "This module version cannot be edited.");
+            }
 
             TrainingLesson lesson;
             if (model.LessonId.HasValue)
@@ -975,13 +1188,13 @@ namespace AlgoaBayBMT.Services
             else
             {
                 var nextOrder = await dbContext.Lessons
-                    .Where(x => x.ModuleId == model.ModuleId)
+                    .Where(x => x.ModuleVersionId == model.ModuleVersionId)
                     .MaxAsync(x => (int?)x.OrderIndex, cancellationToken) ?? 0;
 
                 lesson = new TrainingLesson
                 {
                     LessonId = Guid.NewGuid(),
-                    ModuleId = model.ModuleId,
+                    ModuleVersionId = model.ModuleVersionId,
                     OrderIndex = nextOrder + 1
                 };
                 dbContext.Lessons.Add(lesson);
@@ -994,7 +1207,7 @@ namespace AlgoaBayBMT.Services
             lesson.IsActive = model.IsActive;
 
             await dbContext.SaveChangesAsync(cancellationToken);
-            await ReindexLessonsAsync(dbContext, lesson.ModuleId, cancellationToken);
+            await ReindexLessonsAsync(dbContext, lesson.ModuleVersionId, cancellationToken);
             await WriteAuditLogAsync(dbContext, "Lesson", lesson.LessonId.ToString(), "Save", changedByUserId, notes: lesson.Title, cancellationToken: cancellationToken);
             await dbContext.SaveChangesAsync(cancellationToken);
 
@@ -1006,13 +1219,20 @@ namespace AlgoaBayBMT.Services
         public async Task<OperationResult> DeleteLessonAsync(Guid lessonId, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var editable = await EnsureLessonEditableAsync(dbContext, lessonId, cancellationToken);
+            if (!editable.Succeeded)
+            {
+                return editable;
+            }
+
             var lesson = await dbContext.Lessons.FirstOrDefaultAsync(x => x.LessonId == lessonId, cancellationToken);
             if (lesson is null)
             {
                 return OperationResult.Failure("Lesson not found.");
             }
 
-            var moduleId = lesson.ModuleId;
+            var moduleId = lesson.ModuleVersionId;
             dbContext.Lessons.Remove(lesson);
             await WriteAuditLogAsync(dbContext, "Lesson", lessonId.ToString(), "Delete", changedByUserId, notes: lesson.Title, cancellationToken: cancellationToken);
             try
@@ -1032,6 +1252,13 @@ namespace AlgoaBayBMT.Services
         public async Task<OperationResult> MoveLessonAsync(Guid lessonId, int direction, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var editable = await EnsureLessonEditableAsync(dbContext, lessonId, cancellationToken);
+            if (!editable.Succeeded)
+            {
+                return editable;
+            }
+
             var lesson = await dbContext.Lessons.FirstOrDefaultAsync(x => x.LessonId == lessonId, cancellationToken);
             if (lesson is null)
             {
@@ -1039,7 +1266,7 @@ namespace AlgoaBayBMT.Services
             }
 
             var lessons = await dbContext.Lessons
-                .Where(x => x.ModuleId == lesson.ModuleId)
+                .Where(x => x.ModuleVersionId == lesson.ModuleVersionId)
                 .OrderBy(x => x.OrderIndex)
                 .ToListAsync(cancellationToken);
 
@@ -1055,7 +1282,7 @@ namespace AlgoaBayBMT.Services
             try
             {
                 await dbContext.SaveChangesAsync(cancellationToken);
-                await ReindexLessonsAsync(dbContext, lesson.ModuleId, cancellationToken);
+                await ReindexLessonsAsync(dbContext, lesson.ModuleVersionId, cancellationToken);
                 await dbContext.SaveChangesAsync(cancellationToken);
             }
             catch (DbUpdateException ex)
@@ -1069,6 +1296,12 @@ namespace AlgoaBayBMT.Services
         public async Task<OperationResult<TrainingLessonBlockEditModel>> SaveLessonBlockAsync(TrainingLessonBlockEditModel model, string? changedByUserId, CancellationToken cancellationToken = default)
         {
             await using var dbContext = await dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+            var editable = await EnsureLessonEditableAsync(dbContext, model.LessonId, cancellationToken);
+            if (!editable.Succeeded)
+            {
+                return OperationResult<TrainingLessonBlockEditModel>.Failure(editable.Message ?? "This module version cannot be edited.");
+            }
 
             // An Assessment block may be saved as a draft without a linked assessment; the learner
             // runtime guards against a missing pool, so blocking the save here only stranded new blocks.
@@ -1158,27 +1391,30 @@ namespace AlgoaBayBMT.Services
             }
 
             var modules = course.CurrentVersionId.HasValue
-                ? await dbContext.Modules.AsNoTracking()
+                ? await dbContext.CourseModules.AsNoTracking()
                     .Where(x => x.CourseVersionId == course.CurrentVersionId.Value)
                     .OrderBy(x => x.OrderIndex)
-                    .Select(x => new TrainingModuleLookupModel
-                    {
-                        ModuleId = x.ModuleId,
-                        Name = x.Title
-                    })
+                    .Join(dbContext.ModuleVersions.AsNoTracking(),
+                        courseModule => courseModule.ModuleVersionId,
+                        moduleVersion => moduleVersion.ModuleVersionId,
+                        (courseModule, moduleVersion) => new TrainingModuleLookupModel
+                        {
+                            ModuleVersionId = moduleVersion.ModuleVersionId,
+                            Name = moduleVersion.Title
+                        })
                     .ToListAsync(cancellationToken)
                 : new List<TrainingModuleLookupModel>();
 
-            var moduleIdList = modules.Select(x => x.ModuleId).ToList();
+            var moduleIdList = modules.Select(x => x.ModuleVersionId).ToList();
             var lessons = moduleIdList.Count == 0
                 ? new List<TrainingLessonLookupModel>()
                 : await dbContext.Lessons.AsNoTracking()
-                    .Where(x => moduleIdList.Contains(x.ModuleId))
+                    .Where(x => moduleIdList.Contains(x.ModuleVersionId))
                     .OrderBy(x => x.OrderIndex)
                     .Select(x => new TrainingLessonLookupModel
                     {
                         LessonId = x.LessonId,
-                        ModuleId = x.ModuleId,
+                        ModuleVersionId = x.ModuleVersionId,
                         Name = x.Title
                     })
                     .ToListAsync(cancellationToken);
@@ -1191,7 +1427,7 @@ namespace AlgoaBayBMT.Services
             var assessmentIds = assessments.Select(x => x.TrainingCourseAssessmentId).ToList();
             var questions = await dbContext.TrainingQuestionBankQuestions.AsNoTracking()
                 .Where(x => assessmentIds.Contains(x.TrainingCourseAssessmentId))
-                .OrderBy(x => x.TrainingModuleId)
+                .OrderBy(x => x.TrainingModuleVersionId)
                 .ThenBy(x => x.Prompt)
                 .ToListAsync(cancellationToken);
 
@@ -1231,7 +1467,7 @@ namespace AlgoaBayBMT.Services
                 {
                     TrainingQuestionBankQuestionId = x.TrainingQuestionBankQuestionId,
                     TrainingCourseAssessmentId = x.TrainingCourseAssessmentId,
-                    TrainingModuleId = x.TrainingModuleId,
+                    TrainingModuleVersionId = x.TrainingModuleVersionId,
                     QuestionType = x.QuestionType,
                     TrainingLessonId = x.TrainingLessonId,
                     Prompt = x.Prompt,
@@ -1320,7 +1556,7 @@ namespace AlgoaBayBMT.Services
             }
 
             question.TrainingCourseAssessmentId = model.TrainingCourseAssessmentId;
-            question.TrainingModuleId = model.TrainingModuleId;
+            question.TrainingModuleVersionId = model.TrainingModuleVersionId;
             question.TrainingLessonId = model.TrainingLessonId;
             question.QuestionType = model.QuestionType;
             question.Prompt = model.Prompt.Trim();
@@ -1380,6 +1616,12 @@ namespace AlgoaBayBMT.Services
                 return OperationResult.Failure("Lesson content block not found.");
             }
 
+            var editable = await EnsureLessonEditableAsync(dbContext, block.LessonId, cancellationToken);
+            if (!editable.Succeeded)
+            {
+                return editable;
+            }
+
             var lessonId = block.LessonId;
             dbContext.LessonBlocks.Remove(block);
             await WriteAuditLogAsync(dbContext, "LessonBlock", lessonBlockId.ToString(), "Delete", changedByUserId, notes: block.Title, cancellationToken: cancellationToken);
@@ -1404,6 +1646,12 @@ namespace AlgoaBayBMT.Services
             if (block is null)
             {
                 return OperationResult.Failure("Lesson content block not found.");
+            }
+
+            var editable = await EnsureLessonEditableAsync(dbContext, block.LessonId, cancellationToken);
+            if (!editable.Succeeded)
+            {
+                return editable;
             }
 
             var blocks = await dbContext.LessonBlocks
@@ -1434,24 +1682,23 @@ namespace AlgoaBayBMT.Services
             return OperationResult.Success("Lesson content order updated.");
         }
 
-        private static async Task ReindexModulesAsync(ApplicationDbContext dbContext, Guid courseVersionId, CancellationToken cancellationToken)
+        private static async Task ReindexCourseModulesAsync(ApplicationDbContext dbContext, Guid courseVersionId, CancellationToken cancellationToken)
         {
-            var modules = await dbContext.Modules
+            var courseModules = await dbContext.CourseModules
                 .Where(x => x.CourseVersionId == courseVersionId)
                 .OrderBy(x => x.OrderIndex)
-                .ThenBy(x => x.Title)
                 .ToListAsync(cancellationToken);
 
-            for (var index = 0; index < modules.Count; index++)
+            for (var index = 0; index < courseModules.Count; index++)
             {
-                modules[index].OrderIndex = index + 1;
+                courseModules[index].OrderIndex = index + 1;
             }
         }
 
-        private static async Task ReindexLessonsAsync(ApplicationDbContext dbContext, Guid moduleId, CancellationToken cancellationToken)
+        private static async Task ReindexLessonsAsync(ApplicationDbContext dbContext, Guid moduleVersionId, CancellationToken cancellationToken)
         {
             var lessons = await dbContext.Lessons
-                .Where(x => x.ModuleId == moduleId)
+                .Where(x => x.ModuleVersionId == moduleVersionId)
                 .OrderBy(x => x.OrderIndex)
                 .ThenBy(x => x.Title)
                 .ToListAsync(cancellationToken);

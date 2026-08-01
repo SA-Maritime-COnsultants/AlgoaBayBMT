@@ -406,12 +406,26 @@
             return;
         }
 
-        _fullscreenModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/coursePlayerFullscreen.js");
-        IsFullscreenSupported = await _fullscreenModule.InvokeAsync<bool>("isFullscreenSupported");
-        _dotNetRef = DotNetObjectReference.Create(this);
-        await _fullscreenModule.InvokeVoidAsync("registerFullscreenChange", _dotNetRef, _fullscreenElementId);
-        _fullscreenInteropInitialized = true;
-        await InvokeAsync(StateHasChanged);
+        // An exception out of OnAfterRenderAsync is NOT caught by MainLayout's ErrorBoundary —
+        // it terminates the circuit outright. Fullscreen is an enhancement, so a failed import
+        // or a client that navigated away mid-call must never cost the learner the whole page.
+        try
+        {
+            _fullscreenModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/coursePlayerFullscreen.js");
+            IsFullscreenSupported = await _fullscreenModule.InvokeAsync<bool>("isFullscreenSupported");
+            _dotNetRef = DotNetObjectReference.Create(this);
+            await _fullscreenModule.InvokeVoidAsync("registerFullscreenChange", _dotNetRef, _fullscreenElementId);
+            _fullscreenInteropInitialized = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (Exception ex)
+        {
+            IsFullscreenSupported = false;
+            Console.Error.WriteLine($"CoursePlayer: fullscreen interop init failed: {ex}");
+        }
     }
 
     private async Task LoadPlayerAsync()

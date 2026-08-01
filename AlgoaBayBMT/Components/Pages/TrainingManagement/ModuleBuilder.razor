@@ -1,0 +1,469 @@
+@page "/training-management/module-builder/{ModuleId:guid}"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using AlgoaBayBMT.Shared.Security
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Navigations
+@using Syncfusion.Blazor.Notifications
+
+@implements IDisposable
+
+@inject IModuleLibraryService ModuleLibraryService
+@inject ITrainingManagementService TrainingManagementService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Module Builder</PageTitle>
+
+<HeadContent>
+    <link rel="stylesheet" href="css/courseBuilder.css" />
+</HeadContent>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell pf-training-admin-shell cb-builder-breadcrumb-shell">
+    <SfBreadcrumb CssClass="cb-builder-breadcrumb">
+        <BreadcrumbItems>
+            <BreadcrumbItem Text="Training Management" Url="/training-management" />
+            <BreadcrumbItem Text="Module Library" Url="/training-management/module-library" />
+            <BreadcrumbItem Text="@(Module?.Title ?? "Module Builder")" />
+        </BreadcrumbItems>
+    </SfBreadcrumb>
+</div>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Module Builder</h1>
+            <div class="page-subtitle">Author lessons and content once; this module can be reused across many courses.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <a class="e-btn pf-training-page-action-btn" href="/training-management/module-library">
+                <span class="e-btn-icon e-icons e-arrow-left e-icon-left"></span>Back to Library
+            </a>
+            @if (CurrentVersion is { Status: ModuleVersionStatus.Draft })
+            {
+                <SfButton CssClass="pf-training-page-action-btn cb-btn-publish-version" IconCss="e-icons e-upload" IconPosition="IconPosition.Left" OnClick="PublishVersionAsync">Publish Version</SfButton>
+            }
+            else
+            {
+                <SfButton CssClass="pf-training-page-action-btn cb-btn-create-version" IconCss="e-icons e-copy" IconPosition="IconPosition.Left" OnClick="CreateNewVersionAsync">Create New Version</SfButton>
+            }
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    @if (Module is null || CurrentVersion is null)
+    {
+        <div class="cb-loading-state">Loading module builder...</div>
+    }
+    else
+    {
+        <div class="pf-header-container">
+            <div class="pf-header-row-primary">
+                <h1>@Module.Title</h1>
+            </div>
+            <div class="pf-header-row-secondary">
+                <span class="e-badge pf-role-badge cb-summary-badge">@Module.Code</span>
+                <span class="e-badge pf-role-badge cb-summary-badge cb-summary-badge--status">v@(CurrentVersion.VersionNumber) — @CurrentVersion.Status</span>
+                <span class="e-badge pf-role-badge cb-summary-badge">@Lessons.Count lesson(s)</span>
+                @if (Usage is { Courses.Count: > 0 })
+                {
+                    <span class="e-badge pf-role-badge cb-summary-badge">used in @Usage.Courses.Count course(s)</span>
+                }
+                @if (!IsEditable)
+                {
+                    <span class="e-badge pf-role-badge cb-summary-badge cb-summary-badge--locked">Published — read only. Create a new version to edit.</span>
+                }
+            </div>
+        </div>
+
+        <div class="cb-dashboard-layout">
+            <div class="row g-2 align-items-start cb-dashboard-row">
+
+                <div class="col-12 col-xl-2 cb-left-col-wrap">
+                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--structure mb-2">
+                        <div class="training-panel-header cb-dashboard-header-content">
+                            <span>Lessons</span>
+                            @if (IsEditable)
+                            {
+                                <SfButton CssClass="pf-training-page-action-btn" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="StartNewLesson">+ Lesson</SfButton>
+                            }
+                        </div>
+                        <div class="training-panel-body cb-dashboard-panel-body cb-dashboard-panel-body--tree">
+                            @if (Lessons.Count == 0)
+                            {
+                                <div class="pf-empty-state">No lessons yet.</div>
+                            }
+                            else
+                            {
+                                <div class="pf-training-tree">
+                                    @foreach (var lesson in Lessons.OrderBy(x => x.OrderIndex))
+                                    {
+                                        var lessonId = lesson.LessonId;
+                                        <button type="button"
+                                                class="tp-journey-lesson @(_selectedLessonId == lessonId ? "is-current" : string.Empty)"
+                                                @onclick="() => SelectLesson(lessonId!.Value)"
+                                                @key="@($"les-{lessonId}")">
+                                            <span class="pf-training-tree-label">@lesson.OrderIndex. @lesson.Title</span>
+                                            <span class="e-badge pf-role-badge cb-tree-count">@lesson.Blocks.Count</span>
+                                        </button>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </section>
+                </div>
+
+                <div class="col-12 col-xl-10">
+                    <section class="training-panel cb-dashboard-panel cb-dashboard-panel--editor">
+                        <div class="training-panel-header cb-dashboard-header-content cb-dashboard-header-content--title-only">
+                            @if (SelectedLesson is not null)
+                            {
+                                <span>Lesson Details</span>
+                            }
+                            else
+                            {
+                                <span>Module Details</span>
+                            }
+                        </div>
+                        <div class="cb-dashboard-panel-body cb-dashboard-panel-body--editor">
+                            @if (!IsEditable)
+                            {
+                                <div class="pf-alert pf-alert--warning-strong">
+                                    This module version is published and its content is locked. Click "Create New Version" above to make changes.
+                                </div>
+                            }
+                            @if (SelectedLesson is not null)
+                            {
+                                <div class="cb-editor-workspace" @key="@($"les-{_selectedLessonId}")">
+                                    <section class="cb-editor-section cb-editor-section--details">
+                                        <div class="cb-section-body cb-section-body--details cb-section-body--lesson-editor">
+                                            <TrainingLessonEditor
+                                                @key="@($"le-{_selectedLessonId?.ToString() ?? "new"}")"
+                                                Model="SelectedLesson"
+                                                SaveRequested="SaveLessonAsync"
+                                                DeleteRequested="DeleteLessonAsync"
+                                                MoveRequested="MoveLessonAsync" />
+                                        </div>
+                                    </section>
+
+                                    <section class="cb-editor-section cb-editor-section--blocks">
+                                        <div class="training-panel-header cb-section-header cb-blocks-header-shell">
+                                            <span>Content Blocks</span>
+                                            <span class="e-badge pf-role-badge">@SelectedLesson.Blocks.Count</span>
+                                        </div>
+                                        <div class="cb-section-body cb-section-body--blocks">
+                                            @if (SelectedLesson.Blocks.Count == 0)
+                                            {
+                                                <div class="pf-empty-state">No content blocks yet.</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="cb-blocks-list">
+                                                    @foreach (var block in SelectedLesson.Blocks.OrderBy(x => x.OrderIndex))
+                                                    {
+                                                        <TrainingLessonBlockEditor
+                                                            @key="block.UiKey"
+                                                            Model="block"
+                                                            IsSelected="@IsBlockSelected(block)"
+                                                            AssessmentOptions="ModuleAssessments"
+                                                            CurrentUserId="CurrentUserId"
+                                                            SelectedRequested="() => SelectBlockAsync(block)"
+                                                            SaveRequested="SaveLessonBlockAsync"
+                                                            DeleteRequested="() => DeleteLessonBlockAsync(block)"
+                                                            MoveRequested="direction => MoveLessonBlockAsync(block, direction)" />
+                                                    }
+                                                </div>
+                                            }
+                                            @if (IsEditable)
+                                            {
+                                                <div class="cb-add-block-row">
+                                                    <label class="pf-field-label cb-add-block-label">Add Content Block</label>
+                                                    <SfDropDownList TValue="LessonBlockType" TItem="BlockTypeOption"
+                                                                    DataSource="@BlockTypeOptions"
+                                                                    @bind-Value="_newBlockType"
+                                                                    Placeholder="Select content type"
+                                                                    CssClass="cb-add-block-ddl">
+                                                        <DropDownListFieldSettings Text="Label" Value="Value" />
+                                                    </SfDropDownList>
+                                                    <SfButton CssClass="e-primary cb-btn-add-block" IconCss="e-icons e-add" IconPosition="IconPosition.Left" OnClick="AddBlockFromDropdown">+ Add Block</SfButton>
+                                                </div>
+                                            }
+                                        </div>
+                                    </section>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="pf-empty-state">Select a lesson from the left panel, or create a new one.</div>
+                            }
+                        </div>
+                    </section>
+                </div>
+
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Guid ModuleId { get; set; }
+
+    private bool _isDisposed;
+    private SfToast SuccessToast = default!;
+    private string? ErrorMessage;
+    private string? CurrentUserId;
+
+    private ModuleLibraryItemModel? Module;
+    private TrainingModuleEditModel? CurrentVersion;
+    private ModuleUsageModel? Usage;
+    private List<TrainingLessonEditModel> Lessons = [];
+    private List<TrainingCourseAssessmentEditModel> ModuleAssessments = [];
+    private Guid? _selectedLessonId;
+    private Guid? _selectedBlockId;
+    private TrainingLessonEditModel? _newLesson;
+
+    private bool IsEditable => CurrentVersion?.Status == ModuleVersionStatus.Draft;
+
+    private TrainingLessonEditModel? SelectedLesson =>
+        _newLesson is not null ? _newLesson :
+        _selectedLessonId.HasValue ? Lessons.FirstOrDefault(l => l.LessonId == _selectedLessonId) : null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync())
+            .User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync(Guid? focusLessonId = null)
+    {
+        if (_isDisposed) return;
+        Module = await ModuleLibraryService.GetModuleAsync(ModuleId);
+        if (Module?.CurrentVersionId is not Guid versionId)
+        {
+            ErrorMessage = "This module could not be loaded.";
+            return;
+        }
+
+        CurrentVersion = await ModuleLibraryService.GetModuleVersionAsync(versionId);
+        Usage = await ModuleLibraryService.GetModuleUsageAsync(ModuleId);
+        if (_isDisposed || CurrentVersion is null) return;
+
+        Lessons = await TrainingManagementService.GetLessonsForModuleVersionAsync(versionId);
+        ErrorMessage = null;
+
+        if (focusLessonId.HasValue)
+        {
+            _selectedLessonId = focusLessonId;
+        }
+        else
+        {
+            var stillExists = _selectedLessonId.HasValue && Lessons.Any(l => l.LessonId == _selectedLessonId);
+            if (!stillExists)
+            {
+                _selectedLessonId = Lessons.OrderBy(x => x.OrderIndex).FirstOrDefault()?.LessonId;
+            }
+        }
+        _newLesson = null;
+        ApplySelectedBlockState();
+    }
+
+    private void SelectLesson(Guid lessonId)
+    {
+        _newLesson = null;
+        _selectedLessonId = lessonId;
+        _selectedBlockId = null;
+    }
+
+    private void StartNewLesson()
+    {
+        if (CurrentVersion?.ModuleVersionId is not Guid versionId) return;
+        _selectedLessonId = null;
+        _newLesson = new TrainingLessonEditModel
+        {
+            ModuleVersionId = versionId,
+            OrderIndex = Lessons.Count + 1,
+            IsActive = true
+        };
+    }
+
+    private async Task SaveLessonAsync(TrainingLessonEditModel model)
+    {
+        if (_isDisposed) return;
+        var result = await TrainingManagementService.SaveLessonAsync(model, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded || result.Data?.LessonId is null) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync(result.Data.LessonId.Value);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson saved.");
+    }
+
+    private async Task DeleteLessonAsync()
+    {
+        if (_isDisposed) return;
+        if (_newLesson is not null) { _newLesson = null; return; }
+        if (SelectedLesson?.LessonId is not Guid lessonId) return;
+        var result = await TrainingManagementService.DeleteLessonAsync(lessonId, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        _selectedLessonId = null;
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Lesson deleted.");
+    }
+
+    private async Task MoveLessonAsync(int direction)
+    {
+        if (_isDisposed || SelectedLesson?.LessonId is not Guid lessonId) return;
+        var result = await TrainingManagementService.MoveLessonAsync(lessonId, direction, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync(lessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Lesson order updated.");
+    }
+
+    private LessonBlockType _newBlockType = LessonBlockType.Card;
+
+    private static IReadOnlyList<BlockTypeOption> BlockTypeOptions =>
+    [
+        new(LessonBlockType.Card, "Card"),
+        new(LessonBlockType.Video, "Video"),
+        new(LessonBlockType.Flashcard, "Flash Card"),
+        new(LessonBlockType.Quiz, "Quiz"),
+        new(LessonBlockType.Assessment, "Assessment"),
+        new(LessonBlockType.Download, "Download")
+    ];
+
+    private sealed record BlockTypeOption(LessonBlockType Value, string Label);
+
+    private Task AddBlockFromDropdown() => AddBlockOfType(_newBlockType);
+
+    private async Task AddBlockOfType(LessonBlockType blockType)
+    {
+        if (_isDisposed) return;
+        var lesson = SelectedLesson;
+        if (lesson?.LessonId is not Guid lessonId) { ErrorMessage = "Save the lesson before adding content blocks."; return; }
+
+        var model = new TrainingLessonBlockEditModel
+        {
+            UiKey = Guid.NewGuid(),
+            LessonId = lessonId,
+            OrderIndex = lesson.Blocks.Count + 1,
+            BlockType = blockType,
+            IsActive = true,
+            IsExpanded = true
+        };
+        var result = await TrainingManagementService.SaveLessonBlockAsync(model, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded || result.Data?.LessonBlockId is null)
+        {
+            ErrorMessage = result.Message ?? string.Join(", ", result.Errors);
+            return;
+        }
+        _selectedBlockId = result.Data.LessonBlockId;
+        await LoadAsync(lessonId);
+    }
+
+    private async Task SaveLessonBlockAsync(TrainingLessonBlockEditModel model)
+    {
+        if (_isDisposed) return;
+        var result = await TrainingManagementService.SaveLessonBlockAsync(model, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        _selectedBlockId = result.Data?.LessonBlockId ?? model.LessonBlockId;
+        await LoadAsync(model.LessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Block saved.");
+    }
+
+    private async Task DeleteLessonBlockAsync(TrainingLessonBlockEditModel block)
+    {
+        if (_isDisposed) return;
+        if (block.LessonBlockId is not Guid blockId) { SelectedLesson?.Blocks.Remove(block); return; }
+        var result = await TrainingManagementService.DeleteLessonBlockAsync(blockId, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        if (_selectedBlockId == blockId) _selectedBlockId = null;
+        await LoadAsync(block.LessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Block deleted.");
+    }
+
+    private async Task MoveLessonBlockAsync(TrainingLessonBlockEditModel block, int direction)
+    {
+        if (_isDisposed || block.LessonBlockId is not Guid blockId) return;
+        var result = await TrainingManagementService.MoveLessonBlockAsync(blockId, direction, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        _selectedBlockId = blockId;
+        await LoadAsync(block.LessonId);
+        await ShowSuccessToastAsync(result.Message ?? "Block order updated.");
+    }
+
+    private Task SelectBlockAsync(TrainingLessonBlockEditModel block)
+    {
+        var lesson = SelectedLesson;
+        if (lesson is null) return Task.CompletedTask;
+        foreach (var candidate in lesson.Blocks) candidate.IsExpanded = false;
+        block.IsExpanded = true;
+        _selectedBlockId = block.LessonBlockId;
+        return Task.CompletedTask;
+    }
+
+    private bool IsBlockSelected(TrainingLessonBlockEditModel block)
+        => block.LessonBlockId.HasValue ? _selectedBlockId == block.LessonBlockId : block.IsExpanded;
+
+    private void ApplySelectedBlockState()
+    {
+        var lesson = SelectedLesson;
+        if (lesson is null) return;
+        foreach (var block in lesson.Blocks)
+        {
+            block.UiKey = block.UiKey == Guid.Empty ? Guid.NewGuid() : block.UiKey;
+            block.IsExpanded = block.LessonBlockId.HasValue && _selectedBlockId == block.LessonBlockId;
+        }
+    }
+
+    private async Task CreateNewVersionAsync()
+    {
+        if (_isDisposed) return;
+        var result = await ModuleLibraryService.CreateModuleVersionAsync(ModuleId, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "New version created.");
+    }
+
+    private async Task PublishVersionAsync()
+    {
+        if (_isDisposed || CurrentVersion?.ModuleVersionId is not Guid versionId) return;
+        var result = await ModuleLibraryService.PublishModuleVersionAsync(versionId, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Module version published.");
+    }
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        if (_isDisposed) return;
+        ErrorMessage = null;
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success", Content = message,
+            CssClass = "e-toast-success", ShowCloseButton = true, Timeout = 3500
+        });
+    }
+
+    public void Dispose() => _isDisposed = true;
+}

@@ -24,8 +24,24 @@ namespace AlgoaBayBMT.Shared.Models
         public DateTime? PaidOnUtc { get; set; }
         public string? PaidByUserId { get; set; }
 
+        /// <summary>
+        /// The course version this learner was assigned. Pinned at registration so later authoring
+        /// and republishing cannot change the training this learner is actually doing.
+        /// </summary>
+        public Guid? ResolvedCourseVersionId { get; set; }
+
+        /// <summary>
+        /// The rank profile used to resolve the module sequence. Null means the learner had no
+        /// matching profile (or is a full-access user) and received the unfiltered course sequence.
+        /// </summary>
+        public Guid? ResolvedRankProfileId { get; set; }
+
+        public DateTime? ResolvedOnUtc { get; set; }
+
         public Course? Course { get; set; }
         public Invoice? Invoice { get; set; }
+        public CourseVersion? ResolvedCourseVersion { get; set; }
+        public RankProfile? ResolvedRankProfile { get; set; }
     }
 
     public class UserLessonProgress
@@ -60,8 +76,16 @@ namespace AlgoaBayBMT.Shared.Models
         public Guid? CurrentLessonId { get; set; }
         public DateTime? ExpiryDateUtc { get; set; }
 
+        /// <summary>The course version this progress was accrued against.</summary>
+        public Guid? CourseVersionId { get; set; }
+
+        /// <summary>The rank profile whose module sequence this progress is measured against.</summary>
+        public Guid? RankProfileId { get; set; }
+
         public Course? Course { get; set; }
         public TrainingLesson? CurrentLesson { get; set; }
+        public CourseVersion? CourseVersion { get; set; }
+        public RankProfile? RankProfile { get; set; }
     }
 
     public class CourseCompletionRecord
@@ -75,8 +99,15 @@ namespace AlgoaBayBMT.Shared.Models
         public decimal? FinalScorePercent { get; set; }
         public string CertificateNumber { get; set; } = string.Empty;
 
+        /// <summary>The rank profile that determined the module sequence this learner completed.</summary>
+        public Guid? RankProfileId { get; set; }
+
+        /// <summary>Name captured at completion, so renaming the profile later cannot rewrite evidence.</summary>
+        public string? RankProfileName { get; set; }
+
         public Course? Course { get; set; }
         public CourseVersion? CourseVersion { get; set; }
+        public RankProfile? RankProfile { get; set; }
         public TrainingCertificate? TrainingCertificate { get; set; }
     }
 
@@ -120,6 +151,14 @@ namespace AlgoaBayBMT.Shared.Models
         public DateTime IssuedOnUtc { get; set; }
         public DateTime ExpiresOnUtc { get; set; }
         public DateTime? RevokedOnUtc { get; set; }
+
+        // Values captured at issue time. A certificate is evidence: later edits to the course,
+        // its version label, the rank profile or the learner's name must not alter what it shows.
+        public string? CourseTitleSnapshot { get; set; }
+        public string? CourseCodeSnapshot { get; set; }
+        public string? VersionLabelSnapshot { get; set; }
+        public string? RankProfileNameSnapshot { get; set; }
+        public string? LearnerFullNameSnapshot { get; set; }
 
         public CourseCompletionRecord? CourseCompletionRecord { get; set; }
     }

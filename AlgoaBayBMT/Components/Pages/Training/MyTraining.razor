@@ -16,7 +16,21 @@
 
 <div class="page-shell pf-training-learner-shell">
 
-    @if (Dashboard is null)
+    @if (_loadError is not null)
+    {
+        <SfCard CssClass="pf-card-shell pf-training-learner-card">
+            <CardContent>
+                <div class="pf-empty-state">
+                    <i class="bi bi-exclamation-triangle text-warning fs-4 d-block mb-2"></i>
+                    <div class="mb-3">@_loadError</div>
+                    <button type="button" class="btn btn-bmt btn-pastel-green" @onclick="ReloadAsync">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Try again
+                    </button>
+                </div>
+            </CardContent>
+        </SfCard>
+    }
+    else if (Dashboard is null)
     {
         <SfCard CssClass="pf-card-shell pf-training-learner-card">
             <CardContent>
@@ -177,6 +191,7 @@
 @code {
     private MyTrainingDashboardModel? Dashboard;
     private string? _userId;
+    private string? _loadError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -188,7 +203,7 @@
             return;
         }
 
-        Dashboard = await LearnerTrainingService.GetDashboardAsync(_userId);
+        await LoadDashboardAsync();
     }
 
     private async Task ReloadAsync()
@@ -199,8 +214,25 @@
         }
 
         Dashboard = null;
+        _loadError = null;
         StateHasChanged();
-        Dashboard = await LearnerTrainingService.GetDashboardAsync(_userId);
+        await LoadDashboardAsync();
+    }
+
+    private async Task LoadDashboardAsync()
+    {
+        try
+        {
+            Dashboard = await LearnerTrainingService.GetDashboardAsync(_userId!);
+            _loadError = null;
+        }
+        catch (Exception ex)
+        {
+            // The dashboard makes several round trips to a remote database; a transient failure
+            // must leave the learner on a page they can retry from, not an empty shell.
+            _loadError = "Your training dashboard could not be loaded. Please try again.";
+            Console.Error.WriteLine($"Training dashboard load failed for {_userId}: {ex}");
+        }
     }
 
     private RenderFragment RenderCourseCard(MyTrainingCourseListItemModel course) => @<SfCard CssClass="pf-training-course-card">

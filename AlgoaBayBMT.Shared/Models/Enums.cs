@@ -90,7 +90,13 @@ namespace AlgoaBayBMT.Shared.Models
         Master = 12,
 
         [Display(Name = "POAC")]
-        POAC = 13
+        POAC = 13,
+
+        [Display(Name = "Designated Person Ashore")]
+        DesignatedPersonAshore = 14,
+
+        [Display(Name = "Bunker Operator Manager")]
+        BunkerOperatorManager = 15
     }
 
     public enum SeagoingCommercialQualification
@@ -295,6 +301,23 @@ namespace AlgoaBayBMT.Shared.Models
     }
 
     public enum CourseVersionStatus
+    {
+        [Display(Name = "Draft")]
+        Draft = 0,
+
+        [Display(Name = "Published")]
+        Published = 1,
+
+        [Display(Name = "Archived")]
+        Archived = 2
+    }
+
+    /// <summary>
+    /// Lifecycle of an authored module version. Published and Archived versions are immutable:
+    /// their lessons and content blocks may not be edited, because learner progress and
+    /// certificates reference them.
+    /// </summary>
+    public enum ModuleVersionStatus
     {
         [Display(Name = "Draft")]
         Draft = 0,

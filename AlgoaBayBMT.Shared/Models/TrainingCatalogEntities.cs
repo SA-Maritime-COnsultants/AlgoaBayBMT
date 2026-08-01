@@ -56,36 +56,61 @@ namespace AlgoaBayBMT.Shared.Models
         public string? Notes { get; set; }
         public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
         public DateTime? UpdatedOnUtc { get; set; }
+        public byte[]? RowVersion { get; set; }
+
+        /// <summary>Published and archived course versions are immutable.</summary>
+        public bool IsEditable => Status == CourseVersionStatus.Draft;
 
         public Course? Course { get; set; }
-        public ICollection<TrainingModule> Modules { get; set; } = new List<TrainingModule>();
+        /// <summary>Ordered references to shared module versions. Replaces the old owned Modules collection.</summary>
+        public ICollection<CourseModule> CourseModules { get; set; } = new List<CourseModule>();
+        /// <summary>Rank profiles this course version serves.</summary>
+        public ICollection<CourseRankProfile> RankProfiles { get; set; } = new List<CourseRankProfile>();
         public ICollection<CourseCompletionRecord> CompletionRecords { get; set; } = new List<CourseCompletionRecord>();
     }
 
-    public class TrainingModule
+    /// <summary>
+    /// An immutable unit of authored content: the lessons and content blocks themselves.
+    /// A module version is NOT owned by a course — courses reference it through
+    /// <see cref="CourseModule"/>, so one authored version can serve many courses without
+    /// duplicating a single lesson or block. Stable identity lives on <see cref="TrainingModule"/>.
+    /// </summary>
+    public class TrainingModuleVersion
     {
+        public Guid ModuleVersionId { get; set; }
         public Guid ModuleId { get; set; }
-        public Guid CourseVersionId { get; set; }
+        public int VersionNumber { get; set; } = 1;
+        public string? VersionLabel { get; set; }
+        public ModuleVersionStatus Status { get; set; } = ModuleVersionStatus.Draft;
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public int OrderIndex { get; set; }
         public int? EstimatedMinutes { get; set; }
         public bool IsActive { get; set; } = true;
         public bool HasModuleAssessment { get; set; }
         public Guid? AssessmentId { get; set; }
         public decimal? AssessmentPassMarkPercent { get; set; }
         public int AssessmentMaxAttempts { get; set; } = 3;
+        public string? ChangeSummary { get; set; }
+        public DateTime? PublishedOnUtc { get; set; }
+        public string? PublishedByUserId { get; set; }
+        public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
+        public DateTime? UpdatedOnUtc { get; set; }
+        public byte[]? RowVersion { get; set; }
 
-        public CourseVersion? CourseVersion { get; set; }
+        /// <summary>Published and archived versions may not have their content edited.</summary>
+        public bool IsEditable => Status == ModuleVersionStatus.Draft;
+
+        public TrainingModule? Module { get; set; }
         public TrainingCourseAssessment? ModuleAssessment { get; set; }
         public ICollection<TrainingLesson> Lessons { get; set; } = new List<TrainingLesson>();
         public ICollection<TrainingQuestionBankQuestion> QuestionBankQuestions { get; set; } = new List<TrainingQuestionBankQuestion>();
+        public ICollection<CourseModule> CourseModules { get; set; } = new List<CourseModule>();
     }
 
     public class TrainingLesson
     {
         public Guid LessonId { get; set; }
-        public Guid ModuleId { get; set; }
+        public Guid ModuleVersionId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Summary { get; set; }
         public int OrderIndex { get; set; }
@@ -94,7 +119,7 @@ namespace AlgoaBayBMT.Shared.Models
         public bool IsRequired { get; set; } = true;
         public bool IsActive { get; set; } = true;
 
-        public TrainingModule? Module { get; set; }
+        public TrainingModuleVersion? ModuleVersion { get; set; }
         public ICollection<LessonBlock> LessonBlocks { get; set; } = new List<LessonBlock>();
         public ICollection<UserLessonProgress> UserLessonProgressRecords { get; set; } = new List<UserLessonProgress>();
         public ICollection<UserCourseProgress> CurrentCourseProgressRecords { get; set; } = new List<UserCourseProgress>();
@@ -142,6 +167,14 @@ namespace AlgoaBayBMT.Shared.Models
     {
         public Guid TrainingCourseAssessmentId { get; set; }
         public Guid TrainingCourseId { get; set; }
+
+        /// <summary>
+        /// Set when the assessment belongs to a shared module version rather than to the course.
+        /// A module-scoped assessment travels with the module into every course that includes it;
+        /// a course-scoped assessment (this being null) is only valid within its owning course.
+        /// </summary>
+        public Guid? ModuleVersionId { get; set; }
+
         public string Name { get; set; } = string.Empty;
         public string? Instructions { get; set; }
         public decimal PassMarkPercent { get; set; } = 80m;
@@ -151,6 +184,7 @@ namespace AlgoaBayBMT.Shared.Models
         public bool IsActive { get; set; } = true;
 
         public Course? Course { get; set; }
+        public TrainingModuleVersion? ModuleVersion { get; set; }
         public ICollection<TrainingQuestionBankQuestion> QuestionBankQuestions { get; set; } = new List<TrainingQuestionBankQuestion>();
         public ICollection<UserAssessmentAttempt> Attempts { get; set; } = new List<UserAssessmentAttempt>();
     }
@@ -159,7 +193,7 @@ namespace AlgoaBayBMT.Shared.Models
     {
         public Guid TrainingQuestionBankQuestionId { get; set; }
         public Guid TrainingCourseAssessmentId { get; set; }
-        public Guid? TrainingModuleId { get; set; }
+        public Guid? TrainingModuleVersionId { get; set; }
         public Guid? TrainingLessonId { get; set; }
         public TrainingQuestionType QuestionType { get; set; }
         public string Prompt { get; set; } = string.Empty;
@@ -170,7 +204,7 @@ namespace AlgoaBayBMT.Shared.Models
         public bool IsActive { get; set; } = true;
 
         public TrainingCourseAssessment? Assessment { get; set; }
-        public TrainingModule? Module { get; set; }
+        public TrainingModuleVersion? ModuleVersion { get; set; }
         public ICollection<TrainingQuestionBankOption> Options { get; set; } = new List<TrainingQuestionBankOption>();
         public ICollection<UserAssessmentResponse> Responses { get; set; } = new List<UserAssessmentResponse>();
     }

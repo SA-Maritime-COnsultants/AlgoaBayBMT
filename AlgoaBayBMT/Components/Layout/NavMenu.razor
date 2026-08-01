@@ -60,6 +60,18 @@
                             </NavLink>
                         </li>
                         <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management/module-library" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)TrainingIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Module Library</span><span class="side-nav-meta">Shared modules, versions</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
+                            <NavLink class="side-nav-link" href="training-management/rank-profiles" @onclick="HandleNavClick">
+                                <span class="side-nav-icon" aria-hidden="true">@((MarkupString)RoleEditorIcon)</span>
+                                <span class="side-nav-copy"><span class="side-nav-label">Rank Profiles</span><span class="side-nav-meta">Configure training levels</span></span>
+                            </NavLink>
+                        </li>
+                        <li class="side-nav-item">
                             <NavLink class="side-nav-link" href="training-management/approvals" @onclick="HandleNavClick">
                                 <span class="side-nav-icon" aria-hidden="true">@((MarkupString)ComplianceIcon)</span>
                                 <span class="side-nav-copy"><span class="side-nav-label">Training Approvals</span><span class="side-nav-meta">Approve crew registrations</span></span>
@@ -380,8 +392,18 @@
             var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrWhiteSpace(userId))
             {
-                var model = await UserManagementService.GetUserEditorAsync(userId);
-                _canViewBunkering = model?.IsBunkerManager == true;
+                try
+                {
+                    var model = await UserManagementService.GetUserEditorAsync(userId);
+                    _canViewBunkering = model?.IsBunkerManager == true;
+                }
+                catch (Exception ex)
+                {
+                    // The nav lives outside MainLayout's ErrorBoundary, so an exception here
+                    // would terminate the circuit. A transient database failure must only cost
+                    // us the bunkering entry, never the whole shell.
+                    Console.Error.WriteLine($"Navigation menu permission lookup failed: {ex}");
+                }
             }
         }
     }
@@ -455,8 +477,12 @@
         catch (Microsoft.JSInterop.JSDisconnectedException)
         {
         }
-        catch (InvalidOperationException)
+        catch (Exception ex)
         {
+            // Previously only InvalidOperationException was caught, which let a JSException
+            // (blocked localStorage, failed interop) escape OnAfterRenderAsync — and an
+            // exception from there bypasses MainLayout's ErrorBoundary and kills the circuit.
+            Console.Error.WriteLine($"Navigation menu state restore failed: {ex}");
         }
 
         _menuStateLoaded = true;
@@ -488,8 +514,11 @@
         catch (Microsoft.JSInterop.JSDisconnectedException)
         {
         }
-        catch (InvalidOperationException)
+        catch (Exception ex)
         {
+            // Persisting the expanded/collapsed state is cosmetic — never let it reach the
+            // renderer, where an unhandled exception terminates the circuit.
+            Console.Error.WriteLine($"Navigation menu state save failed: {ex}");
         }
     }
 

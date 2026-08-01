@@ -1,0 +1,266 @@
+@page "/training-management/rank-profiles"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Models
+@using AlgoaBayBMT.Shared.Security
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Popups
+
+@implements IDisposable
+
+@inject IRankProfileService RankProfileService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Rank Profiles</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Rank Profiles</h1>
+            <div class="page-subtitle">Configure the training levels courses target, and which crew ranks belong to each level.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <button class="btn btn-bmt btn-pastel-green" @onclick="OpenCreateDialog">
+                <i class="bi bi-plus-circle-fill me-2"></i>Add Level
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    @if (Coverage is not null && !Coverage.IsFullyCovered)
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">
+            @if (Coverage.UnassignedRanks.Count > 0)
+            {
+                <div>Unassigned ranks (will receive the full unfiltered course when resolving): @string.Join(", ", Coverage.UnassignedRanks.Select(x => x.GetDisplayName()))</div>
+            }
+            @if (Coverage.OverlappingRanks.Count > 0)
+            {
+                <div>Ranks in more than one level (lowest-order level wins): @string.Join("; ", Coverage.OverlappingRanks.Select(x => $"{x.CrewRank.GetDisplayName()} → {string.Join(" / ", x.ProfileNames)}"))</div>
+            }
+        </div>
+    }
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardHeader Title="Levels" SubTitle="Ordered junior to senior. Courses opt in to the levels they serve." />
+        <CardContent>
+            @if (Profiles.Count == 0)
+            {
+                <div class="pf-empty-state">No rank levels configured yet.</div>
+            }
+            else
+            {
+                <div class="cb-rank-profile-list">
+                    @foreach (var profile in Profiles.OrderBy(x => x.OrderIndex))
+                    {
+                        <div class="cb-rank-profile-card" @key="profile.RankProfileId">
+                            <div class="cb-rank-profile-card-header">
+                                <span class="cb-rank-profile-order">@profile.OrderIndex</span>
+                                <div class="cb-rank-profile-title-block">
+                                    <div class="cb-rank-profile-name">@profile.Name <span class="e-badge pf-role-badge">@profile.Code</span> @(profile.IsSystem ? "" : "")</div>
+                                    @if (!string.IsNullOrWhiteSpace(profile.Description))
+                                    {
+                                        <div class="cb-rank-profile-desc">@profile.Description</div>
+                                    }
+                                </div>
+                                <div class="pf-grid-actions pf-grid-actions--compact">
+                                    <SfButton CssClass="e-small" IconCss="e-icons e-chevron-up" OnClick="() => MoveAsync(profile, -1)" />
+                                    <SfButton CssClass="e-small" IconCss="e-icons e-chevron-down" OnClick="() => MoveAsync(profile, 1)" />
+                                    <SfButton CssClass="e-small pf-training-page-action-btn" IconCss="e-icons e-edit" OnClick="() => OpenEditDialog(profile)" />
+                                    <SfButton CssClass="e-small pf-training-page-action-btn cb-btn-delete" IconCss="e-icons e-trash" Disabled="profile.CourseUsageCount > 0" OnClick="() => PromptDeleteAsync(profile)" />
+                                </div>
+                            </div>
+                            <div class="cb-rank-profile-ranks">
+                                @foreach (var rank in profile.Ranks)
+                                {
+                                    <span class="e-badge pf-role-badge">@rank.GetDisplayName()</span>
+                                }
+                                @if (profile.CourseUsageCount > 0)
+                                {
+                                    <span class="e-badge pf-role-badge cb-usage-badge">used by @profile.CourseUsageCount course version(s)</span>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="640px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="ShowEditDialog">
+    <DialogTemplates>
+        <Header>@(EditModel.RankProfileId.HasValue ? "Edit Level" : "Add Level")</Header>
+        <Content>
+            <EditForm Model="EditModel" OnValidSubmit="SaveAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message" />
+                <div class="pf-form-grid">
+                    <div class="pf-col-8">
+                        <label class="pf-field-label">Name</label>
+                        <SfTextBox @bind-Value="EditModel.Name" Placeholder="e.g. Officer" />
+                    </div>
+                    <div class="pf-col-4">
+                        <label class="pf-field-label">Code</label>
+                        <SfTextBox @bind-Value="EditModel.Code" Placeholder="Auto if blank" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Description</label>
+                        <SfTextBox @bind-Value="EditModel.Description" Multiline="true" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Ranks in this level</label>
+                        <SfMultiSelect TValue="List<CrewRank>" TItem="CrewRankOption" DataSource="@RankOptions" @bind-Value="EditModel.Ranks" Placeholder="Select crew ranks">
+                            <MultiSelectFieldSettings Text="Text" Value="Value" />
+                        </SfMultiSelect>
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-inline-check">
+                            <InputCheckbox @bind-Value="EditModel.IsActive" />
+                            <span>Active</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="pf-dialog-actions pf-dialog-actions--split">
+                    <button type="button" class="btn btn-bmt btn-pastel-gray" @onclick="() => ShowEditDialog = false">Cancel</button>
+                    <SfButton IsPrimary="true" type="submit">Save Level</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="520px" CssClass="abmt-dialog pf-training-reset-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="ShowDeleteConfirmation">
+    <DialogTemplates>
+        <Header>Delete Level</Header>
+        <Content>
+            <div class="pf-training-reset-dialog-content">
+                <p class="pf-training-reset-dialog-subtitle">Delete <strong>@(ProfileToDelete?.Name)</strong>? This is only possible when no course uses it.</p>
+                <div class="pf-dialog-actions pf-dialog-actions--split pf-training-dialog-actions">
+                    <button class="btn btn-bmt btn-pastel-gray" @onclick="() => ShowDeleteConfirmation = false">Cancel</button>
+                    <button class="btn btn-bmt btn-pastel-red" @onclick="DeleteAsync">Delete Level</button>
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private bool _isDisposed;
+    private SfToast SuccessToast = default!;
+    private string? ErrorMessage;
+    private string? CurrentUserId;
+
+    private List<RankProfileEditModel> Profiles = [];
+    private RankCoverageModel? Coverage;
+    private List<CrewRankOption> RankOptions = [];
+
+    private bool ShowEditDialog;
+    private RankProfileEditModel EditModel = new();
+
+    private bool ShowDeleteConfirmation;
+    private RankProfileEditModel? ProfileToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync())
+            .User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        RankOptions = CrewRankExtensions.All.ToList();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_isDisposed) return;
+        Profiles = await RankProfileService.GetRankProfilesAsync(includeInactive: true);
+        Coverage = await RankProfileService.GetRankCoverageAsync();
+    }
+
+    private void OpenCreateDialog()
+    {
+        EditModel = new RankProfileEditModel { IsActive = true };
+        ShowEditDialog = true;
+    }
+
+    private void OpenEditDialog(RankProfileEditModel profile)
+    {
+        EditModel = new RankProfileEditModel
+        {
+            RankProfileId = profile.RankProfileId,
+            Code = profile.Code,
+            Name = profile.Name,
+            Description = profile.Description,
+            OrderIndex = profile.OrderIndex,
+            IsActive = profile.IsActive,
+            IsSystem = profile.IsSystem,
+            Ranks = profile.Ranks.ToList()
+        };
+        ShowEditDialog = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        if (_isDisposed) return;
+        var result = await RankProfileService.SaveRankProfileAsync(EditModel, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        ShowEditDialog = false;
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Level saved.");
+    }
+
+    private async Task MoveAsync(RankProfileEditModel profile, int direction)
+    {
+        if (_isDisposed || profile.RankProfileId is not Guid id) return;
+        var result = await RankProfileService.MoveRankProfileAsync(id, direction, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync();
+    }
+
+    private void PromptDeleteAsync(RankProfileEditModel profile)
+    {
+        ProfileToDelete = profile;
+        ShowDeleteConfirmation = true;
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (_isDisposed || ProfileToDelete?.RankProfileId is not Guid id) return;
+        var result = await RankProfileService.DeleteRankProfileAsync(id, CurrentUserId);
+        if (_isDisposed) return;
+        ShowDeleteConfirmation = false;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Level deleted.");
+    }
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        if (_isDisposed) return;
+        ErrorMessage = null;
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success", Content = message,
+            CssClass = "e-toast-success", ShowCloseButton = true, Timeout = 3500
+        });
+    }
+
+    public void Dispose() => _isDisposed = true;
+}

@@ -1,0 +1,278 @@
+@page "/training-management/module-library"
+@rendermode InteractiveServer
+@attribute [Authorize(Roles = RoleNames.Admin)]
+
+@using AlgoaBayBMT.Services.Interfaces
+@using AlgoaBayBMT.Services.Models
+@using AlgoaBayBMT.Shared.Security
+@using Microsoft.AspNetCore.Components.Forms
+@using Syncfusion.Blazor.Buttons
+@using Syncfusion.Blazor.DropDowns
+@using Syncfusion.Blazor.Grids
+@using Syncfusion.Blazor.Inputs
+@using Syncfusion.Blazor.Notifications
+@using Syncfusion.Blazor.Popups
+
+@implements IDisposable
+
+@inject IModuleLibraryService ModuleLibraryService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager NavigationManager
+
+<PageTitle>Module Library</PageTitle>
+
+<SfToast @ref="SuccessToast" CssClass="e-toast-success" ShowCloseButton="true">
+    <ToastPosition X="Right" Y="Top"></ToastPosition>
+</SfToast>
+
+<div class="page-shell pf-training-admin-shell">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title pf-training-heading">Module Library</h1>
+            <div class="page-subtitle">Author shared modules once and reuse them across multiple courses and rank profiles.</div>
+        </div>
+        <div class="pf-grid-actions pf-grid-actions--compact">
+            <button class="btn btn-bmt btn-pastel-green" @onclick="OpenCreateDialogAsync">
+                <i class="bi bi-plus-circle-fill me-2"></i>Create Module
+            </button>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="pf-alert pf-alert--warning-strong" role="alert">@ErrorMessage</div>
+    }
+
+    <div class="cb-library-filters cb-library-filters--page">
+        <SfTextBox @bind-Value="SearchTerm" @bind-Value:after="LoadAsync" Placeholder="Search by title, code or description..." />
+        <SfDropDownList TValue="string" TItem="string" DataSource="@Categories" @bind-Value="CategoryFilter"
+                        Placeholder="All Categories" ShowClearButton="true" ValueChange="@(async () => await LoadAsync())" />
+        <label class="pf-inline-check">
+            <input type="checkbox" @bind="IncludeArchived" @bind:after="LoadAsync" />
+            <span>Show archived</span>
+        </label>
+    </div>
+
+    <SfCard CssClass="pf-card-shell abmt-panel-3d">
+        <CardContent>
+            @if (Modules.Count == 0)
+            {
+                <div class="pf-empty-state">No modules match your filters.</div>
+            }
+            else
+            {
+                <div class="pf-training-responsive-grid">
+                    <SfGrid DataSource="@Modules" TValue="ModuleLibraryItemModel" AllowSorting="true" AllowFiltering="true" EnableHover="true" CssClass="pf-grid--compact">
+                        <GridFilterSettings Type="Syncfusion.Blazor.Grids.FilterType.Excel" />
+                        <GridColumns>
+                            <GridColumn Field="@nameof(ModuleLibraryItemModel.Code)" HeaderText="Code" Width="110" />
+                            <GridColumn HeaderText="Title" Width="220">
+                                <Template>
+                                    @{ var m = context as ModuleLibraryItemModel; }
+                                    @if (m is not null)
+                                    {
+                                        <a class="pf-training-panel-link" href="@($"/training-management/module-builder/{m.ModuleId}")">@m.Title</a>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn Field="@nameof(ModuleLibraryItemModel.Category)" HeaderText="Category" Width="130" />
+                            <GridColumn HeaderText="Version" Width="110">
+                                <Template>
+                                    @{ var m = context as ModuleLibraryItemModel; }
+                                    <span>v@(m?.VersionNumber) — @m?.Status</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Lessons" Width="90">
+                                <Template>
+                                    @{ var m = context as ModuleLibraryItemModel; }
+                                    <span>@m?.LessonCount</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Usage" Width="140">
+                                <Template>
+                                    @{ var m = context as ModuleLibraryItemModel; }
+                                    <span class="e-badge pf-role-badge">@(m?.UsageCourseCount ?? 0) course(s)</span>
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Status" Width="110">
+                                <Template>
+                                    @{ var m = context as ModuleLibraryItemModel; }
+                                    @if (m?.IsArchived == true)
+                                    {
+                                        <span class="badge-bmt badge-bmt-orange">Archived</span>
+                                    }
+                                    else if (m?.IsActive == true)
+                                    {
+                                        <span class="badge-bmt badge-bmt-green">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-bmt badge-bmt-red">Inactive</span>
+                                    }
+                                </Template>
+                            </GridColumn>
+                            <GridColumn HeaderText="Actions" Width="160">
+                                <Template>
+                                    @{ var m = context as ModuleLibraryItemModel; }
+                                    @if (m is not null)
+                                    {
+                                        <div class="pf-grid-actions pf-grid-actions--compact">
+                                            <a class="e-btn e-small" href="@($"/training-management/module-builder/{m.ModuleId}")" title="Edit">
+                                                <span class="e-icons e-edit"></span>
+                                            </a>
+                                            <button class="e-btn e-small" title="@(m.IsArchived ? "Restore" : "Archive")" @onclick="() => ToggleArchiveAsync(m)">
+                                                <span class="e-icons @(m.IsArchived ? "e-refresh" : "e-folder")"></span>
+                                            </button>
+                                            <button class="e-btn e-small pf-training-page-action-btn cb-btn-delete" title="Delete" @onclick="() => PromptDeleteAsync(m)">
+                                                <span class="e-icons e-trash"></span>
+                                            </button>
+                                        </div>
+                                    }
+                                </Template>
+                            </GridColumn>
+                        </GridColumns>
+                    </SfGrid>
+                </div>
+            }
+        </CardContent>
+    </SfCard>
+</div>
+
+<SfDialog Width="560px" CssClass="abmt-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="ShowCreateDialog">
+    <DialogTemplates>
+        <Header>Create Module</Header>
+        <Content>
+            <EditForm Model="NewModule" OnValidSubmit="CreateModuleAsync">
+                <DataAnnotationsValidator />
+                <ValidationSummary class="validation-message" />
+                <div class="pf-form-grid">
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Title</label>
+                        <SfTextBox @bind-Value="NewModule.Title" Placeholder="Module title" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Category</label>
+                        <SfTextBox @bind-Value="NewModule.Category" Placeholder="e.g. Awareness" />
+                    </div>
+                    <div class="pf-col-6">
+                        <label class="pf-field-label">Est. Minutes</label>
+                        <SfNumericTextBox TValue="int?" @bind-Value="NewModule.EstimatedMinutes" Min="0" />
+                    </div>
+                    <div class="pf-col-12">
+                        <label class="pf-field-label">Description</label>
+                        <SfTextBox @bind-Value="NewModule.Description" Multiline="true" />
+                    </div>
+                </div>
+                <div class="pf-dialog-actions pf-dialog-actions--split">
+                    <button type="button" class="btn btn-bmt btn-pastel-gray" @onclick="() => ShowCreateDialog = false">Cancel</button>
+                    <SfButton IsPrimary="true" type="submit">Create Module</SfButton>
+                </div>
+            </EditForm>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+<SfDialog Width="520px" CssClass="abmt-dialog pf-training-reset-dialog" IsModal="true" ShowCloseIcon="true" @bind-Visible="ShowDeleteConfirmation">
+    <DialogTemplates>
+        <Header>Delete Module</Header>
+        <Content>
+            <div class="pf-training-reset-dialog-content">
+                <p class="pf-training-reset-dialog-subtitle">Permanently delete <strong>@(ModuleToDelete?.Title)</strong>? This is only possible when no course references it and no learner has progress against it.</p>
+                <div class="pf-dialog-actions pf-dialog-actions--split pf-training-dialog-actions">
+                    <button class="btn btn-bmt btn-pastel-gray" @onclick="() => ShowDeleteConfirmation = false">Cancel</button>
+                    <button class="btn btn-bmt btn-pastel-red" @onclick="DeleteModuleAsync">Delete Module</button>
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+</SfDialog>
+
+@code {
+    private bool _isDisposed;
+    private SfToast SuccessToast = default!;
+    private string? ErrorMessage;
+    private string? CurrentUserId;
+
+    private List<ModuleLibraryItemModel> Modules = [];
+    private List<string> Categories = [];
+    private string? SearchTerm;
+    private string? CategoryFilter;
+    private bool IncludeArchived;
+
+    private bool ShowCreateDialog;
+    private ModuleLibraryItemModel NewModule = new() { IsActive = true };
+
+    private bool ShowDeleteConfirmation;
+    private ModuleLibraryItemModel? ModuleToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        CurrentUserId = (await AuthenticationStateProvider.GetAuthenticationStateAsync())
+            .User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        Categories = await ModuleLibraryService.GetCategoriesAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_isDisposed) return;
+        Modules = await ModuleLibraryService.SearchModulesAsync(SearchTerm, CategoryFilter, IncludeArchived);
+    }
+
+    private void OpenCreateDialogAsync()
+    {
+        NewModule = new ModuleLibraryItemModel { IsActive = true };
+        ShowCreateDialog = true;
+    }
+
+    private async Task CreateModuleAsync()
+    {
+        if (_isDisposed) return;
+        var result = await ModuleLibraryService.SaveModuleAsync(NewModule, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        ShowCreateDialog = false;
+        await LoadAsync();
+        NavigationManager.NavigateTo($"/training-management/module-builder/{result.Data!.ModuleId}");
+    }
+
+    private async Task ToggleArchiveAsync(ModuleLibraryItemModel module)
+    {
+        if (_isDisposed) return;
+        var result = await ModuleLibraryService.ArchiveModuleAsync(module.ModuleId, !module.IsArchived, CurrentUserId);
+        if (_isDisposed) return;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Updated.");
+    }
+
+    private void PromptDeleteAsync(ModuleLibraryItemModel module)
+    {
+        ModuleToDelete = module;
+        ShowDeleteConfirmation = true;
+    }
+
+    private async Task DeleteModuleAsync()
+    {
+        if (_isDisposed || ModuleToDelete is null) return;
+        var result = await ModuleLibraryService.DeleteModuleAsync(ModuleToDelete.ModuleId, CurrentUserId);
+        if (_isDisposed) return;
+        ShowDeleteConfirmation = false;
+        if (!result.Succeeded) { ErrorMessage = result.Message ?? string.Join(", ", result.Errors); return; }
+        await LoadAsync();
+        await ShowSuccessToastAsync(result.Message ?? "Module deleted.");
+    }
+
+    private async Task ShowSuccessToastAsync(string message)
+    {
+        if (_isDisposed) return;
+        ErrorMessage = null;
+        await SuccessToast.ShowAsync(new ToastModel
+        {
+            Title = "Success", Content = message,
+            CssClass = "e-toast-success", ShowCloseButton = true, Timeout = 3500
+        });
+    }
+
+    public void Dispose() => _isDisposed = true;
+}

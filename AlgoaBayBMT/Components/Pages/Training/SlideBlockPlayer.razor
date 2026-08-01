@@ -108,22 +108,34 @@
         if (!firstRender || _disposed) return;
         if (!_hasAvatarVideo) { await AutoCompleteNoAvatarAsync(); return; }
 
-        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/trainingPlayer.js");
-        _dotNetRef ??= DotNetObjectReference.Create(this);
-
-        switch (_avatarType)
+        // OnAfterRenderAsync sits outside MainLayout's ErrorBoundary — an escaping exception
+        // kills the circuit rather than showing an error, so every interop call is guarded.
+        try
         {
-            case "youtube":
-                var ytId = ExtractYouTubeId(_avatarSrc!);
-                if (!string.IsNullOrWhiteSpace(ytId))
-                    await _module.InvokeVoidAsync("initYouTubePlayer", _avatarId, ytId, _dotNetRef, true);
-                break;
-            case "vimeo":
-                await _module.InvokeVoidAsync("initVimeoPlayer", _avatarId, _avatarSrc, _dotNetRef, true);
-                break;
-            default:
-                await _module.InvokeVoidAsync("initAvatarPlayer", _avatarId, _dotNetRef);
-                break;
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "/js/trainingPlayer.js");
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+
+            switch (_avatarType)
+            {
+                case "youtube":
+                    var ytId = ExtractYouTubeId(_avatarSrc!);
+                    if (!string.IsNullOrWhiteSpace(ytId))
+                        await _module.InvokeVoidAsync("initYouTubePlayer", _avatarId, ytId, _dotNetRef, true);
+                    break;
+                case "vimeo":
+                    await _module.InvokeVoidAsync("initVimeoPlayer", _avatarId, _avatarSrc, _dotNetRef, true);
+                    break;
+                default:
+                    await _module.InvokeVoidAsync("initAvatarPlayer", _avatarId, _dotNetRef);
+                    break;
+            }
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"SlideBlockPlayer: avatar interop init failed for {_avatarId}: {ex}");
         }
     }
 

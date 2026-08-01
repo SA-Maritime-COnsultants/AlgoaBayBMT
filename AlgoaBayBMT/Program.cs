@@ -16,7 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+    .AddInteractiveServerComponents(options => options.DetailedErrors = builder.Environment.IsDevelopment());
 builder.Services.AddSyncfusionBlazor();
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<IdentityRedirectManager>();
@@ -30,8 +30,16 @@ builder.Services.AddAuthentication(options =>
     .AddIdentityCookies();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+// The database is a public-internet SQL host (~175ms per round trip), so transient drops are
+// routine rather than exceptional. Widen the retry envelope and the command timeout beyond the
+// framework defaults, otherwise a single blip surfaces as a SqlException in a page's
+// OnInitializedAsync.
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString, sqlOptions => sqlOptions.EnableRetryOnFailure()));
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(maxRetryCount: 8, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+        sqlOptions.CommandTimeout(60);
+    }));
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext());
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -60,6 +68,11 @@ builder.Services.AddScoped<IUserApprovalService, UserApprovalService>();
 builder.Services.AddScoped<IUserManagementService, UserManagementService>();
 builder.Services.AddScoped<IRoleEditorService, RoleEditorService>();
 builder.Services.AddScoped<ITrainingManagementService, TrainingManagementService>();
+// Shared-module course authoring: module library, rank levels, course composition, resolution.
+builder.Services.AddScoped<IModuleLibraryService, ModuleLibraryService>();
+builder.Services.AddScoped<IRankProfileService, RankProfileService>();
+builder.Services.AddScoped<ICourseCompositionService, CourseCompositionService>();
+builder.Services.AddScoped<ITrainingResolutionService, TrainingResolutionService>();
 builder.Services.AddScoped<ITrainingAssetStorageService, TrainingAssetStorageService>();
 builder.Services.AddScoped<ILearnerTrainingService, LearnerTrainingService>();
 builder.Services.AddScoped<IContentAuthoringService, ContentAuthoringService>();
@@ -219,6 +232,7 @@ try
     }
 
     await IdentitySeedData.EnsureSeedDataAsync(app.Services);
+    await TrainingSeedData.EnsureSeedDataAsync(app.Services);
 }
 catch (Exception ex)
 {
