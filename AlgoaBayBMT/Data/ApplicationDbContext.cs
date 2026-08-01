@@ -9,7 +9,13 @@ namespace AlgoaBayBMT.Data
     {
         public DbSet<Course> Courses => Set<Course>();
         public DbSet<CourseVersion> CourseVersions => Set<CourseVersion>();
-        public DbSet<TrainingModule> Modules => Set<TrainingModule>();
+        public DbSet<TrainingModule> TrainingModules => Set<TrainingModule>();
+        public DbSet<TrainingModuleVersion> ModuleVersions => Set<TrainingModuleVersion>();
+        public DbSet<CourseModule> CourseModules => Set<CourseModule>();
+        public DbSet<RankProfile> RankProfiles => Set<RankProfile>();
+        public DbSet<RankProfileRank> RankProfileRanks => Set<RankProfileRank>();
+        public DbSet<CourseRankProfile> CourseRankProfiles => Set<CourseRankProfile>();
+        public DbSet<CourseRankModule> CourseRankModules => Set<CourseRankModule>();
         public DbSet<TrainingLesson> Lessons => Set<TrainingLesson>();
         public DbSet<LessonBlock> LessonBlocks => Set<LessonBlock>();
         public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
@@ -445,47 +451,102 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.VersionLabel).HasMaxLength(50);
                 entity.Property(x => x.ChangeSummary).HasMaxLength(1000);
                 entity.Property(x => x.ApprovedByUserId).HasMaxLength(450);
+                entity.Property(x => x.RowVersion).IsRowVersion();
                 entity.HasOne(x => x.Course)
                     .WithMany(x => x.Versions)
                     .HasForeignKey(x => x.CourseId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
+            // Stable module identity. Carries no content: every authored revision is a
+            // TrainingModuleVersion, and courses reference those versions via CourseModules.
             builder.Entity<TrainingModule>(entity =>
             {
-                entity.ToTable("Modules");
+                entity.ToTable("TrainingModules");
                 entity.HasKey(x => x.ModuleId);
-                // Non-unique: ordering is compacted by the service's reindex logic, and a
-                // unique index makes swap-based reordering throw transient constraint violations.
-                entity.HasIndex(x => new { x.CourseVersionId, x.OrderIndex });
+                entity.HasIndex(x => x.Code).IsUnique();
+                entity.HasIndex(x => x.IsArchived);
+                entity.HasIndex(x => x.Category);
+                entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
                 entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.Description).HasMaxLength(1000);
+                entity.Property(x => x.Category).HasMaxLength(100);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.Property(x => x.IsArchived).HasDefaultValue(false);
+                entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+                entity.Property(x => x.UpdatedByUserId).HasMaxLength(450);
+                entity.Property(x => x.ArchivedByUserId).HasMaxLength(450);
+                entity.Property(x => x.RowVersion).IsRowVersion();
+                entity.HasOne(x => x.CurrentVersion)
+                    .WithMany()
+                    .HasForeignKey(x => x.CurrentVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Immutable authored content. Deliberately has NO CourseVersionId: a module version is
+            // shared, and ownership by a single course is exactly what this redesign removes.
+            builder.Entity<TrainingModuleVersion>(entity =>
+            {
+                entity.ToTable("ModuleVersions");
+                entity.HasKey(x => x.ModuleVersionId);
+                entity.HasIndex(x => new { x.ModuleId, x.VersionNumber }).IsUnique();
+                entity.HasIndex(x => x.Status);
+                entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
+                entity.Property(x => x.Description).HasMaxLength(1000);
+                entity.Property(x => x.VersionLabel).HasMaxLength(50);
+                entity.Property(x => x.ChangeSummary).HasMaxLength(1000);
+                entity.Property(x => x.PublishedByUserId).HasMaxLength(450);
+                entity.Property(x => x.VersionNumber).HasDefaultValue(1);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
                 entity.Property(x => x.HasModuleAssessment).HasDefaultValue(false);
                 entity.Property(x => x.AssessmentPassMarkPercent).HasPrecision(5, 2);
                 entity.Property(x => x.AssessmentMaxAttempts).HasDefaultValue(3);
-                entity.HasOne(x => x.CourseVersion)
-                    .WithMany(x => x.Modules)
-                    .HasForeignKey(x => x.CourseVersionId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(x => x.RowVersion).IsRowVersion();
+                entity.Ignore(x => x.IsEditable);
+                entity.HasOne(x => x.Module)
+                    .WithMany(x => x.Versions)
+                    .HasForeignKey(x => x.ModuleId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne(x => x.ModuleAssessment)
                     .WithMany()
                     .HasForeignKey(x => x.AssessmentId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
+            // The ordered reference that makes reuse possible. Adding a module to a course writes
+            // one of these rows; no lesson or content block is ever duplicated.
+            builder.Entity<CourseModule>(entity =>
+            {
+                entity.ToTable("CourseModules");
+                entity.HasKey(x => x.CourseModuleId);
+                entity.HasIndex(x => new { x.CourseVersionId, x.ModuleVersionId }).IsUnique();
+                // Non-unique: reordering swaps positions and would trip a unique index mid-update.
+                entity.HasIndex(x => new { x.CourseVersionId, x.OrderIndex });
+                entity.HasIndex(x => x.ModuleVersionId);
+                entity.Property(x => x.IsRequired).HasDefaultValue(true);
+                entity.HasOne(x => x.CourseVersion)
+                    .WithMany(x => x.CourseModules)
+                    .HasForeignKey(x => x.CourseVersionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                // Restrict: a module version referenced by any course cannot be deleted. Archive it.
+                entity.HasOne(x => x.ModuleVersion)
+                    .WithMany(x => x.CourseModules)
+                    .HasForeignKey(x => x.ModuleVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
             });
 
             builder.Entity<TrainingLesson>(entity =>
             {
                 entity.ToTable("Lessons");
                 entity.HasKey(x => x.LessonId);
-                entity.HasIndex(x => new { x.ModuleId, x.OrderIndex });
+                entity.HasIndex(x => new { x.ModuleVersionId, x.OrderIndex });
                 entity.Property(x => x.Title).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.Summary).HasMaxLength(1000);
                 entity.Property(x => x.IsPreview).HasDefaultValue(false);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
-                entity.HasOne(x => x.Module)
+                entity.HasOne(x => x.ModuleVersion)
                     .WithMany(x => x.Lessons)
-                    .HasForeignKey(x => x.ModuleId)
+                    .HasForeignKey(x => x.ModuleVersionId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -512,16 +573,97 @@ namespace AlgoaBayBMT.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
+            // A rank profile is a configurable training level (General Crew, Officer, ...). Global
+            // and admin-editable; courses opt into the ones they serve via CourseRankProfiles.
+            builder.Entity<RankProfile>(entity =>
+            {
+                entity.ToTable("RankProfiles");
+                entity.HasKey(x => x.RankProfileId);
+                entity.HasIndex(x => x.Code).IsUnique();
+                entity.HasIndex(x => x.OrderIndex);
+                entity.Property(x => x.Code).HasMaxLength(50).IsRequired();
+                entity.Property(x => x.Name).HasMaxLength(150).IsRequired();
+                entity.Property(x => x.Description).HasMaxLength(500);
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.Property(x => x.IsSystem).HasDefaultValue(false);
+                entity.Property(x => x.CreatedByUserId).HasMaxLength(450);
+                entity.Property(x => x.UpdatedByUserId).HasMaxLength(450);
+            });
+
+            builder.Entity<RankProfileRank>(entity =>
+            {
+                entity.ToTable("RankProfileRanks");
+                entity.HasKey(x => x.RankProfileRankId);
+                entity.HasIndex(x => new { x.RankProfileId, x.CrewRank }).IsUnique();
+                entity.HasIndex(x => x.CrewRank);
+                // Same display-name string form as every other CrewRank column in the model.
+                entity.Property(x => x.CrewRank)
+                    .HasMaxLength(50)
+                    .HasConversion(
+                        value => value.GetDisplayName(),
+                        value => CrewRankExtensions.ParseDisplayName(value) ?? Shared.Models.CrewRank.OrdinarySeaman);
+                entity.HasOne(x => x.RankProfile)
+                    .WithMany(x => x.Ranks)
+                    .HasForeignKey(x => x.RankProfileId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            builder.Entity<CourseRankProfile>(entity =>
+            {
+                entity.ToTable("CourseRankProfiles");
+                entity.HasKey(x => x.CourseRankProfileId);
+                entity.HasIndex(x => new { x.CourseVersionId, x.RankProfileId }).IsUnique();
+                entity.HasIndex(x => new { x.CourseVersionId, x.OrderIndex });
+                entity.Property(x => x.IsActive).HasDefaultValue(true);
+                entity.HasOne(x => x.CourseVersion)
+                    .WithMany(x => x.RankProfiles)
+                    .HasForeignKey(x => x.CourseVersionId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                // Restrict: a profile in use by a course cannot be deleted out from under it.
+                entity.HasOne(x => x.RankProfile)
+                    .WithMany(x => x.CourseRankProfiles)
+                    .HasForeignKey(x => x.RankProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Per-rank inclusion of a course module. Ordering always comes from
+            // CourseModule.OrderIndex; there is deliberately no per-rank sequence override.
+            builder.Entity<CourseRankModule>(entity =>
+            {
+                entity.ToTable("CourseRankModules");
+                entity.HasKey(x => x.CourseRankModuleId);
+                entity.HasIndex(x => new { x.CourseRankProfileId, x.CourseModuleId }).IsUnique();
+                entity.Property(x => x.IsIncluded).HasDefaultValue(true);
+                entity.Property(x => x.RowVersion).IsRowVersion();
+                entity.HasOne(x => x.CourseRankProfile)
+                    .WithMany(x => x.RankModules)
+                    .HasForeignKey(x => x.CourseRankProfileId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                // NoAction on the second leg: both FKs reach CourseVersions, and two cascade
+                // paths to the same table is SQL Server error 1785.
+                entity.HasOne(x => x.CourseModule)
+                    .WithMany(x => x.RankModules)
+                    .HasForeignKey(x => x.CourseModuleId)
+                    .OnDelete(DeleteBehavior.NoAction);
+            });
+
             builder.Entity<TrainingCourseAssessment>(entity =>
             {
                 entity.ToTable("TrainingCourseAssessments");
                 entity.HasKey(x => x.TrainingCourseAssessmentId);
                 entity.HasIndex(x => x.TrainingCourseId);
+                entity.HasIndex(x => x.ModuleVersionId);
                 entity.Property(x => x.Name).HasMaxLength(200).IsRequired();
                 entity.Property(x => x.PassMarkPercent).HasPrecision(5, 2).HasDefaultValue(80m);
                 entity.Property(x => x.RandomQuestionCount).HasDefaultValue(25);
                 entity.Property(x => x.MaxAttempts).HasDefaultValue(3);
                 entity.Property(x => x.IsActive).HasDefaultValue(true);
+                // Module-scoped assessments travel with a shared module into every course that
+                // includes it. NoAction because ModuleVersions -> ... already reaches this table.
+                entity.HasOne(x => x.ModuleVersion)
+                    .WithMany()
+                    .HasForeignKey(x => x.ModuleVersionId)
+                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             builder.Entity<TrainingQuestionBankQuestion>(entity =>
@@ -535,14 +677,14 @@ namespace AlgoaBayBMT.Data
                     .WithMany(x => x.QuestionBankQuestions)
                     .HasForeignKey(x => x.TrainingCourseAssessmentId)
                     .OnDelete(DeleteBehavior.Cascade);
-                entity.HasOne(x => x.Module)
+                entity.HasOne(x => x.ModuleVersion)
                     .WithMany(x => x.QuestionBankQuestions)
-                    .HasForeignKey(x => x.TrainingModuleId)
+                    .HasForeignKey(x => x.TrainingModuleVersionId)
                     .OnDelete(DeleteBehavior.SetNull);
                 // Lesson-scoped question bank: TrainingLessonId is a soft reference (indexed, no FK)
                 // so the end-of-lesson quiz can draw a random subset specific to that lesson. A hard
                 // FK to Lessons would introduce multiple cascade paths (SQL Server error 1785) because
-                // the question already reaches Lessons via Assessment -> Course -> Version -> Module.
+                // the question already reaches Lessons via Assessment -> ModuleVersion -> Lessons.
                 entity.HasIndex(x => x.TrainingLessonId);
             });
 
@@ -603,6 +745,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.ApprovalNotes).HasMaxLength(1000);
                 entity.Property(x => x.CompletionScorePercent).HasPrecision(5, 2);
                 entity.Property(x => x.PaidByUserId).HasMaxLength(450);
+                entity.HasIndex(x => x.ResolvedCourseVersionId);
                 entity.HasOne(x => x.Course)
                     .WithMany(x => x.UserTrainingAssignments)
                     .HasForeignKey(x => x.CourseId)
@@ -611,6 +754,16 @@ namespace AlgoaBayBMT.Data
                     .WithMany()
                     .HasForeignKey(x => x.InvoiceId)
                     .OnDelete(DeleteBehavior.SetNull);
+                // Restrict on both: the pinned version and rank profile are the learner's
+                // training record. Neither may be deleted while an assignment references it.
+                entity.HasOne(x => x.ResolvedCourseVersion)
+                    .WithMany()
+                    .HasForeignKey(x => x.ResolvedCourseVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.ResolvedRankProfile)
+                    .WithMany()
+                    .HasForeignKey(x => x.ResolvedRankProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
@@ -688,6 +841,14 @@ namespace AlgoaBayBMT.Data
                     .WithMany(x => x.CurrentCourseProgressRecords)
                     .HasForeignKey(x => x.CurrentLessonId)
                     .OnDelete(DeleteBehavior.NoAction);
+                entity.HasOne(x => x.CourseVersion)
+                    .WithMany()
+                    .HasForeignKey(x => x.CourseVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.RankProfile)
+                    .WithMany()
+                    .HasForeignKey(x => x.RankProfileId)
+                    .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<ApplicationUser>()
                     .WithMany()
                     .HasForeignKey(x => x.UserId)
@@ -702,6 +863,7 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.UserId).HasMaxLength(450).IsRequired();
                 entity.Property(x => x.CertificateNumber).HasMaxLength(100).IsRequired();
                 entity.Property(x => x.FinalScorePercent).HasPrecision(5, 2);
+                entity.Property(x => x.RankProfileName).HasMaxLength(150);
                 entity.HasOne(x => x.Course)
                     .WithMany(x => x.CompletionRecords)
                     .HasForeignKey(x => x.CourseId)
@@ -709,6 +871,10 @@ namespace AlgoaBayBMT.Data
                 entity.HasOne(x => x.CourseVersion)
                     .WithMany(x => x.CompletionRecords)
                     .HasForeignKey(x => x.CourseVersionId)
+                    .OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne(x => x.RankProfile)
+                    .WithMany()
+                    .HasForeignKey(x => x.RankProfileId)
                     .OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<ApplicationUser>()
                     .WithMany()
@@ -726,6 +892,11 @@ namespace AlgoaBayBMT.Data
                 entity.Property(x => x.CertificateNumber).HasMaxLength(100).IsRequired();
                 entity.Property(x => x.FilePath).HasMaxLength(500);
                 entity.Property(x => x.VerificationCode).HasMaxLength(100).IsRequired();
+                entity.Property(x => x.CourseTitleSnapshot).HasMaxLength(200);
+                entity.Property(x => x.CourseCodeSnapshot).HasMaxLength(50);
+                entity.Property(x => x.VersionLabelSnapshot).HasMaxLength(50);
+                entity.Property(x => x.RankProfileNameSnapshot).HasMaxLength(150);
+                entity.Property(x => x.LearnerFullNameSnapshot).HasMaxLength(200);
                 entity.HasOne(x => x.CourseCompletionRecord)
                     .WithOne(x => x.TrainingCertificate)
                     .HasForeignKey<TrainingCertificate>(x => x.CourseCompletionRecordId)

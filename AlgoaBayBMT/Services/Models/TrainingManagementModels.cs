@@ -163,8 +163,26 @@ namespace AlgoaBayBMT.Services.Models
 
     public sealed class TrainingModuleEditModel
     {
-        public Guid? ModuleId { get; set; }
-        public Guid CourseVersionId { get; set; }
+        /// <summary>The authored content revision being edited.</summary>
+        public Guid? ModuleVersionId { get; set; }
+
+        /// <summary>The stable module identity that owns this version.</summary>
+        public Guid ModuleId { get; set; }
+
+        /// <summary>Set when the module is viewed in the context of a course that includes it.</summary>
+        public Guid? CourseModuleId { get; set; }
+
+        /// <summary>
+        /// When creating a module from inside the Course Builder, the course version to attach the
+        /// new module to. Attaching writes a CourseModule reference; it never copies content.
+        /// </summary>
+        public Guid? CourseVersionId { get; set; }
+
+        public int VersionNumber { get; set; } = 1;
+        public ModuleVersionStatus Status { get; set; } = ModuleVersionStatus.Draft;
+
+        /// <summary>Published and archived versions may not have their content edited.</summary>
+        public bool IsEditable => Status == ModuleVersionStatus.Draft;
 
         [Required]
         [StringLength(200)]
@@ -203,7 +221,7 @@ namespace AlgoaBayBMT.Services.Models
     public sealed class TrainingLessonEditModel
     {
         public Guid? LessonId { get; set; }
-        public Guid ModuleId { get; set; }
+        public Guid ModuleVersionId { get; set; }
 
         [Required]
         [StringLength(200)]
@@ -369,7 +387,7 @@ namespace AlgoaBayBMT.Services.Models
     {
         public Guid? TrainingQuestionBankQuestionId { get; set; }
         public Guid TrainingCourseAssessmentId { get; set; }
-        public Guid? TrainingModuleId { get; set; }
+        public Guid? TrainingModuleVersionId { get; set; }
         public Guid? TrainingLessonId { get; set; }
         public TrainingQuestionType QuestionType { get; set; } = TrainingQuestionType.MultipleChoice;
 
@@ -414,14 +432,14 @@ namespace AlgoaBayBMT.Services.Models
 
     public sealed class TrainingModuleLookupModel
     {
-        public Guid ModuleId { get; set; }
+        public Guid ModuleVersionId { get; set; }
         public string Name { get; set; } = string.Empty;
     }
 
     public sealed class TrainingLessonLookupModel
     {
         public Guid LessonId { get; set; }
-        public Guid ModuleId { get; set; }
+        public Guid ModuleVersionId { get; set; }
         public string Name { get; set; } = string.Empty;
     }
 

@@ -14,6 +14,7 @@ public sealed class CrewComplianceWorkflowService(
     IBillingService billingService,
     IApplicationEmailService emailService,
     INotificationService notificationService,
+    ITrainingResolutionService trainingResolutionService,
     ILogger<CrewComplianceWorkflowService> logger) : ICrewComplianceWorkflowService
 {
     public async Task<CrewComplianceDashboardModel?> GetCrewDashboardAsync(int crewMemberId, int? vesselId = null, CancellationToken cancellationToken = default)
@@ -214,6 +215,19 @@ public sealed class CrewComplianceWorkflowService(
 
         await dbContext.SaveChangesAsync(cancellationToken);
         logger.LogInformation("Submitted {Count} training registrations for crew {CrewMemberId}", createdIds.Count, request.CrewMemberId);
+
+        // Pin each assignment's rank-resolved module sequence at registration time, so later
+        // authoring or republishing cannot change the training this learner was registered for.
+        foreach (var assignmentId in createdIds)
+        {
+            var snapshotResult = await trainingResolutionService.SnapshotAssignmentAsync(assignmentId, performedByUserId, cancellationToken);
+            if (!snapshotResult.Succeeded)
+            {
+                logger.LogWarning(
+                    "Could not resolve a training sequence for assignment {AssignmentId} at registration: {Message}",
+                    assignmentId, snapshotResult.Message);
+            }
+        }
 
         return OperationResult<TrainingRegistrationSubmissionResultModel>.Success(
             new TrainingRegistrationSubmissionResultModel

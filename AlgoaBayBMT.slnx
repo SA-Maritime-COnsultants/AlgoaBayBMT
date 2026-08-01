@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="AlgoaBayBMT.Shared/AlgoaBayBMT.Shared.csproj" Id="8395fb81-ded8-4916-8ed0-6a28234de1a0" />
   <Project Path="AlgoaBayBMT/AlgoaBayBMT.csproj" />
+  <Project Path="AlgoaBayBMT.Tests/AlgoaBayBMT.Tests.csproj" />
 </Solution>

@@ -160,6 +160,25 @@ p,
     background: rgba(245, 249, 252, 0.72) !important;
 }
 
+/* Page-level error boundary fallback (MainLayout) */
+.pf-page-error {
+    margin: 1.5rem auto;
+    max-width: 60rem;
+    padding: 2rem 1.5rem;
+    text-align: center;
+}
+
+.pf-page-error-detail {
+    max-height: 16rem;
+    overflow: auto;
+    padding: 0.75rem;
+    border: 1px solid var(--pf-modern-border);
+    border-radius: var(--pf-modern-radius);
+    background: rgba(245, 249, 252, 0.72);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 /* Syncfusion grids */
 .e-grid {
     border: 1px solid var(--pf-modern-border) !important;

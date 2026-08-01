@@ -107,5 +107,20 @@
         }
     }
 
-    private async Task PrintAsync() => await JSRuntime.InvokeVoidAsync("print");
+    private async Task PrintAsync()
+    {
+        // Called from OnAfterRenderAsync, which is outside MainLayout's ErrorBoundary — an
+        // escaping JS exception would terminate the circuit instead of surfacing an error.
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("print");
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"CertificateView: print interop failed: {ex}");
+        }
+    }
 }

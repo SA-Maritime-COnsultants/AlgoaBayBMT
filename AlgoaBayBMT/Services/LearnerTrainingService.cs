@@ -13,6 +13,7 @@ namespace AlgoaBayBMT.Services;
 public sealed class LearnerTrainingService(
     IDbContextFactory<ApplicationDbContext> dbContextFactory,
     UserManager<ApplicationUser> userManager,
+    ITrainingResolutionService trainingResolutionService,
     IWebHostEnvironment environment) : ILearnerTrainingService
 {
     private static readonly string[] FullAccessRoles = [RoleNames.Admin, RoleNames.Dffe, RoleNames.Samsa];
@@ -75,8 +76,16 @@ public sealed class LearnerTrainingService(
             return null;
         }
 
+        // The learner's resolved, rank-filtered sequence — pinned on their assignment once
+        // resolved, so later authoring or republishing cannot change the training they see here.
+        var resolved = await trainingResolutionService.ResolveForLearnerAsync(userId, courseId, cancellationToken);
+        if (resolved is null)
+        {
+            return null;
+        }
+
         var courseProjection = await dbContext.Courses.AsNoTracking()
-            .Where(x => x.CourseId == courseId && x.IsActive && x.CurrentVersionId.HasValue)
+            .Where(x => x.CourseId == courseId && x.IsActive)
             .Select(x => new CourseProjection
             {
                 CourseId = x.CourseId,
@@ -86,7 +95,7 @@ public sealed class LearnerTrainingService(
                 RegulatoryReference = x.RegulatoryReference,
                 PassMarkPercent = x.PassMarkPercent,
                 ValidityMonths = x.ValidityMonths,
-                CurrentVersionId = x.CurrentVersionId!.Value
+                CurrentVersionId = resolved.CourseVersionId
             })
             .FirstOrDefaultAsync(cancellationToken);
         if (courseProjection is null)
@@ -94,25 +103,25 @@ public sealed class LearnerTrainingService(
             return null;
         }
 
-        var modules = await dbContext.Modules.AsNoTracking()
-            .Where(x => x.CourseVersionId == courseProjection.CurrentVersionId && x.IsActive)
+        var modules = resolved.Modules
             .OrderBy(x => x.OrderIndex)
             .Select(x => new ModuleProjection
             {
-                ModuleId = x.ModuleId,
+                ModuleVersionId = x.ModuleVersionId,
                 Title = x.Title,
                 OrderIndex = x.OrderIndex
             })
-            .ToListAsync(cancellationToken);
+            .ToList();
 
-        var moduleIds = modules.Select(x => x.ModuleId).ToList();
+        var moduleIds = modules.Select(x => x.ModuleVersionId).ToList();
+        var allowedLessonIds = resolved.Modules.SelectMany(x => x.LessonIds).ToHashSet();
         var lessons = await dbContext.Lessons.AsNoTracking()
-            .Where(x => moduleIds.Contains(x.ModuleId) && x.IsActive)
+            .Where(x => moduleIds.Contains(x.ModuleVersionId) && x.IsActive && allowedLessonIds.Contains(x.LessonId))
             .OrderBy(x => x.OrderIndex)
             .Select(x => new LessonProjection
             {
                 LessonId = x.LessonId,
-                ModuleId = x.ModuleId,
+                ModuleVersionId = x.ModuleVersionId,
                 Title = x.Title,
                 Summary = x.Summary,
                 OrderIndex = x.OrderIndex
@@ -233,7 +242,7 @@ public sealed class LearnerTrainingService(
 
         var flattenedLessons = modules
             .OrderBy(x => x.OrderIndex)
-            .SelectMany(module => lessons.Where(lesson => lesson.ModuleId == module.ModuleId).OrderBy(lesson => lesson.OrderIndex))
+            .SelectMany(module => lessons.Where(lesson => lesson.ModuleVersionId == module.ModuleVersionId).OrderBy(lesson => lesson.OrderIndex))
             .ToList();
 
         var lockedLessonReached = false;
@@ -300,12 +309,12 @@ public sealed class LearnerTrainingService(
             .OrderBy(x => x.OrderIndex)
             .Select(module => new TrainingPlayerModuleModel
             {
-                ModuleId = module.ModuleId,
+                ModuleId = module.ModuleVersionId,
                 Title = module.Title,
                 OrderIndex = module.OrderIndex,
-                TotalLessons = lessons.Count(x => x.ModuleId == module.ModuleId),
-                CompletedLessons = lessons.Count(x => x.ModuleId == module.ModuleId && lessonSummaries.GetValueOrDefault(x.LessonId)?.IsCompleted == true),
-                Lessons = lessons.Where(x => x.ModuleId == module.ModuleId)
+                TotalLessons = lessons.Count(x => x.ModuleVersionId == module.ModuleVersionId),
+                CompletedLessons = lessons.Count(x => x.ModuleVersionId == module.ModuleVersionId && lessonSummaries.GetValueOrDefault(x.LessonId)?.IsCompleted == true),
+                Lessons = lessons.Where(x => x.ModuleVersionId == module.ModuleVersionId)
                     .OrderBy(x => x.OrderIndex)
                     .Select(x =>
                     {
@@ -377,14 +386,18 @@ public sealed class LearnerTrainingService(
             return OperationResult.Failure("Training course not found.");
         }
 
-        var lessonIds = await dbContext.Lessons.AsNoTracking()
-            .Join(dbContext.Modules.AsNoTracking().Where(x => x.CourseVersionId == course.CurrentVersionId!.Value && x.IsActive),
-                lesson => lesson.ModuleId,
-                module => module.ModuleId,
-                (lesson, module) => lesson)
-            .Where(x => x.IsActive)
-            .Select(x => x.LessonId)
-            .ToListAsync(cancellationToken);
+        // Scoped to the lessons this learner's resolved, rank-filtered sequence actually contains.
+        // Modules are shared, so a lesson reached here may also belong to another course —
+        // resetting is global by design, matching the shared-completion semantics of
+        // UserLessonProgress (keyed on UserId + LessonId). If the sequence can't be resolved (e.g.
+        // the learner's pinned rank profile was since deselected) refuse outright rather than
+        // deleting completion records and certificates while leaving lesson progress untouched.
+        var resolved = await trainingResolutionService.ResolveForLearnerReadOnlyAsync(userId, courseId, cancellationToken);
+        if (resolved is null)
+        {
+            return OperationResult.Failure("This learner's training sequence for this course could not be determined. Check their assigned rank profile before resetting.");
+        }
+        var lessonIds = resolved.Modules.SelectMany(x => x.LessonIds).ToList();
 
         var lessonProgressRecords = lessonIds.Count == 0
             ? new List<UserLessonProgress>()
@@ -693,19 +706,23 @@ public sealed class LearnerTrainingService(
             return null;
         }
 
+        // Snapshot fields are evidence — captured at issue time so later edits to the course,
+        // its version label or the learner's name cannot alter what a certificate shows. Older
+        // certificates issued before the snapshot columns existed fall back to the live join.
         return new TrainingCertificateViewModel
         {
             CertificateId = certificate.certificateEntity.TrainingCertificateId,
-            LearnerFullName = learner.DisplayName,
-            CourseTitle = certificate.course.Title,
-            CourseCode = certificate.course.Code,
+            LearnerFullName = certificate.certificateEntity.LearnerFullNameSnapshot ?? learner.DisplayName,
+            CourseTitle = certificate.certificateEntity.CourseTitleSnapshot ?? certificate.course.Title,
+            CourseCode = certificate.certificateEntity.CourseCodeSnapshot ?? certificate.course.Code,
             CertificateNumber = certificate.certificateEntity.CertificateNumber,
             VerificationCode = certificate.certificateEntity.VerificationCode,
             CompletedOnUtc = certificate.completion.CompletedOnUtc,
             ExpiresOnUtc = certificate.completion.ExpiryDateUtc,
-            VersionLabel = string.IsNullOrWhiteSpace(certificate.version.VersionLabel)
-                ? $"v{certificate.version.VersionNumber}"
-                : certificate.version.VersionLabel
+            VersionLabel = certificate.certificateEntity.VersionLabelSnapshot
+                ?? (string.IsNullOrWhiteSpace(certificate.version.VersionLabel)
+                    ? $"v{certificate.version.VersionNumber}"
+                    : certificate.version.VersionLabel)
         };
     }
 
@@ -852,25 +869,48 @@ public sealed class LearnerTrainingService(
             .Where(x => x.BlockType is LessonBlockType.Quiz or LessonBlockType.Assessment && x.IsRequired)
             .All(x => evidence.CompletedBlockIds.Contains(x.LessonBlockId));
 
-        var currentVersionId = course.CurrentVersionId;
-        if (!currentVersionId.HasValue)
+        // Course completion is measured against the learner's resolved, rank-filtered sequence —
+        // pinned on first access (by GetCoursePlayerAsync) so republishing the course cannot
+        // change what "complete" means for training already in progress. Uses the read-only
+        // resolve, not the pinning one: this method runs against the caller's own dbContext with
+        // unsaved lessonProgress/courseProgress changes already tracked, so a nested pin-and-save
+        // on a second connection here would race the caller's own SaveChangesAsync.
+        var resolved = await trainingResolutionService.ResolveForLearnerReadOnlyAsync(userId, courseId, cancellationToken);
+        if (resolved is null)
         {
             return;
         }
 
+        courseProgress.CourseVersionId = resolved.CourseVersionId;
+        courseProgress.RankProfileId = resolved.RankProfileId;
+
+        var allowedLessonIds = resolved.Modules.SelectMany(x => x.LessonIds).ToHashSet();
         var requiredLessons = await dbContext.Lessons.AsNoTracking()
-            .Join(dbContext.Modules.AsNoTracking().Where(x => x.CourseVersionId == currentVersionId.Value),
-                lesson => lesson.ModuleId,
-                module => module.ModuleId,
-                (lesson, module) => lesson)
-            .Where(x => x.IsActive && x.IsRequired)
-            .OrderBy(x => x.OrderIndex)
+            .Where(x => allowedLessonIds.Contains(x.LessonId) && x.IsActive && x.IsRequired)
             .ToListAsync(cancellationToken);
+
+        var lessonOrderLookup = resolved.Modules
+            .OrderBy(x => x.OrderIndex)
+            .SelectMany(m => m.LessonIds)
+            .Select((id, index) => (id, index))
+            .ToDictionary(x => x.id, x => x.index);
+        requiredLessons = requiredLessons
+            .OrderBy(x => lessonOrderLookup.TryGetValue(x.LessonId, out var order) ? order : int.MaxValue)
+            .ToList();
 
         var requiredLessonIds = requiredLessons.Select(x => x.LessonId).ToList();
         var lessonProgressRecords = await dbContext.UserLessonProgress
             .Where(x => x.UserId == userId && requiredLessonIds.Contains(x.LessonId))
             .ToListAsync(cancellationToken);
+
+        // A first-time completion adds lessonProgress to the context but hasn't been saved yet,
+        // so the query above — hitting the database directly — won't see it. Merge it in so the
+        // course doesn't stay stuck below 100% until the next unrelated save flushes it.
+        if (requiredLessonIds.Contains(lessonId) && !lessonProgressRecords.Any(x => x.LessonId == lessonId))
+        {
+            lessonProgressRecords.Add(lessonProgress);
+        }
+
         var completedRequiredLessons = lessonProgressRecords.Count(x => x.Status == ProgressStatus.Completed);
 
         courseProgress.PercentComplete = requiredLessonIds.Count == 0
@@ -891,7 +931,7 @@ public sealed class LearnerTrainingService(
 
         if (courseProgress.Status == ProgressStatus.Completed)
         {
-            await EnsureCompletionRecordAsync(dbContext, userId, course, courseProgress, cancellationToken);
+            await EnsureCompletionRecordAsync(dbContext, userId, course, resolved, courseProgress, cancellationToken);
         }
     }
 
@@ -917,30 +957,35 @@ public sealed class LearnerTrainingService(
         return courseProgress;
     }
 
-    private async Task EnsureCompletionRecordAsync(ApplicationDbContext dbContext, string userId, Course course, UserCourseProgress courseProgress, CancellationToken cancellationToken)
+    private async Task EnsureCompletionRecordAsync(ApplicationDbContext dbContext, string userId, Course course, ResolvedTrainingSequenceModel resolved, UserCourseProgress courseProgress, CancellationToken cancellationToken)
     {
-        if (!course.CurrentVersionId.HasValue)
-        {
-            return;
-        }
-
         var existingCompletion = await dbContext.CourseCompletionRecords
-            .FirstOrDefaultAsync(x => x.UserId == userId && x.CourseId == course.CourseId && x.CourseVersionId == course.CurrentVersionId.Value, cancellationToken);
+            .FirstOrDefaultAsync(x => x.UserId == userId && x.CourseId == course.CourseId && x.CourseVersionId == resolved.CourseVersionId, cancellationToken);
         if (existingCompletion is not null)
         {
             return;
         }
+
+        var courseVersion = await dbContext.CourseVersions.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.CourseVersionId == resolved.CourseVersionId, cancellationToken);
+        var versionLabel = courseVersion is null
+            ? null
+            : string.IsNullOrWhiteSpace(courseVersion.VersionLabel) ? $"v{courseVersion.VersionNumber}" : courseVersion.VersionLabel;
+
+        var learnerUser = await userManager.FindByIdAsync(userId);
 
         var completion = new CourseCompletionRecord
         {
             CourseCompletionRecordId = Guid.NewGuid(),
             UserId = userId,
             CourseId = course.CourseId,
-            CourseVersionId = course.CurrentVersionId.Value,
+            CourseVersionId = resolved.CourseVersionId,
             CompletedOnUtc = courseProgress.CompletedOnUtc ?? DateTime.UtcNow,
             ExpiryDateUtc = (courseProgress.CompletedOnUtc ?? DateTime.UtcNow).AddMonths(course.ValidityMonths),
             FinalScorePercent = courseProgress.PercentComplete,
-            CertificateNumber = $"TRN-{course.Code}-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}"
+            CertificateNumber = $"TRN-{course.Code}-{DateTime.UtcNow:yyyyMMdd}-{Random.Shared.Next(1000, 9999)}",
+            RankProfileId = resolved.RankProfileId,
+            RankProfileName = resolved.RankProfileName
         };
 
         var certificate = new TrainingCertificate
@@ -951,7 +996,12 @@ public sealed class LearnerTrainingService(
             VerificationCode = Guid.NewGuid().ToString("N")[..10].ToUpperInvariant(),
             IssuedOnUtc = completion.CompletedOnUtc,
             ExpiresOnUtc = completion.ExpiryDateUtc,
-            FilePath = $"/my-training/certificates/{Guid.Empty}"
+            FilePath = $"/my-training/certificates/{Guid.Empty}",
+            CourseTitleSnapshot = course.Title,
+            CourseCodeSnapshot = course.Code,
+            VersionLabelSnapshot = versionLabel,
+            RankProfileNameSnapshot = resolved.RankProfileName,
+            LearnerFullNameSnapshot = learnerUser?.FullName
         };
         certificate.FilePath = $"/my-training/certificates/{certificate.TrainingCertificateId}";
 
@@ -1455,7 +1505,7 @@ public sealed class LearnerTrainingService(
 
     private sealed class ModuleProjection
     {
-        public Guid ModuleId { get; set; }
+        public Guid ModuleVersionId { get; set; }
         public string Title { get; set; } = string.Empty;
         public int OrderIndex { get; set; }
     }
@@ -1463,7 +1513,7 @@ public sealed class LearnerTrainingService(
     private sealed class LessonProjection
     {
         public Guid LessonId { get; set; }
-        public Guid ModuleId { get; set; }
+        public Guid ModuleVersionId { get; set; }
         public string Title { get; set; } = string.Empty;
         public string? Summary { get; set; }
         public int OrderIndex { get; set; }

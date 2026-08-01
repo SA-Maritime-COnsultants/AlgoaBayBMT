@@ -15,6 +15,8 @@ namespace AlgoaBayBMT.Services.Interfaces
         Task<OperationResult<CourseVersion>> CreateNextCourseVersionAsync(Guid courseId, string? changedByUserId, CancellationToken cancellationToken = default);
         Task<OperationResult> PublishCourseVersionAsync(Guid courseId, Guid courseVersionId, string? changedByUserId, CancellationToken cancellationToken = default);
         Task<TrainingCourseBuilderModel?> GetCourseBuilderAsync(Guid courseId, CancellationToken cancellationToken = default);
+        /// <summary>Lessons and their content blocks authored under one module version, ordered. Backs ModuleBuilder.razor.</summary>
+        Task<List<TrainingLessonEditModel>> GetLessonsForModuleVersionAsync(Guid moduleVersionId, CancellationToken cancellationToken = default);
         Task<OperationResult<TrainingModuleEditModel>> SaveModuleAsync(TrainingModuleEditModel model, string? changedByUserId, CancellationToken cancellationToken = default);
         Task<OperationResult> DeleteModuleAsync(Guid moduleId, string? changedByUserId, CancellationToken cancellationToken = default);
         Task<OperationResult> MoveModuleAsync(Guid moduleId, int direction, string? changedByUserId, CancellationToken cancellationToken = default);

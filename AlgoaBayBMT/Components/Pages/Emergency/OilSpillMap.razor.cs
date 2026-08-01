@@ -197,9 +197,12 @@ namespace AlgoaBayBMT.Components.Pages.Emergency
                 {
                     _mapsRef.Refresh();
                 }
-                catch (InvalidOperationException)
+                catch (Exception ex)
                 {
-                    // Circuit/JS interop not available (e.g. during teardown) - ignore.
+                    // Circuit/JS interop not available (e.g. during teardown) - ignore. This must
+                    // stay broad: OnAfterRender is outside MainLayout's ErrorBoundary, so anything
+                    // escaping here terminates the circuit rather than showing an error.
+                    Console.Error.WriteLine($"OilSpillMap: map refresh skipped: {ex.Message}");
                 }
             }
         }
